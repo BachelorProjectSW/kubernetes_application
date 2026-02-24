@@ -23,4 +23,5 @@ jobs:
           project-url: https://github.com/orgs/BachelorProjectSW/projects/2
           github-token: ${{ secrets.ORG_PROJECT_TOKEN }}
           item-id: ${{ steps.add-to-project.outputs.itemId }}
-          fields: '{"Status":"Peer Review","Priority":"Medium"}'
+          field-keys: "Status,Priority"
+          field-values: "Peer Review,Medium"
