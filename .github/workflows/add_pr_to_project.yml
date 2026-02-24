@@ -42,7 +42,7 @@ jobs:
             exit 0
           fi
           
-          ALL_REVIEWERS=("DoubleO69420" "glund23student" "Jon" "MadsRantzau49")
+          ALL_REVIEWERS=("DoubleO69420" "glund23student" "jvincenth" "MadsRantzau49")
           
           # Filter out the PR author
           AVAILABLE_REVIEWERS=()
