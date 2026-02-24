@@ -2,13 +2,13 @@ name: Auto Add PRs to Project
 
 on:
   pull_request:
+    # Everytime a pull request change
     types: [opened, synchronize, reopened]
 
 jobs:
   add-to-project:
     runs-on: ubuntu-latest
     steps:
-    # Compute deadline +2 weekdays
       - name: Compute Deadline
         id: deadline
         run: |
@@ -25,15 +25,11 @@ jobs:
               fi
           done
           echo "deadline=$current_date" >> $GITHUB_OUTPUT
-          echo "Computed Deadline: $current_date"
 
-      # Assign random peer reviewer
       - name: Assign Random Peer Reviewer
         env:
-          GH_TOKEN: ${{ secrets.ORG_PROJECT_TOKEN }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          # List of all team members (update with your team's GitHub usernames)
           ALL_REVIEWERS=("DoubleO69420" "glund23student" "Jon" "MadsRantzau49")
           
           # Filter out the PR author
@@ -47,15 +43,12 @@ jobs:
           # Select random reviewer
           RANDOM_INDEX=$((RANDOM % ${#AVAILABLE_REVIEWERS[@]}))
           REVIEWER="${AVAILABLE_REVIEWERS[$RANDOM_INDEX]}"
-          
-          echo "Selected reviewer: $REVIEWER"
-          
+                    
           # Assign reviewer to PR
           gh pr edit ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
             --add-reviewer "$REVIEWER"
 
-      # Add PR to Project
       - name: Add PR to Project
         id: add-to-project
         uses: actions/add-to-project@v0.4.0
@@ -63,8 +56,7 @@ jobs:
           project-url: https://github.com/orgs/BachelorProjectSW/projects/2
           github-token: ${{ secrets.ORG_PROJECT_TOKEN }}
       
-      # Set custom fields
-      - name: Set Status and Priority
+      - name: Set Project Status and Fields
         uses: titoportas/update-project-fields@v0.1.0
         with:
           project-url: https://github.com/orgs/BachelorProjectSW/projects/2
