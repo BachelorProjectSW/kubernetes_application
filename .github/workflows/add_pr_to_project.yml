@@ -5,7 +5,7 @@ on:
     types: [opened]
 
 env:
-  ACTIONS_STEP_DEBUG: true  # enables debug logging
+  ACTIONS_STEP_DEBUG: true
 
 jobs:
   add-to-project:
@@ -43,7 +43,7 @@ jobs:
         uses: octokit/request-action@v2.x
         with:
           route: GET /repos/${{ github.repository }}/collaborators
-          mediaType.previews: ["nebula-preview"]
+          mediaType.previews: nebula-preview
 
       # Step 4: Pick a random assignee
       - name: Pick random assignee
