@@ -38,8 +38,8 @@ jobs:
             --json reviewRequests \
             --jq '.reviewRequests | length' 2>/dev/null || echo "0")
           
-          if [ "$EXISTING_REVIEWERS" -eq 0 ]; then
-            echo "No reviewers assigned, skipping peer reviewer"
+          if [ "$EXISTING_REVIEWERS" -gt 0 ]; then
+            echo "Peer reviewer already assigned"
             exit 0
           fi
           
