@@ -36,14 +36,14 @@ jobs:
           EXISTING_REVIEWERS=$(gh pr view ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
             --json reviewRequests \
-            --jq '.reviewRequests | length')
+            --jq '.reviewRequests | length' 2>/dev/null || echo "0")
           
-          if [ "$EXISTING_REVIEWERS" -neq 0 ]; then
-            echo "Peer reviwer already assigned"
+          if [ "$EXISTING_REVIEWERS" -eq 0 ]; then
+            echo "No reviewers assigned, skipping peer reviewer"
             exit 0
           fi
           
-          ALL_REVIEWERS=("DoubleO69420" "glund23student" "Jon" "MadsRantzau49")
+          ALL_REVIEWERS=("DoubleO69420" "glund23student" "jvincenth" "MadsRantzau49")
           
           # Filter out the PR author
           AVAILABLE_REVIEWERS=()
@@ -56,11 +56,13 @@ jobs:
           # Select random reviewer
           RANDOM_INDEX=$((RANDOM % ${#AVAILABLE_REVIEWERS[@]}))
           REVIEWER="${AVAILABLE_REVIEWERS[$RANDOM_INDEX]}"
-                    
-          # Assign reviewer to PR
+          
+          echo "Assigning peer reviewer: $REVIEWER"
+          
+          # Assign reviewer to PR with error handling
           gh pr edit ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
-            --add-reviewer "$REVIEWER"
+            --add-reviewer "$REVIEWER" || echo "Failed to assign reviewer (user may not be a collaborator)"
 
       - name: Add PR to Project
         id: add-to-project
