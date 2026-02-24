@@ -12,9 +12,19 @@ jobs:
       - name: Compute Deadline
         id: deadline
         run: |
-          TODAY=$(date -u +%Y-%m-%d)
-          DEADLINE=$(date -d "$TODAY +2 weekdays" +%Y-%m-%d)
-          echo "deadline=$DEADLINE" >> $GITHUB_OUTPUT
+          start_date="$(date +%Y-%m-%d)"
+          days_to_add=2
+          current_date="$start_date"
+          added=0
+      
+          while [ $added -lt $days_to_add ]; do
+              current_date=$(date -d "$current_date +1 day" +"%Y-%m-%d")
+              weekday=$(date -d "$current_date" +"%u")
+              if [ "$weekday" -lt 6 ]; then
+                  added=$((added + 1))
+              fi
+          done
+          echo "deadline=$current_date" >> $GITHUB_OUTPUT
 
       # Step 2: Add PR to project
       - name: Add PR to Project
