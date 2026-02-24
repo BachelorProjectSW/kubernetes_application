@@ -8,34 +8,9 @@ jobs:
   add-to-project:
     runs-on: ubuntu-latest
     steps:
-      # Step 2: Compute deadline +2 weekdays
-      - name: Compute Deadline
-        id: deadline
-        run: |
-          start_date="$(date +%Y-%m-%d)"
-          days_to_add=2
-          current_date="$start_date"
-          added=0
-      
-          while [ $added -lt $days_to_add ]; do
-              current_date=$(date -d "$current_date +1 day" +"%Y-%m-%d")
-              weekday=$(date -d "$current_date" +"%u")
-              if [ "$weekday" -lt 6 ]; then
-                  added=$((added + 1))
-              fi
-          done
-          echo "deadline=$current_date" >> $GITHUB_OUTPUT
-          echo "Computed Deadline: $current_date"
-
-      # Step 5: Add PR to Project v2
+      # Add PR to Project
       - name: Add PR to Project
         uses: actions/add-to-project@v0.4.0
         with:
           project-url: https://github.com/orgs/BachelorProjectSW/projects/2
           github-token: ${{ secrets.ORG_PROJECT_TOKEN }}
-          fields: |
-            {
-              "Status": "Peer Review",
-              "Priority": "Medium",
-              "Deadline": "${{ steps.deadline.outputs.deadline }}"
-            } 
