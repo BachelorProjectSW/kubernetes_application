@@ -28,6 +28,8 @@ jobs:
 
       - name: Assign Random Peer Reviewer
         env:
+          # To use GitHub CLI in a GitHub Actions workflow
+          GH_TOKEN: ${{ secrets.ORG_PROJECT_TOKEN }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           ALL_REVIEWERS=("DoubleO69420" "glund23student" "Jon" "MadsRantzau49")
