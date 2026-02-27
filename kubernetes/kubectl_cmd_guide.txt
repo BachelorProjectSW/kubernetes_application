@@ -10,4 +10,5 @@ kubectl get pods -o wide
 #Display all services
 kubectl get services
 
-
+#Delete node:
+kubectl delete node {NODE_NAME}
