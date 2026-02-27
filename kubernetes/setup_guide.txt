@@ -1,0 +1,118 @@
+Install k3s guide on rpi
+
+Step 1)
+Install the master node:
+append "cgroup_memory=1 cgroup_enable=memory" to the first line in /boot/firmware/cmdline.txt
+ensure to edit with sudo, as the file is read-only:
+sudo vim /boot/firmware/cmdline.txt
+before:
+cfg80211.ieee80211_regdom=DK
+after:
+cfg80211.ieee80211_regdom=DK cgroup_memory=1 cgroup_enable=memory
+
+Step 2)
+Reboot
+
+Step 3)
+Run "curl -sfL https://get.k3s.io | sh -"
+
+step 4)
+#Get the token (which should be used from the working nodes
+cat /var/lib/rancher/k3s/server/agent-token
+
+step 4)
+#Get the ip address from the master node
+ip a 
+
+step 6) 
+Setup working nodes/agents:
+curl -sfL https://get.k3s.io | K3S_URL=https://{IP_FROM_MASTER_NODE}:6443 K3S_TOKEN={TOKEN_FROM_STEP_4} K3S_NODE_NAME="{UNIQUE_NODE_NAME}" sh -s -
+
+
+Deploy containers on working nodes, this below deploy just a nginx default template:
+step 1)
+make a .yaml file with master node configs:
+
+__________
+# Tell Kubernetes what type of object we are creating and which version of the API to use
+apiVersion: apps/v1  
+
+# The kind of Kubernetes object. 'Deployment' manages creating/updating pods automatically
+kind: Deployment  
+
+# Metadata is basic info about this object
+metadata:  
+  # The name of this deployment; must be unique in the namespace
+  name: nginx-deployment  
+  # Labels are key-value pairs that help identify and group resources
+  labels:  
+    app: nginx  
+
+# The specification of what we want this deployment to do
+spec:  
+  # How many copies of the pod we want running
+  replicas: 1  
+
+  # How the deployment identifies which pods it manages
+  selector:  
+    matchLabels:  
+      # Any pod with this label is considered part of this deployment
+      app: nginx  
+
+  # Template for creating the pods
+  template:  
+    # Metadata for the pods themselves
+    metadata:  
+      # Labels assigned to the pods; must match the selector above
+      labels:  
+        app: nginx  
+
+    # Specification of what is inside the pod
+    spec:  
+      # List of containers inside this pod
+      containers:  
+      - name: nginx  # Name of the container
+        image: nginx:latest  # Docker image to use for this container
+        ports:  # Ports the container exposes
+        - containerPort: 80   # Internal port inside the container (nginx listens here)
+          name: web           # Name of the port (used by services to target it)
+
+
+________
+
+step 2)
+then also make .yaml for service. Its the load balancer that routes traffic to the pods.
+
+______
+# Kubernetes API version for Services
+apiVersion: v1  
+
+# Type of object: Service exposes pods to other pods or external clients
+kind: Service  
+
+# Metadata contains basic info about this object
+metadata:  
+  # The name of this Service; must be unique in the namespace
+  name: nginx-nodeport  
+
+# Specification of how this Service behaves
+spec:  
+  # Type of Service: NodePort exposes the Service on all cluster nodes at a static port
+  type: NodePort  
+
+  # Selector tells the Service which pods to send traffic to
+  selector:  
+    # The Service will route traffic to pods with this label
+    app: nginx  
+
+  # Ports defines how traffic is mapped
+  ports:  
+    - name: web          # A friendly name for the port
+      port: 80           # Cluster-internal port: other pods use this to reach the Service
+      targetPort: 80     # Port inside the pod/container that actually runs the app (matches containerPort)
+      nodePort: 30001    # External port on every node IP; you can access the Service from outside the cluster using <node-ip>:30001
+_______
+
+step 3)
+get the ip from the working node and then the nodePort e.g:
+http://192.168.50.208:30001/
