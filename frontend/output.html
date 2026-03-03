@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Post-Experiment Results Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background:#f4f6f8;
+    padding:20px;
+}
+
+.container {
+    max-width:1400px;
+    margin:auto;
+}
+
+h1 {
+    margin-bottom:20px;
+}
+
+.summary-grid {
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:15px;
+    margin-bottom:30px;
+}
+
+.card {
+    background:white;
+    padding:15px;
+    border-radius:8px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card h3 {
+    margin:0 0 10px 0;
+    font-size:14px;
+    color:#666;
+}
+
+.card p {
+    font-size:20px;
+    margin:0;
+}
+
+.chart-grid {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:25px;
+}
+
+.chart-container {
+    background:white;
+    padding:15px;
+    border-radius:8px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>Post-Experiment Results</h1>
+
+<!-- ===================== -->
+<!-- SUMMARY METRICS -->
+<!-- ===================== -->
+
+<div class="summary-grid">
+
+<div class="card">
+<h3>Total Execution Time</h3>
+<p>60 min</p>
+</div>
+
+<div class="card">
+<h3>Total Tokens</h3>
+<p>120,000</p>
+</div>
+
+<div class="card">
+<h3>Total Energy</h3>
+<p>18.5 kWh</p>
+</div>
+
+<div class="card">
+<h3>Microgrid Energy</h3>
+<p>14.2 kWh</p>
+</div>
+
+<div class="card">
+<h3>Main Grid Energy</h3>
+<p>4.3 kWh</p>
+</div>
+
+<div class="card">
+<h3>Avg Latency / Request</h3>
+<p>110 ms</p>
+</div>
+
+<div class="card">
+<h3>Avg Energy / Request</h3>
+<p>0.15 Wh</p>
+</div>
+
+<div class="card">
+<h3>Total Energy Per Node</h3>
+<p>Nano: 6.2 | Orin: 8.1 | Xavier: 4.2 kWh</p>
+</div>
+
+</div>
+
+<!-- ===================== -->
+<!-- CHARTS -->
+<!-- ===================== -->
+
+<div class="chart-grid">
+
+<div class="chart-container">
+<h3>Microgrid Energy Over Time</h3>
+<canvas id="microgridChart"></canvas>
+</div>
+
+<div class="chart-container">
+<h3>Main Grid Energy Over Time</h3>
+<canvas id="maingridChart"></canvas>
+</div>
+
+<div class="chart-container">
+<h3>Tokens Over Time</h3>
+<canvas id="tokensChart"></canvas>
+</div>
+
+<div class="chart-container">
+<h3>Latency Over Time</h3>
+<canvas id="latencyChart"></canvas>
+</div>
+
+<div class="chart-container">
+<h3>Total Energy Consumption Over Time</h3>
+<canvas id="totalEnergyChart"></canvas>
+</div>
+
+<div class="chart-container">
+<h3>Energy Consumption Per Node</h3>
+<canvas id="nodeEnergyChart"></canvas>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const labels = ["0","10","20","30","40","50","60"];
+
+new Chart(document.getElementById("microgridChart"), {
+type: 'line',
+data: {
+labels: labels,
+datasets: [{
+label: "Microgrid (kWh)",
+data: [2,3,4,3,2,1,2]
+}]
+}
+});
+
+new Chart(document.getElementById("maingridChart"), {
+type: 'line',
+data: {
+labels: labels,
+datasets: [{
+label: "Main Grid (kWh)",
+data: [0.5,0.6,0.8,1,0.7,0.4,0.3]
+}]
+}
+});
+
+new Chart(document.getElementById("tokensChart"), {
+type: 'line',
+data: {
+labels: labels,
+datasets: [{
+label: "Tokens",
+data: [10000,20000,30000,45000,60000,80000,120000]
+}]
+}
+});
+
+new Chart(document.getElementById("latencyChart"), {
+type: 'line',
+data: {
+labels: labels,
+datasets: [{
+label: "Latency (ms)",
+data: [95,100,120,130,110,105,98]
+}]
+}
+});
+
+new Chart(document.getElementById("totalEnergyChart"), {
+type: 'line',
+data: {
+labels: labels,
+datasets: [{
+label: "Total Energy (kWh)",
+data: [2.5,3.6,4.8,4,2.7,1.4,2.3]
+}]
+}
+});
+
+new Chart(document.getElementById("nodeEnergyChart"), {
+type: 'line',
+data: {
+labels: labels,
+datasets: [
+{
+label: "Nano",
+data: [1,2,2.5,2,1.5,1,1]
+},
+{
+label: "Orin",
+data: [0.5,1,1.5,2,2.5,3,3.5]
+},
+{
+label: "Xavier",
+data: [1,0.8,0.7,0.6,0.5,0.4,0.3]
+}
+]
+}
+});
+
+</script>
+
+</body>
+</html>
