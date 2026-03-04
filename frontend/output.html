@@ -2,73 +2,114 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Post-Experiment Results Dashboard</title>
+<title>Experiment Results Dashboard</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.2.0"></script>
 
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background:#f4f6f8;
-    padding:20px;
+
+body{
+font-family:Arial;
+background:#f4f6f8;
+padding:20px;
 }
 
-.container {
-    max-width:1400px;
-    margin:auto;
+.container{
+max-width:1400px;
+margin:auto;
 }
 
-h1 {
-    margin-bottom:20px;
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:25px;
 }
 
-.summary-grid {
-    display:grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap:15px;
-    margin-bottom:30px;
+button{
+padding:8px 14px;
+background:#2c7be5;
+color:white;
+border:none;
+border-radius:4px;
+cursor:pointer;
 }
 
-.card {
-    background:white;
-    padding:15px;
-    border-radius:8px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+.summary-grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:15px;
+margin-bottom:30px;
 }
 
-.card h3 {
-    margin:0 0 10px 0;
-    font-size:14px;
-    color:#666;
+.card{
+background:white;
+padding:15px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
 
-.card p {
-    font-size:20px;
-    margin:0;
+.card h3{
+font-size:14px;
+margin:0 0 8px 0;
+color:#555;
 }
 
-.chart-grid {
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:25px;
+.card p{
+font-size:20px;
+margin:0;
 }
 
-.chart-container {
-    background:white;
-    padding:15px;
-    border-radius:8px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+.chart-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:25px;
 }
+
+.chart-container{
+background:white;
+padding:15px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
+.history-panel{
+margin-bottom:25px;
+background:white;
+padding:15px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
 </style>
 </head>
 <body>
 
 <div class="container">
 
-<h1>Post-Experiment Results</h1>
+<div class="header">
+<h1>Experiment Results</h1>
+<button onclick="toggleHistory()">History / Compare</button>
+</div>
 
-<!-- ===================== -->
-<!-- SUMMARY METRICS -->
-<!-- ===================== -->
+
+<div id="historyPanel" class="history-panel" style="display:none">
+
+<h3>Select Previous Experiment</h3>
+
+<select>
+<option>exp_001</option>
+<option>exp_002</option>
+<option>exp_003</option>
+</select>
+
+<button>Compare</button>
+
+</div>
+
+
+<!-- SUMMARY -->
 
 <div class="summary-grid">
 
@@ -88,6 +129,11 @@ h1 {
 </div>
 
 <div class="card">
+<h3>Avg Latency / Request</h3>
+<p>110 ms</p>
+</div>
+
+<div class="card">
 <h3>Microgrid Energy</h3>
 <p>14.2 kWh</p>
 </div>
@@ -98,8 +144,8 @@ h1 {
 </div>
 
 <div class="card">
-<h3>Avg Latency / Request</h3>
-<p>110 ms</p>
+<h3>Battery Energy</h3>
+<p>2.1 kWh</p>
 </div>
 
 <div class="card">
@@ -107,27 +153,16 @@ h1 {
 <p>0.15 Wh</p>
 </div>
 
-<div class="card">
-<h3>Total Energy Per Node</h3>
-<p>Nano: 6.2 | Orin: 8.1 | Xavier: 4.2 kWh</p>
 </div>
 
-</div>
 
-<!-- ===================== -->
 <!-- CHARTS -->
-<!-- ===================== -->
 
 <div class="chart-grid">
 
 <div class="chart-container">
-<h3>Microgrid Energy Over Time</h3>
-<canvas id="microgridChart"></canvas>
-</div>
-
-<div class="chart-container">
-<h3>Main Grid Energy Over Time</h3>
-<canvas id="maingridChart"></canvas>
+<h3>Energy Sources Over Time</h3>
+<canvas id="energyChart"></canvas>
 </div>
 
 <div class="chart-container">
@@ -141,98 +176,184 @@ h1 {
 </div>
 
 <div class="chart-container">
-<h3>Total Energy Consumption Over Time</h3>
-<canvas id="totalEnergyChart"></canvas>
-</div>
-
-<div class="chart-container">
-<h3>Energy Consumption Per Node</h3>
+<h3>Energy Consumption Per Node Type</h3>
 <canvas id="nodeEnergyChart"></canvas>
 </div>
 
+<div class="chart-container" style="grid-column:span 2">
+<h3>Node State Timeline</h3>
+<canvas id="nodeTimeline"></canvas>
 </div>
 
 </div>
+
+</div>
+
 
 <script>
 
-const labels = ["0","10","20","30","40","50","60"];
-
-new Chart(document.getElementById("microgridChart"), {
-type: 'line',
-data: {
-labels: labels,
-datasets: [{
-label: "Microgrid (kWh)",
-data: [2,3,4,3,2,1,2]
-}]
+function toggleHistory(){
+const panel=document.getElementById("historyPanel");
+panel.style.display = panel.style.display==="none" ? "block":"none";
 }
-});
 
-new Chart(document.getElementById("maingridChart"), {
-type: 'line',
-data: {
-labels: labels,
-datasets: [{
-label: "Main Grid (kWh)",
-data: [0.5,0.6,0.8,1,0.7,0.4,0.3]
-}]
-}
-});
+const labels=["0","10","20","30","40","50","60"];
 
-new Chart(document.getElementById("tokensChart"), {
-type: 'line',
-data: {
-labels: labels,
-datasets: [{
-label: "Tokens",
-data: [10000,20000,30000,45000,60000,80000,120000]
-}]
-}
-});
 
-new Chart(document.getElementById("latencyChart"), {
-type: 'line',
-data: {
-labels: labels,
-datasets: [{
-label: "Latency (ms)",
-data: [95,100,120,130,110,105,98]
-}]
-}
-});
+/* ENERGY SOURCES */
 
-new Chart(document.getElementById("totalEnergyChart"), {
-type: 'line',
-data: {
-labels: labels,
-datasets: [{
-label: "Total Energy (kWh)",
-data: [2.5,3.6,4.8,4,2.7,1.4,2.3]
-}]
-}
-});
-
-new Chart(document.getElementById("nodeEnergyChart"), {
-type: 'line',
-data: {
-labels: labels,
-datasets: [
+new Chart(
+document.getElementById("energyChart"),
 {
-label: "Nano",
-data: [1,2,2.5,2,1.5,1,1]
+type:'line',
+data:{
+labels:labels,
+datasets:[
+{
+label:"Microgrid",
+data:[2,3,4,3.5,2.5,1.8,1.5]
 },
 {
-label: "Orin",
-data: [0.5,1,1.5,2,2.5,3,3.5]
+label:"Main Grid",
+data:[0.5,0.6,0.9,1.1,0.8,0.5,0.3]
 },
 {
-label: "Xavier",
-data: [1,0.8,0.7,0.6,0.5,0.4,0.3]
+label:"Battery",
+data:[0.2,0.3,0.4,0.5,0.3,0.2,0.2]
 }
 ]
 }
-});
+}
+);
+
+
+/* TOKENS */
+
+new Chart(
+document.getElementById("tokensChart"),
+{
+type:'line',
+data:{
+labels:labels,
+datasets:[
+{
+label:"Tokens",
+data:[10000,20000,35000,50000,70000,95000,120000]
+}
+]
+}
+}
+);
+
+
+/* LATENCY */
+
+new Chart(
+document.getElementById("latencyChart"),
+{
+type:'line',
+data:{
+labels:labels,
+datasets:[
+{
+label:"Latency (ms)",
+data:[90,100,120,140,110,105,95]
+}
+]
+}
+}
+);
+
+
+/* NODE ENERGY */
+
+new Chart(
+document.getElementById("nodeEnergyChart"),
+{
+type:'line',
+data:{
+labels:labels,
+datasets:[
+{
+label:"Nano",
+data:[1,1.8,2.2,2,1.5,1.2,1]
+},
+{
+label:"Orin",
+data:[0.4,0.8,1.5,2.2,3,3.5,4]
+},
+{
+label:"Xavier",
+data:[1.1,1,0.9,0.7,0.6,0.5,0.4]
+}
+]
+}
+}
+);
+
+
+/* NODE STATE TIMELINE */
+
+const nodeNames=[
+"nano-1",
+"nano-2",
+"orin-1",
+"xavier-1"
+];
+
+const stateColor={
+on:"#27ae60",
+idle:"#f1c40f",
+off:"#7f8c8d"
+};
+
+const timelineData=[
+{x:0,y:"nano-1",v:"on"},
+{x:10,y:"nano-1",v:"on"},
+{x:20,y:"nano-1",v:"on"},
+{x:30,y:"nano-1",v:"idle"},
+{x:40,y:"nano-1",v:"off"},
+
+{x:20,y:"nano-2",v:"on"},
+{x:30,y:"nano-2",v:"on"},
+{x:40,y:"nano-2",v:"idle"},
+
+{x:30,y:"orin-1",v:"on"},
+{x:40,y:"orin-1",v:"on"},
+{x:50,y:"orin-1",v:"idle"},
+
+{x:50,y:"xavier-1",v:"on"}
+];
+
+new Chart(
+document.getElementById("nodeTimeline"),
+{
+type:'matrix',
+data:{
+datasets:[
+{
+label:"Node State",
+data:timelineData,
+backgroundColor:(ctx)=>stateColor[ctx.raw.v],
+width:20,
+height:20
+}
+]
+},
+options:{
+scales:{
+x:{
+type:'linear',
+title:{display:true,text:"Time (minutes)"}
+},
+y:{
+type:'category',
+labels:nodeNames
+}
+}
+}
+}
+);
 
 </script>
 
