@@ -17,6 +17,11 @@
         padding: 30px;
         border-radius: 8px;
       }
+
+      h1 {
+        margin-bottom: 20px;
+      }
+
       h2 {
         margin-top: 30px;
         border-bottom: 1px solid #ddd;
@@ -27,7 +32,9 @@
         display: flex;
         gap: 20px;
         margin-bottom: 15px;
+        flex-wrap: wrap;
       }
+
       .field {
         flex: 1;
         display: flex;
@@ -38,25 +45,8 @@
       select {
         padding: 6px;
         margin-top: 5px;
-      }
-
-      .rule {
-        background: #e9ecef;
-        padding: 12px;
-        margin: 10px 0;
-        cursor: move;
-      }
-      .condition {
-        margin: 5px 0;
-      }
-
-      .node {
-        background: #e9ecef;
-        padding: 8px;
-        margin: 5px 0;
-        cursor: move;
-        display: flex;
-        justify-content: space-between;
+        border-radius: 4px;
+        border: 1px solid #ccc;
       }
 
       button {
@@ -72,14 +62,69 @@
       button.small {
         padding: 4px 8px;
         font-size: 12px;
+        margin-left: 5px;
       }
+
       button.delete {
         background: #c0392b;
+        color: white;
+      }
+
+      button.toggle {
+        background: #f39c12;
+        color: white;
+      }
+
+      .node-list {
+        list-style: none;
+        padding: 0;
+        margin-top: 10px;
+      }
+
+      .node {
+        background: #e9ecef;
+        padding: 8px;
+        margin: 5px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: grab;
+        border-radius: 4px;
+      }
+
+      .node.disabled {
+        opacity: 0.5;
+        text-decoration: line-through;
+      }
+
+      .rule {
+        background: #e9ecef;
+        padding: 12px;
+        margin: 10px 0;
+        cursor: grab;
+        border-radius: 4px;
+      }
+
+      .condition {
+        margin: 5px 0;
       }
 
       .small {
         font-size: 0.85em;
         color: #555;
+      }
+
+      /* Fix spacing for buttons container in nodes */
+      .node div {
+        display: flex;
+        gap: 5px;
+      }
+
+      /* Ensure responsive */
+      @media (max-width: 600px) {
+        .row {
+          flex-direction: column;
+        }
       }
     </style>
   </head>
@@ -87,40 +132,27 @@
     <div class="container">
       <h1>Microgrid Experiment Framework</h1>
 
-      <!-- ===================== -->
       <!-- EXPERIMENT HEADER -->
-      <!-- ===================== -->
-
       <h2>Experiment</h2>
-
       <div class="row">
         <div class="field">
           <label>Experiment ID</label>
           <input type="text" id="experimentId" placeholder="exp_001" />
         </div>
-        <div style="align-self: flex-end">
+        <div style="align-self: flex-end; display: flex; gap: 10px;">
           <button onclick="saveConfig()">Save</button>
           <button onclick="loadConfig()">Load</button>
         </div>
       </div>
 
-      <!-- ===================== -->
       <!-- WORKLOAD CONFIG -->
-      <!-- ===================== -->
-
       <h2>Workload Configuration</h2>
-
       <div class="row">
         <div class="field">
-          <label>Max Input Tokens</label>
+          <label>Total Context Window</label>
           <input type="number" id="inputTokens" value="512" />
         </div>
-        <div class="field">
-          <label>Max Output Tokens</label>
-          <input type="number" id="outputTokens" value="256" />
-        </div>
       </div>
-
       <div class="row">
         <div class="field">
           <label>Request Rate (req/min)</label>
@@ -132,70 +164,117 @@
         </div>
       </div>
 
-      <!-- ===================== -->
       <!-- SCALING RULES -->
-      <!-- ===================== -->
-
       <h2>Scaling Rules (First Match Wins)</h2>
-
-      <label>Scaling rules time for check(seconds)</label>
+      <label>Scaling rules check interval (seconds)</label>
       <input type="number" placeholder="500" />
-
       <div id="ruleList"></div>
-
       <button onclick="addRule()">+ Add Rule</button>
 
-      <!-- ===================== -->
       <!-- NODE MANAGEMENT -->
-      <!-- ===================== -->
-
       <h2>Node Pool & Priority</h2>
-
-      <div class="row">
-        <div class="field">
-          <label>Add Node Name</label>
-          <input type="text" id="newNodeName" placeholder="Nano-1" />
-        </div>
-        <div class="field">
-          <label>Initial State</label>
-          <select id="newNodeState">
-            <option value="on">ON</option>
-            <option value="idle">IDLE</option>
-            <option value="off">OFF</option>
-          </select>
-        </div>
-      </div>
-
-      <button onclick="addNode()">Add Node</button>
-
-      <ul id="nodeList"></ul>
+      <ul id="nodeList" class="node-list"></ul>
 
       <button onclick="simulate()">Simulate</button>
-
       <p id="result"></p>
     </div>
 
     <script>
       // =====================
+      // DEFAULT NODES
+      // =====================
+      const defaultNodes = [
+        { name: "nano1", state: "on", enabled: true },
+        { name: "nano2", state: "on", enabled: true },
+        { name: "nano3", state: "on", enabled: true },
+        { name: "orin1", state: "on", enabled: true },
+        { name: "xavier1", state: "on", enabled: true },
+      ];
+
+      function renderNodes() {
+        const list = document.getElementById("nodeList");
+        list.innerHTML = "";
+        defaultNodes.forEach((node, index) => {
+          const li = document.createElement("li");
+          li.className = "node" + (node.enabled ? "" : " disabled");
+          li.draggable = true;
+          li.dataset.index = index;
+
+          li.innerHTML = `
+            <span>${node.name} (${node.state.toUpperCase()})</span>
+            <div>
+              <button class="small toggle" onclick="toggleNode(${index})">
+                ${node.enabled ? "Disable" : "Enable"}
+              </button>
+            </div>
+          `;
+          list.appendChild(li);
+        });
+      }
+
+      function toggleNode(index) {
+        defaultNodes[index].enabled = !defaultNodes[index].enabled;
+        renderNodes();
+      }
+
+      function deleteNode(index) {
+        defaultNodes.splice(index, 1);
+        renderNodes();
+      }
+
+      // =====================
+      // DRAG & DROP PRIORITY
+      // =====================
+      let draggedIndex = null;
+
+      document.addEventListener("dragstart", (e) => {
+        if (e.target.classList.contains("node")) {
+          draggedIndex = e.target.dataset.index;
+        }
+      });
+
+      document.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const li = e.target.closest(".node");
+        if (!li) return;
+        li.style.borderTop = "2px solid #2c7be5";
+      });
+
+      document.addEventListener("dragleave", (e) => {
+        const li = e.target.closest(".node");
+        if (!li) return;
+        li.style.borderTop = "";
+      });
+
+      document.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const li = e.target.closest(".node");
+        if (!li) return;
+        const targetIndex = parseInt(li.dataset.index);
+        const draggedNode = defaultNodes.splice(draggedIndex, 1)[0];
+        defaultNodes.splice(targetIndex, 0, draggedNode);
+        renderNodes();
+      });
+
+      // =====================
       // RULE ENGINE
       // =====================
-
       function addRule(ruleData = null) {
         const ruleDiv = document.createElement("div");
         ruleDiv.className = "rule";
         ruleDiv.draggable = true;
 
         ruleDiv.innerHTML = `
-        <div class="conditions"></div>
-        <button class="small" onclick="addCondition(this)">+ Add Condition</button>
-        THEN
-        <select class="action">
-            <option value="on">Set node ON</option>
-            <option value="idle">Set node IDLE</option>
-            <option value="off">Set node OFF</option>
-        </select>
-        <button class="small delete" onclick="this.parentElement.remove()">Delete Rule</button>
-    `;
+          <div class="conditions"></div>
+          <button class="small" onclick="addCondition(this)">+ Add Condition</button>
+          THEN
+          <select class="action">
+              <option value="on">Set node ON</option>
+              <option value="idle">Set node IDLE</option>
+              <option value="off">Set node OFF</option>
+          </select>
+          <button class="small delete" onclick="this.parentElement.remove()">Delete Rule</button>
+        `;
 
         document.getElementById("ruleList").appendChild(ruleDiv);
 
@@ -217,25 +296,25 @@
         condDiv.className = "condition";
 
         condDiv.innerHTML = `
-        <select class="logic">
-            <option value="">IF</option>
-            <option value="AND">AND</option>
-            <option value="OR">OR</option>
-        </select>
+          <select class="logic">
+              <option value="">IF</option>
+              <option value="AND">AND</option>
+              <option value="OR">OR</option>
+          </select>
 
-        <select class="var">
-            <option value="L">Latency (L)</option>
-            <option value="G">Surplus Energy (G)</option>
-        </select>
+          <select class="var">
+              <option value="L">Latency (L)</option>
+              <option value="G">Surplus Energy (G)</option>
+          </select>
 
-        <select class="op">
-            <option value=">">&gt;</option>
-            <option value="<">&lt;</option>
-        </select>
+          <select class="op">
+              <option value=">">&gt;</option>
+              <option value="<">&lt;</option>
+          </select>
 
-        <input type="number" class="th" placeholder="Threshold">
-        <button class="small delete" onclick="this.parentElement.remove()">x</button>
-    `;
+          <input type="number" class="th" placeholder="Threshold">
+          <button class="small delete" onclick="this.parentElement.remove()">x</button>
+        `;
 
         container.appendChild(condDiv);
 
@@ -248,32 +327,8 @@
       }
 
       // =====================
-      // NODE MANAGEMENT
-      // =====================
-
-      function addNode(name = null, state = null) {
-        const nodeName = name || document.getElementById("newNodeName").value;
-        const nodeState =
-          state || document.getElementById("newNodeState").value;
-
-        if (!nodeName) return;
-
-        const li = document.createElement("li");
-        li.className = "node";
-        li.innerHTML = `
-        <span>${nodeName} (${nodeState.toUpperCase()})</span>
-        <button class="small delete" onclick="this.parentElement.remove()">Delete</button>
-    `;
-
-        document.getElementById("nodeList").appendChild(li);
-
-        document.getElementById("newNodeName").value = "";
-      }
-
-      // =====================
       // SAVE / LOAD
       // =====================
-
       function saveConfig() {
         const id = document.getElementById("experimentId").value;
         if (!id) return alert("Provide Experiment ID");
@@ -281,12 +336,11 @@
         const config = {
           workload: {
             inputTokens: document.getElementById("inputTokens").value,
-            outputTokens: document.getElementById("outputTokens").value,
             requestRate: document.getElementById("requestRate").value,
             duration: document.getElementById("duration").value,
           },
           rules: [],
-          nodes: [],
+          nodes: defaultNodes,
         };
 
         document.querySelectorAll(".rule").forEach((rule) => {
@@ -307,10 +361,6 @@
           config.rules.push(ruleObj);
         });
 
-        document.querySelectorAll("#nodeList .node").forEach((node) => {
-          config.nodes.push(node.querySelector("span").innerText);
-        });
-
         localStorage.setItem(id, JSON.stringify(config));
         alert("Configuration saved.");
       }
@@ -324,8 +374,6 @@
 
         document.getElementById("inputTokens").value =
           config.workload.inputTokens;
-        document.getElementById("outputTokens").value =
-          config.workload.outputTokens;
         document.getElementById("requestRate").value =
           config.workload.requestRate;
         document.getElementById("duration").value = config.workload.duration;
@@ -333,11 +381,9 @@
         document.getElementById("ruleList").innerHTML = "";
         config.rules.forEach((r) => addRule(r));
 
-        document.getElementById("nodeList").innerHTML = "";
-        config.nodes.forEach((n) => {
-          const [name, state] = n.split("(");
-          addNode(name.trim(), state.replace(")", "").toLowerCase());
-        });
+        defaultNodes.length = 0;
+        config.nodes.forEach((n) => defaultNodes.push(n));
+        renderNodes();
 
         alert("Configuration loaded.");
       }
@@ -345,7 +391,6 @@
       // =====================
       // SIMULATION
       // =====================
-
       function simulate() {
         const currentLatency = 120;
         const currentSurplus = 80;
@@ -380,6 +425,11 @@
 
         document.getElementById("result").innerText = "No rule matched.";
       }
+
+      // =====================
+      // INITIALIZE
+      // =====================
+      renderNodes();
     </script>
   </body>
 </html>

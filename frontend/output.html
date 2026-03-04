@@ -153,6 +153,16 @@ box-shadow:0 2px 6px rgba(0,0,0,0.08);
 <p>0.15 Wh</p>
 </div>
 
+<div class="card">
+<h3>Expected Requests</h3>
+<p>130,000</p>
+</div>
+
+<div class="card">
+<h3>Total Completed Requests</h3>
+<p>120,000</p>
+</div>
+
 </div>
 
 
@@ -180,9 +190,14 @@ box-shadow:0 2px 6px rgba(0,0,0,0.08);
 <canvas id="nodeEnergyChart"></canvas>
 </div>
 
-<div class="chart-container" style="grid-column:span 2">
+<div class="chart-container" >
 <h3>Node State Timeline</h3>
 <canvas id="nodeTimeline"></canvas>
+</div>
+
+<div class="chart-container">
+<h3>Total Energy Per Node</h3>
+<canvas id="totalNodeEnergyChart"></canvas>
 </div>
 
 </div>
@@ -292,6 +307,14 @@ data:[1.1,1,0.9,0.7,0.6,0.5,0.4]
 );
 
 
+/* NODE STATE OVER TIME (LINE DESIGN) */
+
+const stateMap = {
+"off": 0,
+"idle": 1,
+"on": 2
+};
+
 /* NODE STATE TIMELINE */
 
 const nodeNames=[
@@ -349,6 +372,35 @@ title:{display:true,text:"Time (minutes)"}
 y:{
 type:'category',
 labels:nodeNames
+}
+}
+}
+}
+);
+
+
+
+/* TOTAL ENERGY PER NODE */
+
+new Chart(
+document.getElementById("totalNodeEnergyChart"),
+{
+type: 'bar',
+data: {
+labels: ["nano-1","nano-2","orin-1","xavier-1"],
+datasets: [{
+label: "Total Energy (kWh)",
+data: [6.5, 4.0, 7.8, 3.2]
+}]
+},
+options: {
+responsive: true,
+scales: {
+y: {
+title: {
+display: true,
+text: "Energy (kWh)"
+}
 }
 }
 }
