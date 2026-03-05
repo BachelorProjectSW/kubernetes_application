@@ -3,7 +3,7 @@ name: Auto Add PRs to Project
 on:
   pull_request:
     # Everytime a pull request change
-    types: ubuntu-latest
+    types: [opened, synchronize, reopened]
     branches:
       - main
 
