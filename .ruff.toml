@@ -1,0 +1,5 @@
+line-length = 88
+lint.select = ["E", "F", "W", "N", "D"] # PEP8 + Pyflakes + warnings + naming + docstrings
+lint.extend-select = ["E201", "E202", "E221", "E222"] # spacing rules
+preview = true
+lint.ignore = ["D203","D213"] #Do to contradiction warnings
