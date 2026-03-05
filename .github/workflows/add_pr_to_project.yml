@@ -4,6 +4,8 @@ on:
   pull_request:
     # Everytime a pull request change
     types: [opened, synchronize, reopened]
+    branches:
+      - main
 
 jobs:
   add-to-project:
