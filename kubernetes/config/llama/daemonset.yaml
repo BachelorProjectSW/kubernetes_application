@@ -45,7 +45,7 @@ spec:
             - name: model-storage
               mountPath: /models
 
-      volumes:
+      volumes: #these are the shared folders the containers can use (scripts + model files)
         - name: init-scripts
           configMap:
             name: llama-init
