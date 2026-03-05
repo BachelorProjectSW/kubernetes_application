@@ -7,7 +7,7 @@ on:
 
 jobs:
   add-to-project:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, ARM64]
     steps:
       - name: Compute Deadline
         id: deadline
