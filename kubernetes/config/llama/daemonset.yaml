@@ -41,6 +41,8 @@ spec:
               value: "0.0.0.0"
             - name: LLAMA_ARG_PORT
               value: "8080"
+            - name: LLAMA_ARG_THINK_BUDGET
+              value: "0"
           volumeMounts: #/models inside the container maps to ../llama-models on the node disk.
             - name: model-storage
               mountPath: /models

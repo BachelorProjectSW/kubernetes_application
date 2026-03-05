@@ -3,6 +3,6 @@ kind: ConfigMap
 metadata:
   name: llama-settings
 data:
-  MODEL_URL: "MODEL_URL"
-  MODEL_FILE: "MODEL_FILE"
+  MODEL_URL: "https://huggingface.co/unsloth/Qwen3.5-35B-A3B-GGUF/resolve/main/Qwen3.5-35B-A3B-UD-IQ1_M.gguf" #Random model (for testing)
+  MODEL_FILE: "Qwen3.5-35B-A3B-UD-IQ1_M.gguf"
   CTX_SIZE: "2048"
