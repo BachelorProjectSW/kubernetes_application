@@ -3,13 +3,13 @@ name: Auto Add PRs to Project
 on:
   pull_request:
     # Everytime a pull request change
-    types: [opened, synchronize, reopened]
+    types: ubuntu-latest
     branches:
       - main
 
 jobs:
   add-to-project:
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: self-hosted
     steps:
       - name: Compute Deadline
         id: deadline
