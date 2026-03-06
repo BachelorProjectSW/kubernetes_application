@@ -99,7 +99,7 @@ class Cluster:
 def get_cluster_working_nodes(cluster_name="dk"):
     """Compatibility wrapper used by routes."""
     cluster = get_cluster(cluster_name, refresh=True)
-    print(cluster)
+    log.debug("cluster", cluster=cluster)
     return cluster
 
 
