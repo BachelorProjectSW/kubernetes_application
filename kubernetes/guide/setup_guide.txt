@@ -20,7 +20,7 @@ step 4)
 #Get the token (which should be used from the working nodes
 cat /var/lib/rancher/k3s/server/agent-token
 
-step 4)
+step 5)
 #Get the ip address from the master node
 ip a 
 
