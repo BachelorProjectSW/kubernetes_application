@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.vscode/
+.idea/
+venv/
+.ruff_cache
+
+# Auth folder (keep empty but ignore future content)
+auth/*
+!auth/.gitkeep
+
