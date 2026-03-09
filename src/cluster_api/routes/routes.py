@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from services.get_worker_nodes import get_worker_nodes
+from cluster_api.services.get_worker_nodes import get_worker_nodes
 
 router = APIRouter()
 

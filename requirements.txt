@@ -1,2 +1,5 @@
 ruff
 pytest
+fastapi
+uvicorn
+kubernetes
