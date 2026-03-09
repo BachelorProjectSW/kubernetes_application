@@ -1,6 +1,8 @@
 from kubernetes import client, config
+import os
 
-config.load_kube_config("auth/k3s.yaml")
+KUBE_CONFIG_PATH = os.getenv("KUBE_CONFIG_PATH")
+config.load_kube_config(KUBE_CONFIG_PATH)
 
 
 def get_api_client():

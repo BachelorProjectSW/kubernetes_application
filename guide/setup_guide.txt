@@ -34,10 +34,10 @@ Get API authentication
 
 step 1)
 Copy the auth file to fixed place
-sudo cp /etc/rancher/k3s/k3s.yaml kubernetes/auth
+sudo cp /etc/rancher/k3s/k3s.yaml src/cluster_api/auth
 
-Make it readable
-sudo chmod 644 kubernetes/auth/k3s.yaml
+Make it read/write
+sudo chmod 644 src/cluster_api/auth/k3s.yaml
 
 _____
 Setup docker for getting data from kubernetes network.
@@ -63,7 +63,7 @@ cd kubernetes
 docker build -t kube-api-server .
 
 step 5)
-Run api server:
-sudo docker run --network=host kube-api-server
+Run api server (on host network, as otherwise docker will create its own local network):
+docker run --network=host kube-api-server
 _____
 
