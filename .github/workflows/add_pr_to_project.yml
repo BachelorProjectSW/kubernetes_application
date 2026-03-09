@@ -9,7 +9,7 @@ on:
 
 jobs:
   add-to-project:
-    runs-on: ubuntu:latest
+    runs-on: ubuntu-latest
     steps:
       - name: Compute Deadline
         id: deadline
