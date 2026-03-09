@@ -1,4 +1,4 @@
-from util.client_setup import get_api_client
+from kubernetes.util.client_setup import get_api_client
 
 
 def get_worker_nodes():
