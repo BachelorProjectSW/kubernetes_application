@@ -20,7 +20,9 @@ options:
         nodeFilters:
 <<<<<<< HEAD
           - server:0
-
+      - arg: "--node-taint=node-role.kubernetes.io/control-plane=true:NoSchedule"
+        nodeFilters:
+          - server:0
       - arg: "--node-label=llama=true"
         nodeFilters:
           - agent:*
