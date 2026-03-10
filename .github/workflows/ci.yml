@@ -8,7 +8,7 @@ on:
 jobs:
   test:
     name: Run Tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.9]
@@ -42,18 +42,27 @@ jobs:
 
       - name: Create cluster
         run: |
-          bash scripts/create-cluster.sh
+          bash test/k3d/create-cluster.sh
 
       - name: Deploy manifests
         run: |
-          bash scripts/deploy.sh
+          bash test/k3d/deploy.sh
 
-      - name: Setup Docker
+      - name: get authentication from the deployment
+        run: |
+          sudo cp /etc/rancher/k3s/k3s.yaml src/cluster_api/auth
+          sudo chmod 644 src/cluster_api/auth/k3s.yaml
+
+      - name: Install Docker
         run: |
           sudo apt install docker.io -y
           sudo systemctl start docker
-          sudo systemctl enable docker
-          sudo usermod -aG docker $USER
 
+      - name: Build kubernetes api server
+        run: |
+          docker build -t kube-api-server .
 
+      -name: Run api server
+        run: |
+          docker run kube-api-server:latest
 
