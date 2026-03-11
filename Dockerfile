@@ -10,7 +10,7 @@ COPY src ./src
 
 EXPOSE 8040
 
-ENV KUBE_CONFIG_PATH=/app/src/cluster_api/auth/k3s.yaml
+ENV KUBECONFIG=/app/src/cluster_api/auth/k3d-devcluster.yaml
 
 WORKDIR /app/src
 

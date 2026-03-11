@@ -42,21 +42,7 @@ jobs:
         run: |
           bash test/k3d/deploy.sh
 
-      - name: get authentication from the deployment
+      - name: setup docker and kubernetes api server
         run: |
-          sudo cp /etc/rancher/k3s/k3s.yaml src/cluster_api/auth
-          sudo chmod 644 src/cluster_api/auth/k3s.yaml
-
-      - name: Install Docker
-        run: |
-          sudo apt install docker.io -y
-          sudo systemctl start docker
-
-      - name: Build kubernetes api server
-        run: |
-          docker build -t kube-api-server .
-
-      - name: Run api server
-        run: |
-          docker run kube-api-server:latest
+          bash test/k3d/setup_api_server.sh
 
