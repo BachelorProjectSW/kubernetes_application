@@ -42,7 +42,7 @@ jobs:
 
       - name: Create cluster
         run: |
-          bash test/k3d/create-cluster.sh
+          bash test/k3d/create_cluster.sh
 
       - name: Deploy manifests
         run: |
