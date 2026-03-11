@@ -62,7 +62,7 @@ jobs:
         run: |
           docker build -t kube-api-server .
 
-      -name: Run api server
+      - name: Run api server
         run: |
           docker run kube-api-server:latest
 
