@@ -8,6 +8,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
 
+COPY test ./test
+
 EXPOSE 8040
 
 ENV KUBECONFIG=/app/src/cluster_api/auth/k3d-devcluster.yaml
