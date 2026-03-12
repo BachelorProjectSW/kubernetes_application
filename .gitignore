@@ -9,6 +9,6 @@ venv/
 .ruff_cache
 
 # Auth folder (keep empty but ignore future content)
-auth/*
-!auth/.gitkeep
+**/auth/*
+!**/auth/.gitkeep
 

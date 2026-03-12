@@ -8,10 +8,10 @@ on:
 jobs:
   test:
     name: Run Tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: [3.12]
 
     steps:
       - name: Checkout code
@@ -30,6 +30,20 @@ jobs:
         run: |
           ruff check .
 
-      - name: Run Tests
+      - name: Install k3d and kubectl
         run: |
-          echo "Tests running"
+          bash test/k3d/setup_kubernetes.sh 
+
+      - name: Create cluster
+        run: |
+          sudo bash test/k3d/create_cluster.sh
+
+      - name: Deploy manifests
+        run: |
+          bash test/k3d/deploy.sh
+
+      - name: test
+        run: |
+          pytest
+        env:
+          KUBECONFIG: src/cluster_api/auth/k3d-devcluster.yaml

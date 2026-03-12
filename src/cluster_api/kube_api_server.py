@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes.routes import router
+from cluster_api.routes.routes import router
 import os
 import uvicorn
 
