@@ -148,8 +148,9 @@ curl http://127.0.0.1:<LOCAL_PORT>/v1/chat/completions \
 The developer is expected to have Node.js and npm installed.
 
 Change into the frontend app directory:
-
-`cd src/cluster_frontend`
+```bash
+cd src/cluster_frontend
+```
 
 Install dependencies:
 ```bash
@@ -161,11 +162,14 @@ Next, run the live dev server:
 npm run dev
 ```
 
-Create a production build
-
-`npm run build`
+Create a production build:
+```bash
+npm run build
+```
 
 Preview the production build locally
+```bash
+npm run preview
+```
 
-`npm run preview`
 
