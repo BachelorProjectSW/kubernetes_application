@@ -145,7 +145,7 @@ curl http://127.0.0.1:<LOCAL_PORT>/v1/chat/completions \
 
 # Frontend setup
 
-The developer is expected to have Node.js and npm installed.
+The developer is expected to have Node.js installed.
 
 Change into the frontend app directory:
 ```bash
