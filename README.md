@@ -149,7 +149,7 @@ The developer is expected to have Node.js and npm installed.
 
 Change into the frontend app directory:
 
-cd src/clusterfrontend
+cd src/cluster_frontend
 
 Install dependencies:
 
