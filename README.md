@@ -125,17 +125,23 @@ kubectl logs $pod -c llama
 kubectl get configmap llama-settings llama-init
 
 #Port-forward the service to a local port.
+
 #Replace <LOCAL_PORT> with any free port on your machine, and use the same value in the curl commands.
+
 kubectl port-forward svc/llama-service <LOCAL_PORT>:8080
 
 #Example:
+
 #kubectl port-forward svc/llama-service 8080:8080
+
 #kubectl port-forward svc/llama-service 8888:8080
 
 #Test models endpoint:
+
 curl http://127.0.0.1:<LOCAL_PORT>/v1/models
 
 #Chat request:
+
 curl http://127.0.0.1:<LOCAL_PORT>/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"model","messages":[{"role":"user","content":"Where is the Red Sea located?"}],"temperature":0.7,"max_tokens":-1}'
