@@ -57,12 +57,12 @@ jobs:
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:8888/v1/models > /dev/null; then
               echo "llama-service is ready"
+              kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml get pods -A
               pytest
               exit 0
             fi
             sleep 2
           done
-          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml get pods -A
 
           echo "llama-service never became ready"
           cat port-forward.log || true
