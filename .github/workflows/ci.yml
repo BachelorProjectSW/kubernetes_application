@@ -62,6 +62,7 @@ jobs:
             fi
             sleep 2
           done
+          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml get pods -A
 
           echo "llama-service never became ready"
           cat port-forward.log || true
