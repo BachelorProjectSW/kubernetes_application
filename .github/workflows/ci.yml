@@ -50,12 +50,12 @@ jobs:
       - name: Run tests with llama port-forward
         run: |
           set -e
-          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml port-forward svc/llama-service 8080:8080 > port-forward.log 2>&1 &
+          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml port-forward svc/llama-service 8888:8080 > port-forward.log 2>&1 &
           PF_PID=$!
           trap "kill $PF_PID" EXIT
 
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:8080/v1/models > /dev/null; then
+            if curl -fsS http://127.0.0.1:8888/v1/models > /dev/null; then
               echo "llama-service is ready"
               pytest
               exit 0
