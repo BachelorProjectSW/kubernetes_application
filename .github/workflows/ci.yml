@@ -41,9 +41,27 @@ jobs:
       - name: Deploy manifests
         run: |
           bash test/k3d/deploy.sh
+      
+      - name: Wait for llama pod
+        run: |
+          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml get pods -A
+          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml wait --for=condition=Ready pod -l name=llama-server --timeout=180s
+
+      - name: Port-forward llama service
+        run: |
+          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml port-forward svc/llama-service 8080:8080 > port-forward.log 2>&1 &
+          sleep 10
 
       - name: test
         run: |
           pytest
         env:
           KUBECONFIG: src/cluster_api/auth/k3d-devcluster.yaml
+      
+      - name: Dump Kubernetes info on failure
+        if: failure()
+        run: |
+          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml get pods -A -o wide
+          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml describe pod -l name=llama-server || true
+          kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster.yaml logs -l name=llama-server --all-containers=true --tail=200 || true
+          cat port-forward.log || true
