@@ -34,9 +34,9 @@ jobs:
         run: |
           bash test/k3d/setup_kubernetes.sh 
 
-      - name: Create cluster
+      - name: Create clusters and global scheduler
         run: |
-          sudo bash test/k3d/create_cluster.sh
+          sudo bash test/k3d/create_clusters.sh
 
       - name: Deploy manifests
         run: |
