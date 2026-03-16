@@ -14,12 +14,11 @@ def test_llm_simple():
     payload = {
         "model": "model",
         "messages": [
-            {"role": "user", "content": "What is 2+2?."}
+            {"role": "user", "content": "What is 2+2? Reply with just the number."}
         ],
         "temperature": 0,
         "max_tokens": 30,
     }
-
     response = requests.post(
         f"{BASE_URL}/v1/chat/completions",
         json=payload,

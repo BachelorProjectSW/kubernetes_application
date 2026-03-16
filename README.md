@@ -106,35 +106,22 @@ kubectl get services
 #Delete node:
 kubectl delete node {NODE_NAME}
 
-
-#Apply everything (first-time startup)
-kubectl apply -f kubernetes/config/llama/
-
-#Show DaemonSet status / wait until ready
-kubectl get ds llama-server
-kubectl rollout status daemonset/llama-server
-
-#Get pod name
-POD=$(kubectl get pods -l name=llama-server -o jsonpath='{.items[0].metadata.name}')
-
-#Logs (initContainer + server)
-kubectl logs $pod -c download-model
-kubectl logs $pod -c llama
-
 #Check configmaps exist
 kubectl get configmap llama-settings llama-init
 
 #Port-forward the service to a local port.
+#To get server name run:
+  kubectl get pods -o wide
 
 #Replace <LOCAL_PORT> with any free port on your machine, and use the same value in the curl commands.
 
-kubectl port-forward svc/llama-service <LOCAL_PORT>:8080
+kubectl port-forward pod/<server_name> <LOCAL_PORT>:8080
 
 #Example:
 
-#kubectl port-forward svc/llama-service 8080:8080
+#kubectl port-forward pod/llama-server-45z67 8080:8080
 
-#kubectl port-forward svc/llama-service 8888:8080
+#kubectl port-forward pod/llama-server-r5mdv 8888:8080
 
 #Test models endpoint:
 
