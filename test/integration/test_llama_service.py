@@ -14,10 +14,10 @@ def test_llm_simple():
     payload = {
         "model": "model",
         "messages": [
-            {"role": "user", "content": "What is 2+2? Reply with just the number."}
+            {"role": "user", "content": "What is 2+2?."}
         ],
         "temperature": 0,
-        "max_tokens": 2,
+        "max_tokens": 30,
     }
 
     response = requests.post(
