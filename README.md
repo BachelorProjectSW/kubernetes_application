@@ -124,16 +124,58 @@ kubectl logs $pod -c llama
 #Check configmaps exist
 kubectl get configmap llama-settings llama-init
 
-#Check NodePort service + endpoints (routing)
-kubectl get svc llama-nodeport -o wide
-kubectl get endpoints llama-nodeport
+#Port-forward the service to a local port.
 
-##WITH NODEPORTS##
+#Replace <LOCAL_PORT> with any free port on your machine, and use the same value in the curl commands.
+
+kubectl port-forward svc/llama-service <LOCAL_PORT>:8080
+
+#Example:
+
+#kubectl port-forward svc/llama-service 8080:8080
+
+#kubectl port-forward svc/llama-service 8888:8080
+
 #Test models endpoint:
-curl http://<NODE_IP>:30080/v1/models
+
+curl http://127.0.0.1:<LOCAL_PORT>/v1/models
 
 #Chat request:
-curl http://<NODE_IP>:30080/v1/chat/completions \
+
+curl http://127.0.0.1:<LOCAL_PORT>/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"model","messages":[{"role":"user","content":"Where is the Red Sea located?."}],"temperature":0.7,"max_tokens":-1}'
+  -d '{"model":"model","messages":[{"role":"user","content":"Where is the Red Sea located?"}],"temperature":0.7,"max_tokens":-1}'
+
+
+
+
+# Frontend setup
+
+The developer is expected to have Node.js installed.
+
+Change into the frontend app directory:
+```bash
+cd src/cluster_frontend
+```
+
+Install dependencies:
+```bash
+npm install
+```
+
+Next, run the live dev server:
+```bash
+npm run dev
+```
+
+Create a production build:
+```bash
+npm run build
+```
+
+Preview the production build locally
+```bash
+npm run preview
+```
+
 
