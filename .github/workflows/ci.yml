@@ -42,13 +42,6 @@ jobs:
         run: |
           bash test/k3d/deploy.sh
 
-      - name: Wait for llama pods
-        run: |
-          kubectl get pods -A
-          kubectl wait --for=condition=Ready pod -l name=llama-server --timeout=180s
-        env:
-          KUBECONFIG: src/cluster_api/auth/k3d-devcluster.yaml
-
       - name: Run tests with llama port-forward
         run: |
           kubectl port-forward svc/llama-service 8888:8080 &
