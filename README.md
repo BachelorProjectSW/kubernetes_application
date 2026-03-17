@@ -1,4 +1,4 @@
-# bachelor
+# Bachelor
 
 Install k3s guide on rpi
 
