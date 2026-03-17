@@ -2,17 +2,13 @@
 
 set -e
 
-# Denmark cluster
-k3d cluster delete devcluster-dk || true
+# Get cluster names
+source test/k3d/cluster_name_list.sh
 
-k3d cluster create --config test/k3d/cluster_dk.yaml
+k3d cluster delete -a || true
 
-k3d kubeconfig get devcluster-dk > src/cluster_api/auth/k3d-devcluster-dk.yaml
-
-
-# Portugal cluster
-k3d cluster delete devcluster-po || true
-
-k3d cluster create --config test/k3d/cluster_po.yaml
-
-k3d kubeconfig get devcluster-po > src/cluster_api/auth/k3d-devcluster-po.yaml
+for cluster_name in ${CLUSTER_NAMES[@]}; do
+	k3d cluster create --config test/k3d/cluster_configs/cluster-${cluster_name}.yaml
+	
+	k3d kubeconfig get devcluster-${cluster_name} > src/cluster_api/auth/k3d-devcluster-${cluster_name}.yaml
+done

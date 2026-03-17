@@ -1,15 +1,15 @@
 apiVersion: k3d.io/v1alpha5
 kind: Simple
 metadata:
-  name: devcluster-po
+  name: devcluster-dk
 
 servers: 1
-agents: 5
+agents: 1
 
-network: k3d-network
+network: k3d-network-dk
 
 ports:
-  - port: 8081:80
+  - port: 8080:80
     nodeFilters:
       - loadbalancer
 
