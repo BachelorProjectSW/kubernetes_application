@@ -52,8 +52,6 @@ jobs:
       - name: Run tests with llama port-forward
         run: |
           kubectl port-forward svc/llama-service 8888:8080 &
-          PF_PID=$!
-          trap "kill $PF_PID || true" EXIT
 
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:8888/v1/models; then
