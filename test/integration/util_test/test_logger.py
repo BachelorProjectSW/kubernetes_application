@@ -33,6 +33,7 @@ def clean_logs():
 # --- init_csv ---
 
 def test_init_csv_creates_request_csv():
+    """Test that init_csv creates the request CSV with correct headers."""
     init_csv()
     assert os.path.exists(REQUEST_CSV_PATH)
 
@@ -43,6 +44,7 @@ def test_init_csv_creates_request_csv():
 
 
 def test_init_csv_creates_power_csv():
+    """Test that init_csv creates the power CSV with correct headers."""
     init_csv()
     assert os.path.exists(POWER_CSV_PATH)
 
@@ -53,6 +55,7 @@ def test_init_csv_creates_power_csv():
 
 
 def test_init_csv_does_not_overwrite_existing_data():
+    """Test that init_csv does not overwrite existing data."""
     init_csv()
     log_request(
         request_id="req001",
@@ -73,6 +76,7 @@ def test_init_csv_does_not_overwrite_existing_data():
 # --- reset_logs ---
 
 def test_reset_logs_clears_existing_data():
+    """Test that reset_logs clears existing data from both CSV files."""
     init_csv()
     log_request(
         request_id="req001",
@@ -91,6 +95,7 @@ def test_reset_logs_clears_existing_data():
 
 
 def test_reset_logs_csvs_exist_after():
+    """Test that CSV files still exist after reset_logs."""
     reset_logs()
     assert os.path.exists(REQUEST_CSV_PATH)
     assert os.path.exists(POWER_CSV_PATH)
@@ -99,6 +104,7 @@ def test_reset_logs_csvs_exist_after():
 # --- log_request ---
 
 def test_log_request_writes_row():
+    """Test that log_request writes a row to the request CSV."""
     init_csv()
     log_request(
         request_id="req001",
@@ -120,6 +126,7 @@ def test_log_request_writes_row():
 
 
 def test_log_request_rounds_latency():
+    """Test that log_request rounds latency to two decimal places."""
     init_csv()
     log_request(
         request_id="req001",
@@ -137,6 +144,7 @@ def test_log_request_rounds_latency():
 
 
 def test_log_request_multiple_rows_append():
+    """Test that log_request appends multiple rows to the request CSV."""
     init_csv()
     for i in range(5):
         log_request(
@@ -155,6 +163,7 @@ def test_log_request_multiple_rows_append():
 
 
 def test_log_request_has_timestamp():
+    """Test that log_request includes a timestamp in ISO format."""
     init_csv()
     log_request(
         request_id="req001",
@@ -175,6 +184,7 @@ def test_log_request_has_timestamp():
 # --- log_power_decision ---
 
 def test_log_power_decision_writes_shutdown():
+    """Test that log_power_decision writes a shutdown action to the power CSV."""
     init_csv()
     log_power_decision(
         action="shutdown",
@@ -196,6 +206,7 @@ def test_log_power_decision_writes_shutdown():
 
 
 def test_log_power_decision_writes_startup():
+    """Test that log_power_decision writes a startup action to the power CSV."""
     init_csv()
     log_power_decision(
         action="startup",
@@ -217,12 +228,14 @@ def test_log_power_decision_writes_startup():
 # --- generate_summary ---
 
 def test_generate_summary_returns_error_when_empty():
+    """Test that generate_summary returns an error when the request CSV is empty."""
     init_csv()
     summary = generate_summary()
     assert "error" in summary
 
 
 def test_generate_summary_correct_total():
+    """Test that generate_summary computes the correct total number of requests."""
     init_csv()
     for i in range(3):
         log_request(
@@ -238,6 +251,7 @@ def test_generate_summary_correct_total():
 
 
 def test_generate_summary_correct_avg_latency():
+    """Test that generate_summary computes the correct average latency."""
     init_csv()
     log_request(
         request_id="req1",
@@ -259,6 +273,7 @@ def test_generate_summary_correct_avg_latency():
 
 
 def test_generate_summary_correct_cluster_distribution():
+    """Test that generate_summary computes the correct cluster distribution."""
     init_csv()
     log_request(
         request_id="req1",
@@ -288,6 +303,7 @@ def test_generate_summary_correct_cluster_distribution():
 
 
 def test_generate_summary_reads_strategy_name():
+    """Test that generate_summary reads the strategy name from the request CSV."""
     init_csv()
     log_request(
         request_id="req1",
@@ -304,6 +320,7 @@ def test_generate_summary_reads_strategy_name():
 # --- save_summary ---
 
 def test_save_summary_creates_json():
+    """Test that save_summary creates a JSON file with the summary data."""
     init_csv()
     log_request(
         request_id="req1",

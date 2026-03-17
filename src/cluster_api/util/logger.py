@@ -30,7 +30,7 @@ REQUEST_CSV_FIELDS = [
     "renewable_output_w",
     "cluster_load_w",
 ]
- 
+
 REQUEST_CSV_PATH = "logs/requests.csv"
 
 POWER_CSV_FIELDS = [
@@ -43,32 +43,35 @@ POWER_CSV_FIELDS = [
     "active_nodes_before",
     "active_nodes_after",
 ]
- 
+
 POWER_CSV_PATH = "logs/power_decisions.csv"
 
+
 def init_csv():
-    
+    """Create both CSV files with headers if they don't exist."""
     os.makedirs("logs", exist_ok=True)
- 
+
     if not os.path.exists(REQUEST_CSV_PATH):
         with open(REQUEST_CSV_PATH, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=REQUEST_CSV_FIELDS)
             writer.writeheader()
         log.info("csv.created", path=REQUEST_CSV_PATH)
- 
+
     if not os.path.exists(POWER_CSV_PATH):
         with open(POWER_CSV_PATH, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=POWER_CSV_FIELDS)
             writer.writeheader()
         log.info("csv.created", path=POWER_CSV_PATH)
 
+
 def reset_logs():
-    """Delete existing logs and create fresh CSVs. Call at the start of experiment run"""
+    """Delete existing logs and create fresh CSVs. Call at the start of experiment run."""
     for path in [REQUEST_CSV_PATH, POWER_CSV_PATH]:
         if os.path.exists(path):
             os.remove(path)
     init_csv()
     log.info("logs.reset")
+
 
 def log_request(
     request_id: str,
@@ -93,6 +96,7 @@ def log_request(
 
     log.info("request.logged", **row)
 
+
 def log_power_decision(
     action: str,
     cluster: str,
@@ -100,9 +104,8 @@ def log_power_decision(
     reason: str,
     system_avg_latency_ms: float,
 ):
-    """
-    Log a power scheduler decision to the CSV and console.
-    
+    """Log a power scheduler decision to the CSV and console.
+
     TODO: Add active_nodes_before/after, energy forecast data
     when the power scheduler is implemented.
     """
@@ -118,8 +121,9 @@ def log_power_decision(
     with open(POWER_CSV_PATH, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=POWER_CSV_FIELDS)
         writer.writerow(row)
- 
+
     log.info(f"power.{action}", **row)
+
 
 def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
     """Read the request CSV and compute summary metrics."""
@@ -162,8 +166,9 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
 
     return summary
 
+
 def save_summary(summary: dict, output_path: str = "logs/summary.json"):
-    """Save the summary dictionary to a JSON file"""
+    """Save the summary dictionary to a JSON file."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         json.dump(summary, f, indent=2)
