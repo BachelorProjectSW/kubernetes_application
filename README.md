@@ -70,70 +70,95 @@ docker run --network=host kube-api-server
 _____
 
 
+## Kubernetes quick commands
 
+# Kubernetes access and testing
 
+Use the commands below to inspect the cluster, verify required resources, connect to the server locally, and test the API.
 
+## Cluster inspection
 
+List all nodes:
 
-
-
-
-
-
-
-
-
-
-
-
-
-#Good commands
-
-
-
-#Display all nodes
+```bash
 kubectl get nodes
+```
 
-#Display all pods
+List all pods:
+
+```bash
 kubectl get pods
+```
 
-#Display all pods with working node names
+List all pods with node placement details:
+
+```bash
 kubectl get pods -o wide
+```
 
-#Display all services
+List all services:
+
+```bash
 kubectl get services
+```
 
-#Delete node:
-kubectl delete node {NODE_NAME}
+## Resource checks
 
-#Check configmaps exist
+Confirm that the required configmaps are present:
+
+```bash
 kubectl get configmap llama-settings llama-init
+```
 
-#Port-forward the service to a local port.
-#To get server name run:
-  kubectl get pods -o wide
+## Node management
 
-#Replace <LOCAL_PORT> with any free port on your machine, and use the same value in the curl commands.
+Delete a node:
 
-kubectl port-forward pod/<server_name> <LOCAL_PORT>:8080
+```bash
+kubectl delete node <NODE_NAME>
+```
 
-#Example:
+## Local access with port-forwarding
 
-#kubectl port-forward pod/llama-server-45z67 8080:8080
+Find the target server pod:
 
-#kubectl port-forward pod/llama-server-r5mdv 8888:8080
+```bash
+kubectl get pods -o wide
+```
 
-#Test models endpoint:
+Forward the pod’s port `8080` to your local machine:
 
+```bash
+kubectl port-forward pod/<SERVER_NAME> <LOCAL_PORT>:8080
+```
+
+Example:
+
+```bash
+kubectl port-forward pod/llama-server-45z67 8080:8080
+```
+
+Alternative example:
+
+```bash
+kubectl port-forward pod/llama-server-r5mdv 8888:8080
+```
+
+## API verification
+
+Query the models endpoint:
+
+```bash
 curl http://127.0.0.1:<LOCAL_PORT>/v1/models
+```
 
-#Chat request:
+Send a sample chat request:
 
+```bash
 curl http://127.0.0.1:<LOCAL_PORT>/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"model","messages":[{"role":"user","content":"Where is the Red Sea located?"}],"temperature":0.7,"max_tokens":-1}'
-
-
+```
 
 
 # Frontend setup
