@@ -72,8 +72,6 @@ _____
 
 ## Kubernetes quick commands
 
-# Kubernetes access and testing
-
 Use the commands below to inspect the cluster, verify required resources, connect to the server locally, and test the API.
 
 ## Cluster inspection
