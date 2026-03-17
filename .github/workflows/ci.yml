@@ -42,8 +42,18 @@ jobs:
         run: |
           bash test/k3d/deploy.sh
 
-      - name: test
+      - name: Run tests with llama port-forward
         run: |
-          pytest
+          kubectl port-forward svc/llama-service 8888:8080 &
+
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8888/v1/models; then
+              pytest
+              exit 0
+            fi
+            sleep 2
+          done
+
+          exit 1
         env:
           KUBECONFIG: src/cluster_api/auth/k3d-devcluster.yaml
