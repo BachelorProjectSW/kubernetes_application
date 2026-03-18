@@ -45,4 +45,3 @@ def test_get_worker_nodes():
         result = get_all_nodes()
 
     assert [{"name": "worker-1"}] == result
-
