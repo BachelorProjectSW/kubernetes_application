@@ -45,8 +45,8 @@ jobs:
       - name: Run tests with llama port-forward
         run: |
           # TODO Port forwarding is temp and should be replaced with tail-scale
-          kubectl --cubeconfig=src/cluster_api/auth/k3d-devcluster-dk.yaml port-forward svc/llama-service 8888:8080 &
-          kubectl --cubeconfig=src/cluster_api/auth/k3d-devcluster-dk.yaml port-forward svc/llama-service 8889:8080 &
+          kubectl --kubeconfig=src/cluster_api/auth/k3d-devcluster-dk.yaml port-forward svc/llama-service 8888:8080 &
+          kubectl --kubeconfig=src/cluster_api/auth/k3d-devcluster-dk.yaml port-forward svc/llama-service 8889:8080 &
 
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:8888/v1/models && curl -fsS http://127.0.0.1:8889/v1/models; then
