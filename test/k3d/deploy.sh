@@ -8,5 +8,5 @@ kubectl wait --for=condition=Ready nodes --all --timeout=120s
 
 kubectl apply -f src/cluster_api/manifest/
 
-kubectl wait --for=condition=Ready pod -l name=llama-server --timeout=180s
+#kubectl wait --for=condition=Ready pod -l name=llama-server --timeout=180s
 
