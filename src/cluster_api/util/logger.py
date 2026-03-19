@@ -2,7 +2,10 @@ import structlog
 import csv
 import json
 import os
+import uuid
 from datetime import datetime, timezone
+
+from cluster_api.models.log_models import RequestLog, PowerDecisionLog
 
 structlog.configure(
     processors=[
@@ -18,34 +21,11 @@ structlog.configure(
 
 log = structlog.get_logger()
 
-REQUEST_CSV_FIELDS = [
-    "request_id",
-    "timestamp",
-    "strategy",
-    "cluster",
-    "node",
-    "latency_ms",
-    "carbon_intensity_gco2_kwh",
-    "electricity_price",
-    "renewable_output_w",
-    "cluster_load_w",
-]
-
+REQUEST_CSV_FIELDS = list(RequestLog.model_fields.keys())
 REQUEST_CSV_PATH = "logs/requests.csv"
 
-POWER_CSV_FIELDS = [
-    "timestamp",
-    "action",
-    "cluster",
-    "node",
-    "reason",
-    "system_avg_latency_ms",
-    "active_nodes_before",
-    "active_nodes_after",
-]
-
+POWER_CSV_FIELDS = list(PowerDecisionLog.model_fields.keys())
 POWER_CSV_PATH = "logs/power_decisions.csv"
-
 
 def init_csv():
     """Create both CSV files with headers if they don't exist."""
@@ -81,14 +61,16 @@ def log_request(
     latency_ms: float,
 ):
     """Log a completed request to the CSV and console."""
-    row = {
-        "request_id": request_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "strategy": strategy,
-        "cluster": cluster,
-        "node": node,
-        "latency_ms": round(latency_ms, 2),
-    }
+    entry = RequestLog(
+        request_id=request_id,
+        timestamp=datetime.now(timezone.utc),
+        strategy=strategy,
+        cluster=cluster,
+        node=node,
+        latency_ms=round(latency_ms, 2)
+    )
+
+    row = entry.model_dump(mode="json")
 
     with open(REQUEST_CSV_PATH, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=REQUEST_CSV_FIELDS)
@@ -109,14 +91,16 @@ def log_power_decision(
     TODO: Add active_nodes_before/after, energy forecast data
     when the power scheduler is implemented.
     """
-    row = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "action": action,
-        "cluster": cluster,
-        "node": node,
-        "reason": reason,
-        "system_avg_latency_ms": round(system_avg_latency_ms, 2),
-    }
+    entry = PowerDecisionLog(
+        timestamp=datetime.now(timezone.utc),
+        action=action,
+        cluster=cluster,
+        node=node,
+        reason=reason,
+        system_avg_latency_ms=round(system_avg_latency_ms, 2)
+    )
+
+    row = entry.model_dump(mode="json")
 
     with open(POWER_CSV_PATH, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=POWER_CSV_FIELDS)
@@ -158,6 +142,7 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
     strategy = rows[0].get("strategy", "unknown")
 
     summary = {
+        "summary_id": str(uuid.uuid4()),
         "strategy": strategy,
         "total_requests": total,
         "avg_latency_ms": round(avg_latency, 1),
@@ -166,7 +151,7 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
 
     return summary
 
-
+# TODO - save to database instead of local JSON file when database is implemented
 def save_summary(summary: dict, output_path: str = "logs/summary.json"):
     """Save the summary dictionary to a JSON file."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
