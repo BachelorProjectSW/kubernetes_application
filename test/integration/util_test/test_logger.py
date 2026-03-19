@@ -32,6 +32,7 @@ def clean_logs():
 
 # --- init_csv ---
 
+@pytest.mark.integration
 def test_init_csv_creates_request_csv():
     """Test that init_csv creates the request CSV with correct headers."""
     init_csv()
@@ -42,7 +43,7 @@ def test_init_csv_creates_request_csv():
         headers = next(reader)
     assert headers == REQUEST_CSV_FIELDS
 
-
+@pytest.mark.integration
 def test_init_csv_creates_power_csv():
     """Test that init_csv creates the power CSV with correct headers."""
     init_csv()
@@ -53,7 +54,7 @@ def test_init_csv_creates_power_csv():
         headers = next(reader)
     assert headers == POWER_CSV_FIELDS
 
-
+@pytest.mark.integration
 def test_init_csv_does_not_overwrite_existing_data():
     """Test that init_csv does not overwrite existing data."""
     init_csv()
@@ -75,6 +76,7 @@ def test_init_csv_does_not_overwrite_existing_data():
 
 # --- reset_logs ---
 
+@pytest.mark.integration
 def test_reset_logs_clears_existing_data():
     """Test that reset_logs clears existing data from both CSV files."""
     init_csv()
@@ -93,7 +95,7 @@ def test_reset_logs_clears_existing_data():
         rows = list(reader)
     assert len(rows) == 0
 
-
+@pytest.mark.integration
 def test_reset_logs_csvs_exist_after():
     """Test that CSV files still exist after reset_logs."""
     reset_logs()
@@ -102,7 +104,7 @@ def test_reset_logs_csvs_exist_after():
 
 
 # --- log_request ---
-
+@pytest.mark.integration
 def test_log_request_writes_row():
     """Test that log_request writes a row to the request CSV."""
     init_csv()
@@ -124,7 +126,7 @@ def test_log_request_writes_row():
     assert rows[0]["node"] == "nano4"
     assert rows[0]["strategy"] == "carbon_070_cost_030"
 
-
+@pytest.mark.integration
 def test_log_request_rounds_latency():
     """Test that log_request rounds latency to two decimal places."""
     init_csv()
@@ -142,7 +144,7 @@ def test_log_request_rounds_latency():
 
     assert rows[0]["latency_ms"] == "2340.57"
 
-
+@pytest.mark.integration
 def test_log_request_multiple_rows_append():
     """Test that log_request appends multiple rows to the request CSV."""
     init_csv()
@@ -161,7 +163,7 @@ def test_log_request_multiple_rows_append():
 
     assert len(rows) == 5
 
-
+@pytest.mark.integration
 def test_log_request_has_timestamp():
     """Test that log_request includes a timestamp in ISO format."""
     init_csv()
@@ -182,7 +184,7 @@ def test_log_request_has_timestamp():
 
 
 # --- log_power_decision ---
-
+@pytest.mark.integration
 def test_log_power_decision_writes_shutdown():
     """Test that log_power_decision writes a shutdown action to the power CSV."""
     init_csv()
@@ -204,7 +206,7 @@ def test_log_power_decision_writes_shutdown():
     assert rows[0]["node"] == "nano2"
     assert rows[0]["reason"] == "idle_poor_energy"
 
-
+@pytest.mark.integration
 def test_log_power_decision_writes_startup():
     """Test that log_power_decision writes a startup action to the power CSV."""
     init_csv()
@@ -226,14 +228,14 @@ def test_log_power_decision_writes_startup():
 
 
 # --- generate_summary ---
-
+@pytest.mark.integration
 def test_generate_summary_returns_error_when_empty():
     """Test that generate_summary returns an error when the request CSV is empty."""
     init_csv()
     summary = generate_summary()
     assert "error" in summary
 
-
+@pytest.mark.integration
 def test_generate_summary_correct_total():
     """Test that generate_summary computes the correct total number of requests."""
     init_csv()
@@ -249,7 +251,7 @@ def test_generate_summary_correct_total():
     summary = generate_summary()
     assert summary["total_requests"] == 3
 
-
+@pytest.mark.integration
 def test_generate_summary_correct_avg_latency():
     """Test that generate_summary computes the correct average latency."""
     init_csv()
@@ -271,7 +273,7 @@ def test_generate_summary_correct_avg_latency():
     summary = generate_summary()
     assert summary["avg_latency_ms"] == 2000.0
 
-
+@pytest.mark.integration
 def test_generate_summary_correct_cluster_distribution():
     """Test that generate_summary computes the correct cluster distribution."""
     init_csv()
@@ -301,7 +303,7 @@ def test_generate_summary_correct_cluster_distribution():
     assert summary["cluster_distribution"]["denmark"] == 1
     assert summary["cluster_distribution"]["portugal"] == 2
 
-
+@pytest.mark.integration
 def test_generate_summary_reads_strategy_name():
     """Test that generate_summary reads the strategy name from the request CSV."""
     init_csv()
@@ -318,7 +320,7 @@ def test_generate_summary_reads_strategy_name():
 
 
 # --- save_summary ---
-
+@pytest.mark.integration
 def test_save_summary_creates_json():
     """Test that save_summary creates a JSON file with the summary data."""
     init_csv()
