@@ -43,6 +43,7 @@ def test_init_csv_creates_request_csv():
         headers = next(reader)
     assert headers == REQUEST_CSV_FIELDS
 
+
 @pytest.mark.integration
 def test_init_csv_creates_power_csv():
     """Test that init_csv creates the power CSV with correct headers."""
@@ -53,6 +54,7 @@ def test_init_csv_creates_power_csv():
         reader = csv.reader(f)
         headers = next(reader)
     assert headers == POWER_CSV_FIELDS
+
 
 @pytest.mark.integration
 def test_init_csv_does_not_overwrite_existing_data():
@@ -95,6 +97,7 @@ def test_reset_logs_clears_existing_data():
         rows = list(reader)
     assert len(rows) == 0
 
+
 @pytest.mark.integration
 def test_reset_logs_csvs_exist_after():
     """Test that CSV files still exist after reset_logs."""
@@ -126,6 +129,7 @@ def test_log_request_writes_row():
     assert rows[0]["node"] == "nano4"
     assert rows[0]["strategy"] == "carbon_070_cost_030"
 
+
 @pytest.mark.integration
 def test_log_request_rounds_latency():
     """Test that log_request rounds latency to two decimal places."""
@@ -143,6 +147,7 @@ def test_log_request_rounds_latency():
         rows = list(reader)
 
     assert rows[0]["latency_ms"] == "2340.57"
+
 
 @pytest.mark.integration
 def test_log_request_multiple_rows_append():
@@ -162,6 +167,7 @@ def test_log_request_multiple_rows_append():
         rows = list(reader)
 
     assert len(rows) == 5
+
 
 @pytest.mark.integration
 def test_log_request_has_timestamp():
@@ -206,6 +212,7 @@ def test_log_power_decision_writes_shutdown():
     assert rows[0]["node"] == "nano2"
     assert rows[0]["reason"] == "idle_poor_energy"
 
+
 @pytest.mark.integration
 def test_log_power_decision_writes_startup():
     """Test that log_power_decision writes a startup action to the power CSV."""
@@ -235,6 +242,7 @@ def test_generate_summary_returns_error_when_empty():
     summary = generate_summary()
     assert "error" in summary
 
+
 @pytest.mark.integration
 def test_generate_summary_correct_total():
     """Test that generate_summary computes the correct total number of requests."""
@@ -250,6 +258,7 @@ def test_generate_summary_correct_total():
 
     summary = generate_summary()
     assert summary["total_requests"] == 3
+
 
 @pytest.mark.integration
 def test_generate_summary_correct_avg_latency():
@@ -272,6 +281,7 @@ def test_generate_summary_correct_avg_latency():
 
     summary = generate_summary()
     assert summary["avg_latency_ms"] == 2000.0
+
 
 @pytest.mark.integration
 def test_generate_summary_correct_cluster_distribution():
@@ -302,6 +312,7 @@ def test_generate_summary_correct_cluster_distribution():
     summary = generate_summary()
     assert summary["cluster_distribution"]["denmark"] == 1
     assert summary["cluster_distribution"]["portugal"] == 2
+
 
 @pytest.mark.integration
 def test_generate_summary_reads_strategy_name():
