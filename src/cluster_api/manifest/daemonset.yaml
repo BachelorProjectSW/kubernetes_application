@@ -1,34 +1,24 @@
-apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: llama-server
   labels:
     app: llama-server
 spec:
-  selector: #manages pods with the given label
+  selector:
     matchLabels:
       name: llama-server
-  template: #template for all pods
+  template:
     metadata:
       labels:
         name: llama-server
     spec:
-      initContainers: #runs before "normal" containers
-        - name: download-model
-          image: alpine
-          command: ["sh", "-lc", "sh /scripts/init-download.sh"] #run the .sh script for downloading a model
-          envFrom:
-            - configMapRef:
-                name: llama-settings
-          volumeMounts:
-            - name: init-scripts
-              mountPath: /scripts
-            - name: model-storage
-              mountPath: /models
+      nodeSelector:
+        llama: "true"
 
       containers:
         - name: llama
-          image: ghcr.io/ggml-org/llama.cpp:server # official llama server image
+          image: ghcr.io/kyroninja/llamacpp-arm64:latest
+          command: ["/app/llama-server"]
           env:
             - name: LLAMA_ARG_MODEL
               value: /models/model.gguf
@@ -43,15 +33,12 @@ spec:
               value: "8080"
             - name: LLAMA_ARG_THINK_BUDGET
               value: "0"
-          volumeMounts: #/models inside the container maps to ../llama-models on the node disk.
+          volumeMounts:
             - name: model-storage
               mountPath: /models
-
-      volumes: #these are the shared folders the containers can use (scripts + model files)
-        - name: init-scripts
-          configMap:
-            name: llama-init
+      volumes:
         - name: model-storage
           hostPath:
             path: /var/lib/llama-models
             type: DirectoryOrCreate
+
