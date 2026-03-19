@@ -27,6 +27,7 @@ REQUEST_CSV_PATH = "logs/requests.csv"
 POWER_CSV_FIELDS = list(PowerDecisionLog.model_fields.keys())
 POWER_CSV_PATH = "logs/power_decisions.csv"
 
+
 def init_csv():
     """Create both CSV files with headers if they don't exist."""
     os.makedirs("logs", exist_ok=True)
@@ -150,6 +151,7 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
     }
 
     return summary
+
 
 # TODO - save to database instead of local JSON file when database is implemented
 def save_summary(summary: dict, output_path: str = "logs/summary.json"):
