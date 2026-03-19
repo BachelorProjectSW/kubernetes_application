@@ -1,5 +1,8 @@
 from cluster_api.util.client_setup import get_api_clients
 import structlog
+import structlog
+
+log = structlog.get_logger()
 
 log = structlog.get_logger()
 
@@ -11,6 +14,7 @@ def get_cluster_nodes(api_client):
         # Skip control plane
         labels = str(node.metadata.labels) or ""  # Empty if not exist instead of crash
         if "'node-role.kubernetes.io/control-plane': 'true'" in labels:
+            log.debug("node.skipped", name=node.metadata.name, reason="control-plane")
             log.debug("node.skipped", name=node.metadata.name, reason="control-plane")
             continue
 
