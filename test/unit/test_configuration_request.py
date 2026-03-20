@@ -1,8 +1,8 @@
 from cluster_api.configurer.configuration_request import ConfigModel, render_yaml
-import httpx
 from unittest.mock import patch, mock_open
 from fastapi.testclient import TestClient
-from src.cluster_api.configurer.configuration_request import app
+from src.cluster_api.configurer.configuration_request import app, save_config
+import os
 
 
 def test_render_yaml():
@@ -31,7 +31,24 @@ def test_render_yaml():
 
 
 
+def test_save_config_creates_file(tmp_path):
+    # Arrange
+    d = tmp_path / "yaml_files"
+    d.mkdir()
+    file_path = d / "test_specs.yaml"
+    test_content = "apiVersion: apps/v1\nkind: Deployment"
+
+    # Act
+    save_config(str(file_path), test_content)
+
+    # Assert
+    assert file_path.exists()
+    assert file_path.read_text() == test_content
+
+
+
 client = TestClient(app)
+
 
 def test_configure_yaml_endpoint():
     # Arrange
@@ -46,10 +63,8 @@ def test_configure_yaml_endpoint():
         "strategy_weights": ["carbon emmision", "carbon price"]
     }
 
-
     with patch("src.cluster_api.configurer.configuration_request.render_yaml") as mock_render, \
          patch("src.cluster_api.configurer.configuration_request.save_config") as mock_save:
-
 
         mock_render.return_value = "fake: yaml_content"
     # Act
