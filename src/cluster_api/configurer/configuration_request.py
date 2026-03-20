@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from datetime import datetime
 import uvicorn
 
 
@@ -10,20 +11,26 @@ class ConfigModel(BaseModel):
 
     Attributes:
         experiment_id: Unique identifier for the experiment.
-        total_context_window: the number of tokens allowed.
-        request_rate: maximum number of requests in the span of a minute.
         duration_minutes: the number of minutes the experiment shoudl take place.
+        node_priority: the order in which the nodes are turned on and off (list require python 3.14).
+        start_time_replay: the time in which the user desires the experiemtn to start.
+        request_rate: the number of request allowed in a minute.
+        latency_reshold: when the experiemtn shoudl start shutting down nodes.
         scaling_ interval: the time in which the experient should add nodes.
-        node_priority: the order in which the nodes are turned on and off.
+        strategy_weights: the priority of which strategies shoudl be considered first.
+
+    request_rate: maximum number of requests in the span of a minute.
 
     """
 
     experiment_id: str
-    total_context_window: int
-    request_rate: int
     duration_minutes: int
+    node_priority: list[str]
+    start_time_replay: datetime
+    request_rate: int
+    latency_treshold: int
     scaling_interval: int
-    node_priority: str
+    strategy_weights: list[str]
 
 
 app = FastAPI()
@@ -48,7 +55,7 @@ def render_yaml(template_path: str, yaml_data: ConfigModel):
     print(yaml_data.model_dump())
     with open(template_path, 'r') as yaml_file:
         file = yaml_file.read()
-    return file.format(replicas=yaml_data.total_context_window,
+    return file.format(replicas=yaml_data.request_rate,
                        meta_name=yaml_data.duration_minutes)
 
 
