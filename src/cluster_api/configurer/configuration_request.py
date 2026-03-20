@@ -44,8 +44,8 @@ def render_yaml(template_path: str, yaml_data: ConfigModel):
 
     Arguments:
         template_path: the path to the YAML template file.
-        yaml_data: the configuration data with the values that shoudl be injected into.
-        the template in the form of the "ConfiModel".
+        yaml_data: the configuration data with the values that should be injected into.
+        the template in the form of the "ConfigModel".
 
     Returns:
         str: The rendered YAML content as a string, with placeholders replaced
