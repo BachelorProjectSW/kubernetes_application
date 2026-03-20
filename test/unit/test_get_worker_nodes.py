@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import patch
-from cluster_api.services.get_worker_nodes import get_worker_nodes
+from unittest.mock import patch, Mock
+from cluster_api.services.get_worker_nodes import get_cluster_nodes, get_all_nodes
 from kubernetes.client import V1NodeList, V1Node, V1ObjectMeta, V1NodeStatus, V1NodeCondition
 
 
@@ -19,15 +19,29 @@ def get_fake_v1_node_list():
 
 
 @pytest.mark.unit
+def test_get_cluster_worker_nodes():
+    """Test with a mocked V1NodeList."""
+    fake_nodes = get_fake_v1_node_list()
+
+    class FakeApiClient:
+        def list_node(self):
+            return fake_nodes
+    fake_client = FakeApiClient()
+    result = get_cluster_nodes(fake_client)
+
+    assert [{"name": "worker-1"}] == result
+
+
+@pytest.mark.unit
 def test_get_worker_nodes():
     """Test with a mocked V1NodeList."""
     fake_nodes = get_fake_v1_node_list()
 
-    # Patch in the module where get_worker_nodes actually imported get_api_client
-    with patch("cluster_api.services.get_worker_nodes.get_api_client") as mock_client:
-        mock_api = mock_client.return_value
-        mock_api.list_node.return_value = fake_nodes
+    fake_api_client = Mock()
+    fake_api_client.list_node.return_value = fake_nodes
 
-        result = get_worker_nodes()
+    # Patch get_api_clients to return a list with the fake client
+    with patch("cluster_api.services.get_worker_nodes.get_api_clients", return_value=[fake_api_client]):
+        result = get_all_nodes()
 
     assert [{"name": "worker-1"}] == result
