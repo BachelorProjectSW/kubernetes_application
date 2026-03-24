@@ -1,0 +1,6 @@
+clusters:
+  - name: dk
+    port: "8040"
+
+  - name: po
+    port: "8050"
