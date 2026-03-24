@@ -38,7 +38,7 @@ def start_all_servers():
     server_processes = []
 
     # Start the global scheduler API server
-    g_server = Process(target=run_global_server, args=(8020))
+    g_server = Process(target=run_global_server, args=(8020,))
     g_server.start()
     server_processes.append(g_server)
     
