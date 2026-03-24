@@ -1,7 +1,8 @@
 import requests
 
-def handle_question_request(question: str, port: int):
+def handle_question_request(question: str):
     """Send a question to the local chat completions endpoint."""
+    port = "8888"
     url = f"http://127.0.0.1:{port}/v1/chat/completions" 
 
     payload = {
@@ -25,3 +26,4 @@ def handle_question_request(question: str, port: int):
     except requests.RequestException as e:
         print(f"Request failed: {e}")
         return None
+
