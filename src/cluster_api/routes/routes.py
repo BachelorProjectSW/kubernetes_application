@@ -16,5 +16,5 @@ def nodes():
 
 @router.post("/llm_question")
 def llm(question: Question):
-    return handle_question_request()
+    return handle_question_request(question.question)
 
