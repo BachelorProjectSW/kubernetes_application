@@ -1,4 +1,4 @@
-import request
+import requests
 from ..util.cluster_connection import get_all_clusters_endpoint
 
 def handle_question_request(question: str):
