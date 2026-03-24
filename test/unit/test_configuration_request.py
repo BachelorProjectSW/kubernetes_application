@@ -2,7 +2,6 @@ from cluster_api.configurer.configuration_request import ConfigModel, render_yam
 from unittest.mock import patch, mock_open
 from fastapi.testclient import TestClient
 from src.cluster_api.configurer.configuration_request import app, save_config
-import os
 
 
 def test_render_yaml():
@@ -28,7 +27,6 @@ def test_render_yaml():
     # assert
     assert "name: 5789" in result
     assert "replicas: 6789" in result
-
 
 
 def test_save_config_creates_file(tmp_path):
