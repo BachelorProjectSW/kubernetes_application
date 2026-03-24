@@ -44,7 +44,7 @@ def start_all_servers():
     
     for cluster in clusters:
         # Start the cluster API server
-        p_server = Process(target=run_cluster_server, args=("src.cluster_api.cluster_api_app:app", cluster["name"], int(cluster["port"])))
+        p_server = Process(target=run_cluster_server, args=(cluster["name"], int(cluster["port"])))
         p_server.start()
         server_processes.append(p_server)
 
