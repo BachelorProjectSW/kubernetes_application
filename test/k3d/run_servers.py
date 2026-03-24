@@ -32,22 +32,27 @@ def run_port_forward(cluster_name, local_port, service_port):
 
 def start_all_servers():
     clusters = get_clusters()
-    processes = []
+    server_processes = []
 
     for cluster in clusters:
         # Start the cluster API server
         p_server = Process(target=run_server, args=(cluster["name"], int(cluster["port"])))
         p_server.start()
-        processes.append(p_server)
+        server_processes.append(p_server)
 
-        # Start port-forwarding in a separate process
-        service_port = 8080 
-        p_pf = Process(target=run_port_forward, args=(cluster["name"], int(cluster["llama-service"]), service_port))
-        p_pf.start()
-        processes.append(p_pf)
+        # Start port-forward directly (non-blocking)
+        service_port = 8080
+        local_port = int(cluster["llama-service"])
+        run_cmd_bg([
+            "kubectl",
+            "--kubeconfig", str(SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster['name']}.yaml"),
+            "port-forward",
+            "services/llama-service",
+            f"{local_port}:{service_port}"
+        ])
 
-    # Wait for all processes to finish (this will block)
-    for p in processes:
+    # Wait for Uvicorn servers to finish
+    for p in server_processes:
         p.join()
 
 if __name__ == "__main__":
