@@ -15,7 +15,7 @@ class ConfigModel(BaseModel):
         node_priority: the order in which the nodes are turned on and off (list require python 3.14).
         start_time_replay: the time in which the user desires the experiemtn to start.
         request_rate: the number of request allowed in a minute.
-        latency_reshold: when the experiemtn shoudl start shutting down nodes.
+        latency_reshold: when the experiement 
         scaling_ interval: the time in which the experient should add nodes.
         strategy_weights: the priority of which strategies shoudl be considered first.
 

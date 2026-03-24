@@ -6,7 +6,7 @@ import os
 
 
 def test_render_yaml():
-    """Docstring jeg skriver senere."""
+    """"Verify that render_yaml correctly injects ConfigModel attributes into a mocked YAML template."""
     # arrange
     fake_yaml = "name: {meta_name}\nreplicas: {replicas}"
 
@@ -32,6 +32,7 @@ def test_render_yaml():
 
 
 def test_save_config_creates_file(tmp_path):
+    """Verify that save_config correctly creates a YAML file and writes the expected content to disk."""
     # Arrange
     d = tmp_path / "yaml_files"
     d.mkdir()
@@ -46,11 +47,11 @@ def test_save_config_creates_file(tmp_path):
     assert file_path.read_text() == test_content
 
 
-
 client = TestClient(app)
 
 
 def test_configure_yaml_endpoint():
+    """Verify that the /configure-yaml endpoint renders, saves, and returns a successful JSON response."""
     # Arrange
     mock_configurations = {
         "experiment_id": "test-123",
