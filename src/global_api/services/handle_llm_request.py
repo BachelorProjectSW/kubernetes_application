@@ -6,10 +6,10 @@ def handle_llm_request(question: str):
     print("NO CRASSH YET")
     clusters = get_all_clusters_config()
     print(clusters)
-    return {"mads": "ersej"}
     cluster = random.choice(clusters) 
     print(cluster)
     llama_port = cluster["llama-service"]
+    return {"mads": "ersej"}
 
     url = f"http://127.0.0.1:{llama_port}/v1/chat/completions" 
 
