@@ -13,5 +13,4 @@ def nodes():
 @router.post("/handle_llm_question")
 def handle_llm_question(question: Question):
     """Handle llm question"""
-    return print(question.question)
-    #return handle_llm_request(question.question)
+    return handle_llm_request(question.question)
