@@ -41,9 +41,8 @@ def start_all_servers():
         processes.append(p_server)
 
         # Start port-forwarding in a separate process
-        local_port = cluster["llama-service"] 
         service_port = 8080 
-        p_pf = Process(target=run_port_forward, args=(cluster["name"], local_port, service_port))
+        p_pf = Process(target=run_port_forward, args=(cluster["name"], int(cluster["llama-service"]), service_port))
         p_pf.start()
         processes.append(p_pf)
 
