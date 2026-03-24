@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from multiprocessing import Process
 import uvicorn
-from utils import get_clusters, run_cmd
+from utils import get_clusters, run_cmd_bg
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT_DIR / "src"
@@ -28,7 +28,7 @@ def run_port_forward(cluster_name, local_port, service_port):
         f"services/{service_name}",
         f"{local_port}:{service_port}"
     ]
-    run_cmd(cmd)
+    run_cmd_bg(cmd)
 
 def start_all_servers():
     clusters = get_clusters()
