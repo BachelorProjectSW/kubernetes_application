@@ -6,7 +6,7 @@ def handle_llm_request(question: str):
     print("NO CRASSH YET")
     clusters = get_all_clusters_config()
     print(clusters)
-    cluster = random.choice(clusters) 
+    cluster = random.choice(list(clusters.values()))    
     print(cluster)
     llama_port = cluster["llama-service"]
     return {"mads": "ersej"}
