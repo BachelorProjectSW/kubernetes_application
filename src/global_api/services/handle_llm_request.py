@@ -2,9 +2,12 @@ import random
 import requests
 from ..util.cluster_connection import get_all_clusters_config
 
-def handle_llm_request(question: str):
+def choose_cluster():
     clusters = get_all_clusters_config()
-    cluster = random.choice(list(clusters.values()))    
+    return random.choice(list(clusters.values()))    
+
+def handle_llm_request(question: str):
+    cluster = choose_cluster()
     llama_port = cluster["llama-service"]
 
     url = f"http://127.0.0.1:{llama_port}/v1/chat/completions" 
