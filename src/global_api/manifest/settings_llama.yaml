@@ -1,0 +1,9 @@
+apiVersion: v1 #Defines the given LLM (where to download it from, and some args)
+kind: ConfigMap
+metadata:
+  name: llama-settings
+#Random model (for testing)
+data:
+  MODEL_URL: "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q2_K.gguf" 
+  MODEL_FILE: "tinyllama-1.1b-chat-v1.0.Q2_K.gguf"
+  CTX_SIZE: "2048"
