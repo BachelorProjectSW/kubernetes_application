@@ -5,19 +5,29 @@ from ..util.cluster_connection import get_all_clusters_config
 def handle_llm_request(question: str):
     clusters = get_all_clusters_config()
     cluster = random.choice(clusters) 
+    
+    llama_port = cluster["llama-service"]
 
-    ip = cluster["ip"]
-    port = cluster["port"]
-    llama_port = cluster["llama-service"]  
+    url = f"http://127.0.0.1:{llama_port}/v1/chat/completions" 
 
-    url = f"http://{ip}:{llama_port}/llm_question" 
+    payload = {
+        "model": "model",
+        "messages": [
+            {"role": "user", "content": question}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 500  
+    }
 
-    payload = {"question": question}
+    headers = {
+        "Content-Type": "application/json"
+    }
 
     try:
-        response = requests.post(url, json=payload, timeout=5)
-        response.raise_for_status()
-        return response.json()  
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response.raise_for_status()  # Raises error for HTTP codes >= 400
+        data = response.json()
+        return data
     except requests.RequestException as e:
-        print(f"Error sending question to LLM: {e}")
-        return {"error": str(e)}
+        print(f"Request failed: {e}")
+        return None
