@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from cluster_api.routes.routes import router
-from cluster_api.util.logger import init_csv
+from .routes.routes import router
+from ..custom_logging.logger import init_csv
 import os
 import uvicorn
 

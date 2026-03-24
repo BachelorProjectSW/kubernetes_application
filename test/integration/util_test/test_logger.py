@@ -2,7 +2,7 @@ import csv
 import json
 import os
 import pytest
-from cluster_api.util.logger import (
+from custom_logging.logger import (
     init_csv,
     reset_logs,
     log_request,
