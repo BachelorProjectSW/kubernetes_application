@@ -1,8 +1,8 @@
 clusters:
   - name: dk
     port: "8040"
-    llmservice: "8888"
+    llama-service: "8888"
 
   - name: po
     port: "8050"
-    llamaservice: "8889"
+    llama-service: "8889"
