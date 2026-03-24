@@ -4,3 +4,4 @@ fastapi
 uvicorn
 kubernetes
 requests
+locust
