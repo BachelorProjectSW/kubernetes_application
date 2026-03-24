@@ -1,9 +1,9 @@
 clusters:
   dk:
-    ip: "localhost"
+    ip: "192.168.50.100"
     port: "8040"
     llama-service: "8888"
   po:
-    ip: "localhost"
+    ip: "192.168.50.100"
     port: "8050"
     llama-service: "8889"

@@ -12,7 +12,10 @@ SRC_DIR = ROOT_DIR / "src"
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-def run_server(cluster_name, port):
+def run_global_server(port):
+    uvicorn.run("src.global_api.global_api_app:app", host="0.0.0.0", port=port)
+
+def run_cluster_server(cluster_name, port):
     kubeconfig = SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"
     os.environ["KUBECONFIG"] = str(kubeconfig)
     uvicorn.run("src.cluster_api.cluster_api_app:app", host="0.0.0.0", port=port)
@@ -34,9 +37,14 @@ def start_all_servers():
     clusters = get_clusters()
     server_processes = []
 
+    # Start the global scheduler API server
+    g_server = Process(target=run_global_server, args=(8020))
+    g_server.start()
+    server_processes.append(g_server)
+    
     for cluster in clusters:
         # Start the cluster API server
-        p_server = Process(target=run_server, args=(cluster["name"], int(cluster["port"])))
+        p_server = Process(target=run_cluster_server, args=("src.cluster_api.cluster_api_app:app", cluster["name"], int(cluster["port"])))
         p_server.start()
         server_processes.append(p_server)
 
