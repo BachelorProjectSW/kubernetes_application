@@ -15,11 +15,15 @@ def get_clusters():
     with open(CONFIG_PATH, "r") as f:
         data = yaml.safe_load(f)
 
-    clusters = {}
+    clusters = []
 
-    for name in data["clusters"]:
-        cluster = data["clusters"][name]
-        clusters[name] = cluster
+    for entry in data["clusters"]:
+        cluster = {
+            "name": entry["name"],
+            "port": entry["port"],
+            "llama-service": entry["llama-service"]
+        }
+        clusters.append(cluster)
 
     return clusters
 

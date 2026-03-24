@@ -3,7 +3,6 @@ clusters:
     ip: "localhost"
     port: "8040"
     llama-service: "8888"
-    endpoint: "localhost:8040"
   po:
     ip: "localhost"
     port: "8050"
