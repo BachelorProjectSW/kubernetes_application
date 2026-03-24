@@ -4,8 +4,8 @@ from pathlib import Path
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "clusters.yaml"
 
 
-def get_all_clusters_ip():
-    """Return each clusters ip address."""
+def get_all_clusters_endpoint():
+    """Return each clusters endpoint."""
     with open(CONFIG_PATH) as f:
         data = yaml.safe_load(f)
 
@@ -13,6 +13,6 @@ def get_all_clusters_ip():
 
     for name in data["clusters"]:
         cluster = data["clusters"][name]
-        result[name] = cluster["ip"]
+        result[name] = cluster["endpoint"]
 
     return result

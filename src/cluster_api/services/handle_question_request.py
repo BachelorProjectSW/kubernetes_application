@@ -1,12 +1,10 @@
-import requests
+import request
 from ..util.cluster_connection import get_all_clusters_endpoint
 
-
-def get_all_worker_nodes():
-    """Return all working nodes for each cluster."""
-    worker_nodes = []
+def handle_question_request(question: str):
+    """Handle question reqeust temp."""
     for cluster, endpoint in get_all_clusters_endpoint().items():
-        url = f"http://{endpoint}/get_cluster_nodes"
+        url = f"http://{endpoint}/llm"
         response = requests.get(url, timeout=5)
         worker_nodes.extend(response.json())
 
