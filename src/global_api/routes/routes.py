@@ -11,6 +11,6 @@ def nodes():
     return get_all_worker_nodes()
 
 @router.post("/handle_llm_question")
-def handle_llm_request(question: Question):
-    """Handle llm quest"""
-    return handle_llm_request(question)
+def handle_llm_question(question: Question):
+    """Handle llm question"""
+    return handle_llm_request(question.question)
