@@ -11,4 +11,3 @@ def get_all_worker_nodes():
         worker_nodes.extend(response.json())
 
     return worker_nodes
-

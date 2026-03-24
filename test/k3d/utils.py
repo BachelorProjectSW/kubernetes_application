@@ -4,9 +4,10 @@ import threading
 
 CONFIG_PATH = "test/k3d/cluster_configs/config_clusters.yaml"
 
+
 def run_cmd_bg(cmd):
-    """
-    Run a command in the background (non-blocking) and print stdout/stderr in real time.
+    """Run a command in the background (non-blocking) and print stdout/stderr in real time.
+
     Designed for long-running commands like kubectl port-forward.
     """
     print(f"Running (background): {cmd}")
@@ -51,6 +52,7 @@ def get_clusters():
 
     return clusters
 
+
 def get_cluster_names():
     """Return all cluster names."""
     clusters = get_clusters()
@@ -58,4 +60,3 @@ def get_cluster_names():
     for cluster in clusters:
         names.append(cluster["name"])
     return names
-

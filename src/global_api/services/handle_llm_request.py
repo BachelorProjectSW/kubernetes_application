@@ -2,15 +2,19 @@ import random
 import requests
 from ..util.cluster_connection import get_all_clusters_config
 
+
 def choose_cluster():
+    """Choose cluster is temp."""
     clusters = get_all_clusters_config()
-    return random.choice(list(clusters.values()))    
+    return random.choice(list(clusters.values()))
+
 
 def handle_llm_request(question: str):
+    """Send the question to the port-forwarded llama-service."""
     cluster = choose_cluster()
     llama_port = cluster["llama-service"]
 
-    url = f"http://127.0.0.1:{llama_port}/v1/chat/completions" 
+    url = f"http://127.0.0.1:{llama_port}/v1/chat/completions"
 
     payload = {
         "model": "model",
@@ -18,7 +22,7 @@ def handle_llm_request(question: str):
             {"role": "user", "content": question}
         ],
         "temperature": 0.7,
-        "max_tokens": 500  
+        "max_tokens": 500
     }
 
     headers = {
@@ -30,5 +34,5 @@ def handle_llm_request(question: str):
         response.raise_for_status()  # Raises error for HTTP codes >= 400
         data = response.json()
         return data
-    except requests.RequestException as e:
+    except requests.RequestException:
         return None

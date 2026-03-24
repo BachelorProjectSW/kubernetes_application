@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from ..services.get_worker_nodes import get_cluster_nodes
-from ...models.basemodels import Question
 router = APIRouter()
 
 

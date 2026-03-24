@@ -12,17 +12,22 @@ SRC_DIR = ROOT_DIR / "src"
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+
 def run_global_server(port):
+    """Run Global server."""
     uvicorn.run("src.global_api.global_api_app:app", host="0.0.0.0", port=port)
 
+
 def run_cluster_server(cluster_name, port):
+    """Run cluster server."""
     kubeconfig = SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"
     os.environ["KUBECONFIG"] = str(kubeconfig)
     uvicorn.run("src.cluster_api.cluster_api_app:app", host="0.0.0.0", port=port)
 
+
 def run_port_forward(cluster_name, local_port, service_port):
     """Start kubectl port-forward for the llama-service."""
-    service_name = "llama-service" 
+    service_name = "llama-service"
     kubeconfig = SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"
     cmd = [
         "kubectl",
@@ -33,7 +38,9 @@ def run_port_forward(cluster_name, local_port, service_port):
     ]
     run_cmd_bg(cmd)
 
+
 def start_all_servers():
+    """Start global scheduler, all cluster control planes, and port-forward the llama-services."""
     clusters = get_clusters()
     server_processes = []
 
@@ -41,7 +48,7 @@ def start_all_servers():
     g_server = Process(target=run_global_server, args=(8020,))
     g_server.start()
     server_processes.append(g_server)
-    
+
     for cluster in clusters:
         # Start the cluster API server
         p_server = Process(target=run_cluster_server, args=(cluster["name"], int(cluster["port"])))
@@ -62,6 +69,7 @@ def start_all_servers():
     # Wait for Uvicorn servers to finish
     for p in server_processes:
         p.join()
+
 
 if __name__ == "__main__":
     start_all_servers()

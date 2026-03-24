@@ -9,4 +9,3 @@ def test_get_worker_nodes():
         {'name': 'k3d-devcluster-dk-agent-0'},
         {'name': 'k3d-devcluster-po-agent-0'}
     ] == get_all_worker_nodes()
-

@@ -8,12 +8,13 @@ def get_all_clusters_config():
     """Return each clusters endpoint."""
     with open(CONFIG_PATH) as f:
         data = yaml.safe_load(f)
-    
+
     result = {}
 
     for name in data["clusters"]:
         cluster = data["clusters"][name]
         result[name] = cluster
     return result
+
 
 get_all_clusters_config()
