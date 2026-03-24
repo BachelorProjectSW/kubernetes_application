@@ -31,5 +31,4 @@ def handle_llm_request(question: str):
         data = response.json()
         return data
     except requests.RequestException as e:
-        print(f"Request failed: {e}")
         return None
