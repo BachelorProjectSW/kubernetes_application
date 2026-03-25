@@ -6,3 +6,4 @@ kubernetes
 requests
 structlog
 pydantic
+locust
