@@ -1,13 +1,12 @@
 import pytest
 from datetime import datetime
-from global_api.services.pv_power import get_pt_power_factor_by_time, get_pt_power, POWER_CAPACITY
+from global_api.services.pv_power import get_power_factor_by_time, get_power, POWER_CAPACITY
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not DATA_FILE.exists(), reason="CSV data file not available")
 def test_get_pt_power_factor_by_time_reads_real_csv():
     """Test that get_pt_power_factor_by_time returns correct values from the actual CSV file."""
-    result = get_pt_power_factor_by_time(datetime(2010, 6, 1, 10), datetime(2010, 6, 1, 12))
+    result = get_power_factor_by_time(datetime(2010, 6, 1, 10), datetime(2010, 6, 1, 12), "PT")
 
     assert result == [
         (datetime(2010, 6, 1, 10), 0.6989),
@@ -17,10 +16,9 @@ def test_get_pt_power_factor_by_time_reads_real_csv():
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not DATA_FILE.exists(), reason="CSV data file not available")
 def test_get_pt_power_reads_real_csv_and_calculates_power():
     """Test that get_pt_power returns correct available power from the actual CSV file."""
-    result = get_pt_power(datetime(2010, 6, 1, 10), datetime(2010, 6, 1, 12))
+    result = get_power(datetime(2010, 6, 1, 10), datetime(2010, 6, 1, 12), "PT")
 
     assert len(result) == 3
     assert result[0] == (datetime(2010, 6, 1, 10), POWER_CAPACITY * 0.6989)
