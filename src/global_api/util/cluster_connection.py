@@ -15,6 +15,3 @@ def get_all_clusters_config():
         cluster = data["clusters"][name]
         result[name] = cluster
     return result
-
-
-get_all_clusters_config()

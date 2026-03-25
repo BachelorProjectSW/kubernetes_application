@@ -30,7 +30,7 @@ def handle_llm_request(question: str):
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
         response.raise_for_status()  # Raises error for HTTP codes >= 400
         data = response.json()
         return data
