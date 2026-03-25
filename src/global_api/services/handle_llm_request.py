@@ -12,9 +12,10 @@ def choose_cluster():
 def handle_llm_request(question: str):
     """Send the question to the port-forwarded llama-service."""
     cluster = choose_cluster()
+    ip = cluster["ip"]
     llama_port = cluster["llama-service"]
 
-    url = f"http://127.0.0.1:{llama_port}/v1/chat/completions"
+    url = f"http://{ip}:{llama_port}/v1/chat/completions"
 
     payload = {
         "model": "model",
