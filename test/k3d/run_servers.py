@@ -15,14 +15,14 @@ if str(ROOT_DIR) not in sys.path:
 
 def run_global_server(port):
     """Run Global server."""
-    uvicorn.run("src.global_api.global_api_app:app", host="0.0.0.0", port=port)
+    uvicorn.run("src.global_api.app:app", host="0.0.0.0", port=port)
 
 
 def run_cluster_server(cluster_name, port):
     """Run cluster server."""
     kubeconfig = SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"
     os.environ["KUBECONFIG"] = str(kubeconfig)
-    uvicorn.run("src.cluster_api.cluster_api_app:app", host="0.0.0.0", port=port)
+    uvicorn.run("src.cluster_api.app:app", host="0.0.0.0", port=port)
 
 
 def run_port_forward(cluster_name, local_port, service_port):

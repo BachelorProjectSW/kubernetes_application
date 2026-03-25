@@ -4,7 +4,7 @@ import structlog
 log = structlog.get_logger()
 
 
-def get_cluster_nodes():
+def get_cluster_working_nodes():
     """Return a JSON object with all the active working nodes."""
     api_client = get_api_client()
     nodes = api_client.list_node()

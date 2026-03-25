@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, Mock
-from cluster_api.services.get_worker_nodes import get_cluster_nodes
+from cluster_api.services.get_worker_nodes import get_cluster_working_nodes
 from kubernetes.client import V1NodeList, V1Node, V1ObjectMeta, V1NodeStatus, V1NodeCondition
 
 
@@ -28,6 +28,6 @@ def test_get_worker_nodes():
 
     # Patch get_api_client to return a list with the fake client
     with patch("cluster_api.services.get_worker_nodes.get_api_client", return_value=fake_api_client):
-        result = get_cluster_nodes()
+        result = get_cluster_working_nodes()
 
     assert [{"name": "worker-1"}] == result

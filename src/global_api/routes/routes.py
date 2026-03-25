@@ -5,7 +5,7 @@ from ...models.basemodels import Question
 router = APIRouter()
 
 
-@router.get("/get_all_cluster_nodes")
+@router.get("/get_all_clusters_working_nodes")
 def nodes():
     """Return all working nodes."""
     return get_all_worker_nodes()
