@@ -8,6 +8,9 @@ __pycache__/
 venv/
 .ruff_cache
 
+# Data files
+src/global_api/data/*.csv
+
 # Auth folder (keep empty but ignore future content)
 **/auth/*
 !**/auth/.gitkeep

@@ -74,6 +74,35 @@ _____
 
 Use the commands below to inspect the cluster, verify required resources, connect to the server locally, and test the API.
 
+## Portuguese solar data setup
+
+The Portuguese microgrid simulation requires a CSV file with hourly solar PV capacity factors. This file is not included in the repository due to its size.
+
+### Step 1: Download the dataset
+
+Go to [DTU Data: Time series of hourly resolution Solar-PV generation](https://doi.org/10.11583/DTU.29617220) and download the folder **PV_Utility_scale_no_tracking_RGB**.
+
+### Step 2: Place the CSV file
+
+Copy the CSV file into the data directory in the global_api directory
+
+### Step 3: Verify
+
+Run the tests to confirm the file is readable:
+```bash
+pytest test/integration/pv_power/ -v
+```
+
+### Citation
+
+If referencing this dataset in the report, use:
+
+> Nayak, Shubham; Koivisto, Matti Juhani; Kanellas, Polyneikis (2025).
+> Pan-European wind and solar generation time series.
+> Technical University of Denmark. Collection.
+> https://doi.org/10.11583/DTU.c.7964141
+```
+
 ## Cluster inspection
 
 List all nodes:
