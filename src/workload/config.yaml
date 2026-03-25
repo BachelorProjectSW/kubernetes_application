@@ -1,0 +1,26 @@
+# Target API
+target_host: "http://127.0.0.1:8020"
+
+# Number of simulated users
+users:
+  count: 50
+  spawn_rate: 10
+
+# Requests per user
+requests_per_user: 200
+
+# Burst settings
+burst:
+  avg: 5
+  variation: 0.5            # fraction: 0.5 = ±50% random
+  use_sine_peak: true
+  peak_period: 30           # seconds
+
+# Wait time between bursts
+wait_time:
+  min: 0.1
+  max: 5
+
+# Request payload
+payload:
+  question: "What is your favorit food?"
