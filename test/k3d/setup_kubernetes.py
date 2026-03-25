@@ -3,7 +3,7 @@ import sys
 import urllib.request
 import os
 import stat
-from .utils import run_cmd
+from utils import run_cmd
 
 
 def install_k3d():

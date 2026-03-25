@@ -28,8 +28,7 @@ spec:
 
       containers:
         - name: llama
-          image: llama-server-arm64 # DOT NOT PUSH!!! ITS JUST LOCAL BUILD Llama server!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          imagePullPolicy: Never #DO NOT CHECK IN DOCKER HUB BUT LOCALLY!!!!!!!!!!!!!!!!!! (ALSO DONT PUSH)          
+          image: ghcr.io/ggml-org/llama.cpp:server # official llama server image
           env:
             - name: LLAMA_ARG_MODEL
               value: /models/model.gguf
