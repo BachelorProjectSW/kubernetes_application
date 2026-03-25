@@ -5,7 +5,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 
-from cluster_api.models.log_models import RequestLog, PowerDecisionLog
+from .models.log_models import RequestLog, PowerDecisionLog
 
 structlog.configure(
     processors=[
