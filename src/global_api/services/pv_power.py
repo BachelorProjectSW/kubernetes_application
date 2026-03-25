@@ -9,12 +9,13 @@ DATA_PATH = Path(__file__).parent.parent / "data" / "PV_Utility_scale_no_trackin
 POWER_CAPACITY = 800
 
 
-def get_pt_power_factor_by_time(start: datetime, end: datetime) -> list[tuple[datetime, float]]:
+def get_power_factor_by_time(start: datetime, end: datetime, country: str) -> list[tuple[datetime, float]]:
     """Return PT PV capacity factors between start and end (inclusive).
 
     Args:
         start: Earliest timestamp to include.
         end: Latest timestamp to include.
+        country: Country to get PV power factors for.
 
     Returns:
         List of (timestamp, capacity_factor) tuples where capacity_factor is 0.0-1.0.
@@ -27,19 +28,20 @@ def get_pt_power_factor_by_time(start: datetime, end: datetime) -> list[tuple[da
         for row in reader:
             timestamp = datetime.strptime(row["time"], "%Y-%m-%d %H:%M:%S")
             if start <= timestamp <= end:
-                results.append((timestamp, float(row["PT"])))
+                results.append((timestamp, float(row[country])))
             elif timestamp > end:
                 break
 
     return results
 
 
-def get_pt_power(start: datetime, end: datetime) -> list[tuple[datetime, float]]:
-    """Return available solar power at Portugal microgrid between start and end (inclusive).
+def get_power(start: datetime, end: datetime, country: str) -> list[tuple[datetime, float]]:
+    """Return available solar power at specified microgrid between start and end (inclusive).
 
     Args:
         start: Earliest timestamp to include.
         end: Latest timestamp to include.
+        country: Country to get PV power for.
 
     Returns:
         List of (timestamp, watts) tuples where watts is POWER_CAPACITY * capacity_factor.
@@ -47,7 +49,7 @@ def get_pt_power(start: datetime, end: datetime) -> list[tuple[datetime, float]]
     """
     results = []
 
-    factors = get_pt_power_factor_by_time(start, end)
+    factors = get_power_factor_by_time(start, end, country)
 
     for timestamp, factor in factors:
         available_power = POWER_CAPACITY * factor
