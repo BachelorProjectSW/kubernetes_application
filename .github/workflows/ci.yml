@@ -44,7 +44,7 @@ jobs:
 
       - name: Run servers and port-forward
         run: |
-          python test/k3d/run_server.py
+          python test/k3d/run_servers.py
 
       - name: Run tests with llama port-forward
         run: |
