@@ -3,10 +3,12 @@ import threading
 from pathlib import Path
 import yaml
 
-def get_test_cluster_config():
-    test_config_path = Path(__file__) / "cluster_configs" / "test_clusters.yaml"
+TEST_CONFIG_PATH = Path(__file__) / "cluster_configs" / "test_clusters.yaml"
 
-    with open(test_config_path) as f:
+
+def get_test_cluster_config():
+    """return JSON object with test cluster configs."""
+    with open(TEST_CONFIG_PATH) as f:
         return yaml.safe_load(f)
 
 def run_cmd_bg(cmd):
