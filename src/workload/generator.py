@@ -1,9 +1,17 @@
 import random
 import math
 
+
 def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5):
     random.seed(seed)
+
+    if rpm <= 0 or duration_s <= 0:
+        return []
+
     total_requests = int(duration_s * rpm / 60)
+    if total_requests <= 0:
+        return []
+
     timestamps = []
 
     if pattern == "steady":
@@ -41,18 +49,17 @@ def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5)
             value = max(0.05, value)
             intensity.append(value)
 
-        # --- normalize ---
-        total_intensity = sum(intensity)
-        requests_per_second = [
-            (val / total_intensity) * total_requests
-            for val in intensity
-        ]
+        # --- allocate requests by weighted sampling so low-RPM workloads
+        # still keep the exact request count ---
+        second_choices = random.choices(
+            population=range(duration_s),
+            weights=intensity,
+            k=total_requests,
+        )
 
-        # --- generate timestamps ---
-        for sec, req_count in enumerate(requests_per_second):
-            for _ in range(int(req_count)):
-                ts = sec + random.uniform(0, 1)
-                timestamps.append(ts)
+        for sec in second_choices:
+            ts = sec + random.uniform(0, 1)
+            timestamps.append(ts)
 
     timestamps.sort()
     return timestamps
