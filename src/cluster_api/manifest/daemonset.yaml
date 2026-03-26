@@ -1,3 +1,4 @@
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: llama-server
@@ -14,6 +15,19 @@ spec:
     spec:
       nodeSelector:
         llama: "true"
+
+      initContainers:
+        - name: prepare-model
+          image: alpine:3.20
+          command: ["sh", "-lc", "sh /scripts/init-model.sh"]
+          envFrom:
+            - configMapRef:
+                name: llama-settings
+          volumeMounts:
+            - name: init-scripts
+              mountPath: /scripts
+            - name: model-storage
+              mountPath: /models
 
       containers:
         - name: llama
@@ -36,9 +50,12 @@ spec:
           volumeMounts:
             - name: model-storage
               mountPath: /models
+
       volumes:
+        - name: init-scripts
+          configMap:
+            name: llama-init
         - name: model-storage
           hostPath:
             path: /var/lib/llama-models
             type: DirectoryOrCreate
-
