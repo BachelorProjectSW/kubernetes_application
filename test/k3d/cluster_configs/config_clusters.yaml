@@ -1,8 +1,9 @@
 clusters:
-  - name: dk
+  dk:
+    ip: "127.0.0.1"
     port: "8040"
     llama-service: "8888"
-
-  - name: po
+  po:
+    ip: "127.0.0.1"
     port: "8050"
     llama-service: "8889"
