@@ -1,10 +1,10 @@
 import os
-from utils import get_cluster_names, run_cmd
+from utils import get_test_cluster_config, run_cmd
 
 
 def deploy_clusters():
     """Deploy clusters."""
-    cluster_names = get_cluster_names()
+    cluster_names = get_test_cluster_config()['clusters']
 
     for cluster_name in cluster_names:
         kubeconfig = f"src/cluster_api/auth/k3d-devcluster-{cluster_name}.yaml"
