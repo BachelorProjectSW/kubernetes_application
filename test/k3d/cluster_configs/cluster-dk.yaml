@@ -9,7 +9,7 @@ agents: 1
 network: k3d-network-dk
 
 ports:
-  - port: 8080:30080
+  - port: 8080:80
     nodeFilters:
       - loadbalancer
 
