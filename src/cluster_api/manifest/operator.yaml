@@ -12,8 +12,8 @@ metadata:
   name: operator-oauth
   namespace: tailscale
 stringData:
-  client_id: kL78tigg8A11CNTRL
-  client_secret: tskey-client-kL78tigg8A11CNTRL-JEkaYSbpzKgEMNdGFocfKg7SpdWGqeUYE
+  client_id: kpKdw3TJhS11CNTRL
+  client_secret: tskey-client-kpKdw3TJhS11CNTRL-tC12eCxmPDTJk9vHknt8DTCrF1Mtbe3S6
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -5654,72 +5654,77 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: operator
-    namespace: tailscale
+  name: operator
+  namespace: tailscale
 spec:
-    replicas: 1
-    selector:
-        matchLabels:
-            app: operator
-    strategy:
-        type: Recreate
-    template:
-        metadata:
-            labels:
-                app: operator
-        spec:
-            containers:
-                - env:
-                    - name: OPERATOR_INITIAL_TAGS
-                      value: tag:k8s-operator
-                    - name: OPERATOR_HOSTNAME
-                      value: tailscale-operator
-                    - name: OPERATOR_SECRET
-                      value: operator
-                    - name: OPERATOR_LOGGING
-                      value: info
-                    - name: OPERATOR_NAMESPACE
-                      valueFrom:
-                        fieldRef:
-                            fieldPath: metadata.namespace
-                    - name: OPERATOR_LOGIN_SERVER
-                      value: null
-                    - name: OPERATOR_INGRESS_CLASS_NAME
-                      value: tailscale
-                    - name: CLIENT_ID_FILE
-                      value: /oauth/client_id
-                    - name: CLIENT_SECRET_FILE
-                      value: /oauth/client_secret
-                    - name: PROXY_IMAGE
-                      value: tailscale/tailscale:stable
-                    - name: PROXY_TAGS
-                      value: tag:k8s
-                    - name: APISERVER_PROXY
-                      value: "false"
-                    - name: PROXY_FIREWALL_MODE
-                      value: auto
-                    - name: POD_NAME
-                      valueFrom:
-                        fieldRef:
-                            fieldPath: metadata.name
-                    - name: POD_UID
-                      valueFrom:
-                        fieldRef:
-                            fieldPath: metadata.uid
-                  image: tailscale/k8s-operator:stable
-                  imagePullPolicy: Always
-                  name: operator
-                  volumeMounts:
-                    - mountPath: /oauth
-                      name: oauth
-                      readOnly: true
-            nodeSelector:
-                kubernetes.io/os: linux
-            serviceAccountName: operator
-            volumes:
-                - name: oauth
-                  secret:
-                    secretName: operator-oauth
+  replicas: 1
+  selector:
+    matchLabels:
+      app: operator
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: operator
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/hostname: dk
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+      serviceAccountName: operator
+      containers:
+        - name: operator
+          image: tailscale/k8s-operator:stable
+          imagePullPolicy: Always
+          env:
+            - name: OPERATOR_INITIAL_TAGS
+              value: tag:k8s-operator
+            - name: OPERATOR_HOSTNAME
+              value: tailscale-operator
+            - name: OPERATOR_SECRET
+              value: operator
+            - name: OPERATOR_LOGGING
+              value: info
+            - name: OPERATOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPERATOR_LOGIN_SERVER
+              value: null
+            - name: OPERATOR_INGRESS_CLASS_NAME
+              value: tailscale
+            - name: CLIENT_ID_FILE
+              value: /oauth/client_id
+            - name: CLIENT_SECRET_FILE
+              value: /oauth/client_secret
+            - name: PROXY_IMAGE
+              value: tailscale/tailscale:stable
+            - name: PROXY_TAGS
+              value: tag:k8s
+            - name: APISERVER_PROXY
+              value: "false"
+            - name: PROXY_FIREWALL_MODE
+              value: auto
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          volumeMounts:
+            - mountPath: /oauth
+              name: oauth
+              readOnly: true
+      volumes:
+        - name: oauth
+          secret:
+            secretName: operator-oauth
 ---
 apiVersion: networking.k8s.io/v1
 kind: IngressClass

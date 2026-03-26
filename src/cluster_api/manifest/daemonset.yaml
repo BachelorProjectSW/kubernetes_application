@@ -13,13 +13,12 @@ spec:
       labels:
         name: llama-server
     spec:
-      nodeSelector:
-        llama: "true"
+      dnsPolicy: Default
 
       initContainers:
-        - name: prepare-model
+        - name: download-model
           image: alpine:3.20
-          command: ["sh", "-lc", "sh /scripts/init-model.sh"]
+          command: ["sh", "-lc", "sh /scripts/init-download.sh"]
           envFrom:
             - configMapRef:
                 name: llama-settings
@@ -28,7 +27,6 @@ spec:
               mountPath: /scripts
             - name: model-storage
               mountPath: /models
-
       containers:
         - name: llama
           image: ghcr.io/kyroninja/llamacpp-arm64:latest
