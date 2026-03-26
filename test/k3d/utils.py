@@ -5,10 +5,12 @@ import yaml
 
 TEST_CONFIG_PATH = Path(__file__).parent / "cluster_configs" / "test_clusters.yaml"
 
+
 def get_test_cluster_config():
-    """return JSON object with test cluster configs."""
+    """Return JSON object with test cluster configs."""
     with open(TEST_CONFIG_PATH) as f:
         return yaml.safe_load(f)
+
 
 def run_cmd_bg(cmd):
     """Run a command in the background (non-blocking) and print stdout/stderr in real time.

@@ -1,5 +1,4 @@
 from pathlib import Path
-import pytest
 import global_api.util.cluster_connection as cluster_connection
 
 
