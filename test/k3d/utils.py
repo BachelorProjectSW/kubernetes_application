@@ -3,7 +3,7 @@ import threading
 from pathlib import Path
 import yaml
 
-TEST_CONFIG_PATH = Path(__file__).parent() / "cluster_configs" / "test_clusters.yaml"
+TEST_CONFIG_PATH = Path(__file__).parent / "cluster_configs" / "test_clusters.yaml"
 
 def get_test_cluster_config():
     """return JSON object with test cluster configs."""
