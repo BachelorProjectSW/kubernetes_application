@@ -7,3 +7,4 @@ requests
 structlog
 pydantic
 locust
+aiohttp
