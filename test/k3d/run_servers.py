@@ -50,18 +50,18 @@ def start_all_servers():
     g_server.start()
     server_processes.append(g_server)
 
-    for cluster in cluster_config['clusters']:
+    for cluster_name, cluster_info in cluster_config['clusters'].items():
         # Start the cluster API server
-        p_server = Process(target=run_cluster_server, args=(cluster, int(cluster['port'])))
+        p_server = Process(target=run_cluster_server, args=(cluster_name, int(cluster_info['port'])))
         p_server.start()
         server_processes.append(p_server)
 
         # Start port-forward directly (non-blocking)
         service_port = 8080
-        local_port = int(cluster['llama-service'])
+        local_port = int(cluster_info['llama-service'])
         run_cmd_bg([
             "kubectl",
-            "--kubeconfig", str(SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster}.yaml"),
+            "--kubeconfig", str(SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"),
             "port-forward",
             "services/llama-service",
             f"{local_port}:{service_port}"
