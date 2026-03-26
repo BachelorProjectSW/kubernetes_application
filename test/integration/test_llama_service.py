@@ -1,5 +1,5 @@
 import requests
-from ..k3d.utils import get_test_cluster_config
+from k3d.utils import get_test_cluster_config
 
 CLUSTER_CONFIG = get_test_cluster_config()
 DK_CLUSTER = CLUSTER_CONFIG['clusters']['dk']
