@@ -45,9 +45,6 @@ jobs:
       - name: Run servers and port-forward
         run: |
           python test/k3d/run_servers.py &
-
-      - name: Run tests with llama port-forward
-        run: |
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:8888/v1/models && curl -fsS http://127.0.0.1:8889/v1/models; then
               pytest
@@ -57,3 +54,4 @@ jobs:
           done
 
           exit 1
+
