@@ -14,6 +14,8 @@ spec:
         name: llama-server
     spec:
       dnsPolicy: Default
+      nodeSelector:
+        kubernetes.io/arch: arm64
 
       initContainers:
         - name: download-model
@@ -31,6 +33,70 @@ spec:
       containers:
         - name: llama
           image: ghcr.io/kyroninja/llamacpp-arm64:latest
+          command: ["/app/llama-server"]
+          env:
+            - name: LLAMA_ARG_MODEL
+              value: /models/model.gguf
+            - name: LLAMA_ARG_CTX_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: llama-settings
+                  key: CTX_SIZE
+            - name: LLAMA_ARG_HOST
+              value: "0.0.0.0"
+            - name: LLAMA_ARG_PORT
+              value: "8080"
+            - name: LLAMA_ARG_THINK_BUDGET
+              value: "0"
+          volumeMounts:
+            - name: model-storage
+              mountPath: /models
+
+      volumes: #these are the shared folders the containers can use (scripts + model files)
+        - name: init-scripts
+          configMap:
+            name: llama-init
+        - name: model-storage
+          hostPath:
+            path: /var/lib/llama-models
+            type: DirectoryOrCreate
+
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: llama-server
+  labels:
+    app: llama-server
+spec:
+  selector:
+    matchLabels:
+      name: llama-server
+  template: #template for all pods
+    metadata:
+      labels:
+        name: llama-server
+    spec:
+      dnsPolicy: Default
+      nodeSelector:
+        kubernetes.io/arch: amd64
+
+      initContainers:
+        - name: download-model
+          image: alpine
+          command: ["sh", "-lc", "sh /scripts/init-download.sh"] #run the .sh script for downloading a model
+          envFrom:
+            - configMapRef:
+                name: llama-settings
+          volumeMounts:
+            - name: init-scripts
+              mountPath: /scripts
+            - name: model-storage
+              mountPath: /models
+
+      containers:
+        - name: llama
+          image: ghcr.io/ggml-org/llama.cpp:server
           command: ["/app/llama-server"]
           env:
             - name: LLAMA_ARG_MODEL
