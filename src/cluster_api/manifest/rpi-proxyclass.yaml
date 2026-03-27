@@ -5,8 +5,8 @@ metadata:
 spec:
   statefulSet:
     pod:
-      nodeSelector:
-        kubernetes.io/hostname: rpi-control
+     nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
       tolerations:
         - key: "node-role.kubernetes.io/control-plane"
           operator: "Exists"
