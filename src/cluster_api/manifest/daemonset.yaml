@@ -1,26 +1,28 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: llama-server
+  name: llama-server-arm64
   labels:
     app: llama-server
+    arch: arm64
 spec:
   selector:
     matchLabels:
-      name: llama-server
-  template: #template for all pods
+      app: llama-server
+      arch: arm64
+  template:
     metadata:
       labels:
-        name: llama-server
+        app: llama-server
+        arch: arm64
     spec:
       dnsPolicy: Default
       nodeSelector:
         kubernetes.io/arch: arm64
-
       initContainers:
         - name: download-model
           image: alpine
-          command: ["sh", "-lc", "sh /scripts/init-download.sh"] #run the .sh script for downloading a model
+          command: ["sh", "-lc", "sh /scripts/init-download.sh"]
           envFrom:
             - configMapRef:
                 name: llama-settings
@@ -29,7 +31,6 @@ spec:
               mountPath: /scripts
             - name: model-storage
               mountPath: /models
-
       containers:
         - name: llama
           image: ghcr.io/kyroninja/llamacpp-arm64:latest
@@ -51,8 +52,7 @@ spec:
           volumeMounts:
             - name: model-storage
               mountPath: /models
-
-      volumes: #these are the shared folders the containers can use (scripts + model files)
+      volumes:
         - name: init-scripts
           configMap:
             name: llama-init
@@ -60,31 +60,32 @@ spec:
           hostPath:
             path: /var/lib/llama-models
             type: DirectoryOrCreate
-
-
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: llama-server
+  name: llama-server-amd64
   labels:
     app: llama-server
+    arch: amd64
 spec:
   selector:
     matchLabels:
-      name: llama-server
-  template: #template for all pods
+      app: llama-server
+      arch: amd64
+  template:
     metadata:
       labels:
-        name: llama-server
+        app: llama-server
+        arch: amd64
     spec:
       dnsPolicy: Default
       nodeSelector:
         kubernetes.io/arch: amd64
-
       initContainers:
         - name: download-model
           image: alpine
-          command: ["sh", "-lc", "sh /scripts/init-download.sh"] #run the .sh script for downloading a model
+          command: ["sh", "-lc", "sh /scripts/init-download.sh"]
           envFrom:
             - configMapRef:
                 name: llama-settings
@@ -93,7 +94,6 @@ spec:
               mountPath: /scripts
             - name: model-storage
               mountPath: /models
-
       containers:
         - name: llama
           image: ghcr.io/ggml-org/llama.cpp:server
@@ -115,8 +115,7 @@ spec:
           volumeMounts:
             - name: model-storage
               mountPath: /models
-
-      volumes: #these are the shared folders the containers can use (scripts + model files)
+      volumes:
         - name: init-scripts
           configMap:
             name: llama-init
