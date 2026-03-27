@@ -1,6 +1,10 @@
 import requests
+from k3d.utils import get_test_cluster_config
 
-BASE_URL = "http://127.0.0.1:8888"
+CLUSTER_CONFIG = get_test_cluster_config()
+DK_CLUSTER = CLUSTER_CONFIG['clusters']['dk']
+
+BASE_URL = f"http://{DK_CLUSTER['ip']}:{DK_CLUSTER['llama-service']}"
 
 
 def test_llama_service_models_endpoint():
