@@ -3,12 +3,12 @@ kind: Service
 metadata:
   name: llama-service
   annotations:
-     tailscale.com/proxy-class: rpi-proxy
+    tailscale.com/proxy-class: rpi-proxy
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
   selector:
-    name: llama-server
+    app: llama-server
   ports:
     - port: 8080
       targetPort: 8080
