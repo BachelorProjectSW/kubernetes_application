@@ -16,8 +16,10 @@ def get_arch():
     """Check if the platform is x86 or arm64."""
     arch = platform.machine()
     if arch == "x86_64":
+        print("amd64")
         return "amd64"
     elif arch in ("aarch64", "arm64"):
+        print("arm64")
         return "arm64"
     else:
         print(f"Unsupported architecture: {arch}")
