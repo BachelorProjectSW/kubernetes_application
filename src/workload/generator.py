@@ -42,11 +42,6 @@ def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5)
             for freq, phase, amp in waves:
                 value += amp * math.sin(t * freq + phase)
 
-            # add small randomness
-            value += random.uniform(-0.1, 0.1)
-
-            # clamp
-            value = max(0.05, value)
             intensity.append(value)
 
         # --- allocate requests by weighted sampling so low-RPM workloads
