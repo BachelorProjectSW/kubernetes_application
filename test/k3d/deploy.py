@@ -16,9 +16,10 @@ def deploy_clusters():
         for _ in range(3):
             time.sleep(10)
             run_cmd("kubectl get pods -o wide")
+
         run_cmd(
-           "kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster-dk.yaml 
-            logs -l name=llama-server --all-containers"
+            "kubectl --kubeconfig src/cluster_api/auth/k3d-devcluster-dk.yaml "
+            "logs -l name=llama-server --all-containers"
         )
         run_cmd("kubectl wait --for=condition=Ready pod -l name=llama-server --timeout=180s")
 
