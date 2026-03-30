@@ -15,13 +15,13 @@ def run_cmd_bg(cmd):
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True  # decode output as string
+        text=True,  # decode output as string
     )
 
     # Print stdout asynchronously
     def stream_output(stream):
-        for line in iter(stream.readline, ''):
-            print(line, end='')
+        for line in iter(stream.readline, ""):
+            print(line, end="")
 
     threading.Thread(target=stream_output, args=(process.stdout,), daemon=True).start()
     threading.Thread(target=stream_output, args=(process.stderr,), daemon=True).start()
@@ -43,11 +43,7 @@ def get_clusters():
     clusters = []
 
     for entry in data["clusters"]:
-        cluster = {
-            "name": entry["name"],
-            "port": entry["port"],
-            "llama-service": entry["llama-service"]
-        }
+        cluster = {"name": entry["name"], "port": entry["port"], "llama-service": entry["llama-service"]}
         clusters.append(cluster)
 
     return clusters

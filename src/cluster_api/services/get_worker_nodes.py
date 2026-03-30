@@ -18,9 +18,7 @@ def get_cluster_working_nodes():
 
         name = node.metadata.name
 
-        worker_nodes.append({
-            "name": name
-            })
+        worker_nodes.append({"name": name})
 
     node_names = [n["name"] for n in worker_nodes]
     log.info("worker_nodes.found", count=len(worker_nodes), nodes=node_names)

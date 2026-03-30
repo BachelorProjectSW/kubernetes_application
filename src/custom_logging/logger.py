@@ -68,7 +68,7 @@ def log_request(
         strategy=strategy,
         cluster=cluster,
         node=node,
-        latency_ms=round(latency_ms, 2)
+        latency_ms=round(latency_ms, 2),
     )
 
     row = entry.model_dump(mode="json")
@@ -98,7 +98,7 @@ def log_power_decision(
         cluster=cluster,
         node=node,
         reason=reason,
-        system_avg_latency_ms=round(system_avg_latency_ms, 2)
+        system_avg_latency_ms=round(system_avg_latency_ms, 2),
     )
 
     row = entry.model_dump(mode="json")

@@ -64,7 +64,4 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
     entries = response.json().get("data", [])
     log.info("Prices fetched", count=len(entries))
 
-    return [
-        (datetime.fromisoformat(e["datetime"]), e["value"])
-        for e in entries
-    ]
+    return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]

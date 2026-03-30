@@ -37,6 +37,7 @@ def test_get_power_calculates_available_power():
     """Available power is capacity factor multiplied by max PV capacity."""
     with patch("pathlib.Path.open", mock_open(read_data=CSV_CONTENT)):
         from global_api.services.pv_power import get_power
+
         result = get_power(datetime(2010, 6, 1, 11), datetime(2010, 6, 1, 12), "PT")
 
     assert len(result) == 2

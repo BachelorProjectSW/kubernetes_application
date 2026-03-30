@@ -13,9 +13,7 @@ def test_llm_simple():
     """Testing the LLM with simple math prompt, and checking the returned value."""
     payload = {
         "model": "model",
-        "messages": [
-            {"role": "user", "content": "What is 2+2? Reply with just the number."}
-        ],
+        "messages": [{"role": "user", "content": "What is 2+2? Reply with just the number."}],
         "temperature": 0,
         "max_tokens": 30,
     }

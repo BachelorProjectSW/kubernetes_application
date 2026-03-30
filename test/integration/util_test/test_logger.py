@@ -32,6 +32,7 @@ def clean_logs():
 
 # --- init_csv ---
 
+
 @pytest.mark.integration
 def test_init_csv_creates_request_csv():
     """Test that init_csv creates the request CSV with correct headers."""
@@ -77,6 +78,7 @@ def test_init_csv_does_not_overwrite_existing_data():
 
 
 # --- reset_logs ---
+
 
 @pytest.mark.integration
 def test_reset_logs_clears_existing_data():

@@ -31,10 +31,11 @@ def run_port_forward(cluster_name, local_port, service_port):
     kubeconfig = SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"
     cmd = [
         "kubectl",
-        "--kubeconfig", str(kubeconfig),
+        "--kubeconfig",
+        str(kubeconfig),
         "port-forward",
         f"services/{service_name}",
-        f"{local_port}:{service_port}"
+        f"{local_port}:{service_port}",
     ]
     run_cmd_bg(cmd)
 
@@ -60,10 +61,11 @@ def start_all_servers():
         local_port = int(cluster["llama-service"])
         run_cmd_bg([
             "kubectl",
-            "--kubeconfig", str(SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster['name']}.yaml"),
+            "--kubeconfig",
+            str(SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster['name']}.yaml"),
             "port-forward",
             "services/llama-service",
-            f"{local_port}:{service_port}"
+            f"{local_port}:{service_port}",
         ])
 
     # Wait for Uvicorn servers to finish

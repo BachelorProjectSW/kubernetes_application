@@ -8,12 +8,11 @@ def get_fake_v1_node_list():
     """Return a very simple V1NodeList."""
     worker_node = V1Node(
         metadata=V1ObjectMeta(name="worker-1", labels={}),
-        status=V1NodeStatus(conditions=[V1NodeCondition(type="Ready", status="True")])
+        status=V1NodeStatus(conditions=[V1NodeCondition(type="Ready", status="True")]),
     )
     control_plane_node = V1Node(
-        metadata=V1ObjectMeta(name="master-1",
-            labels={"node-role.kubernetes.io/control-plane": "true"}),
-        status=V1NodeStatus(conditions=[V1NodeCondition(type="Ready", status="True")])
+        metadata=V1ObjectMeta(name="master-1", labels={"node-role.kubernetes.io/control-plane": "true"}),
+        status=V1NodeStatus(conditions=[V1NodeCondition(type="Ready", status="True")]),
     )
     return V1NodeList(items=[worker_node, control_plane_node])
 

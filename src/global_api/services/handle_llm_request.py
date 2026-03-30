@@ -19,16 +19,12 @@ def handle_llm_request(question: str):
 
     payload = {
         "model": "model",
-        "messages": [
-            {"role": "user", "content": question}
-        ],
+        "messages": [{"role": "user", "content": question}],
         "temperature": 0.7,
-        "max_tokens": 500
+        "max_tokens": 500,
     }
 
-    headers = {
-        "Content-Type": "application/json"
-    }
+    headers = {"Content-Type": "application/json"}
 
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=60)

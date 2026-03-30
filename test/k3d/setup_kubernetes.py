@@ -31,7 +31,7 @@ def install_kubectl(c_arch):
     # Get latest stable version
     with urllib.request.urlopen(
         "https://storage.googleapis.com/kubernetes-release/release/stable.txt"
-        ) as response:
+    ) as response:
         version = response.read().decode().strip()
 
     url = f"https://storage.googleapis.com/kubernetes-release/release/{version}/bin/linux/{c_arch}/kubectl"

@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from ..services.get_worker_nodes import get_cluster_working_nodes
+
 router = APIRouter()
 
 
