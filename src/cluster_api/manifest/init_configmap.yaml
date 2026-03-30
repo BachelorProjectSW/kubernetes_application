@@ -3,6 +3,9 @@ kind: ConfigMap
 metadata:
   name: llama-init
 data:
+  #download the model on the different worker nodes, if it already exists do not do anything, 
+  #if not download and replace the old one (if it exists)
+  #Update symlink = we can just call model.gguf instead of llama-q8.gguf
   init-download.sh: |
     #!/bin/sh
     set -eu
@@ -21,5 +24,6 @@ data:
       mv "$TMP" "$DEST"
     fi
 
+    find /models -maxdepth 1 -type f -name '*.gguf' ! -name "${MODEL_FILE}" -delete 
     ln -sf "$DEST" /models/model.gguf
 
