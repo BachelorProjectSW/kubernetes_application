@@ -35,5 +35,5 @@ def handle_llm_request(question: str):
         response.raise_for_status()  # Raises error for HTTP codes >= 400
         data = response.json()
         return data
-    except requests.RequestException:
-        return None
+    except Exception as e:
+        return e 
