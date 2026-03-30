@@ -158,7 +158,6 @@ curl http://127.0.0.1:<LOCAL_PORT>/v1/chat/completions \
   -d '{"model":"model","messages":[{"role":"user","content":"Where is the Red Sea located?"}],"temperature":0.7,"max_tokens":-1}'
 ```
 
-
 # Frontend setup
 
 The developer is expected to have Node.js installed.
