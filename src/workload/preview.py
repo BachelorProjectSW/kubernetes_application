@@ -14,10 +14,10 @@ def preview(timestamps):
 
 if __name__ == "__main__":
     timestamps = generate_workload(
-        duration_s=2000,
-        rpm=2000,
-        pattern="steady",
+        duration_s=1000,
+        rpm=1000,
+        pattern="peaks",
         seed=43,
-        peakiness=0.1,
+        peakiness=10,
     )
     preview(timestamps)
