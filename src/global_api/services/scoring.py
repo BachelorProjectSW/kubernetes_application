@@ -36,3 +36,21 @@ def compute_carbon_blend(
     """
     grid_fraction = compute_grid_fraction(renewable_output_w, cluster_load_w)
     return grid_carbon_intensity * grid_fraction
+
+
+def compute_cost_blend(
+    renewable_output_w: float, cluster_load_w: float, grid_electricity_price: float
+) -> float:
+    """Compute blended energy cost accounting for microgrid production.
+
+    Args:
+        renewable_output_w: Current renewable production in watts.
+        cluster_load_w: Current cluster power consumption in watts.
+        grid_electricity_price: Current grid electricity price (EUR/kWh).
+
+    Returns:
+        Blended electricity price in EUR/kWh.
+
+    """
+    grid_fraction = compute_grid_fraction(renewable_output_w, cluster_load_w)
+    return grid_electricity_price * grid_fraction
