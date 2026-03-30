@@ -1,17 +1,17 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /app/requirements.txt
 
-COPY src ./src
+COPY src/cluster_api /app/src/cluster_api
+COPY src/custom_logging /app/src/custom_logging
+COPY src/models /app/src/models
 
-EXPOSE 8040
-
-ENV KUBECONFIG=/app/src/cluster_api/auth/k3d-devcluster.yaml
-
-WORKDIR /app/src
-
-CMD ["python", "-m", "cluster_api.kube_api_server"]
+CMD ["uvicorn", "src.cluster_api.app:app", "--host", "0.0.0.0", "--port", "8040"]
