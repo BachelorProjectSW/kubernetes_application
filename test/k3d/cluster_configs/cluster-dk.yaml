@@ -1,0 +1,27 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: devcluster-dk
+
+servers: 1
+agents: 1
+
+network: k3d-network-dk
+
+ports:
+  - port: 8080:30080
+    nodeFilters:
+      - loadbalancer
+
+options:
+  k3s:
+    extraArgs:
+      - arg: "--disable=traefik"
+        nodeFilters:
+          - server:0
+      - arg: "--node-taint=node-role.kubernetes.io/control-plane=true:NoSchedule"
+        nodeFilters:
+          - server:0
+      - arg: "--node-label=llama=true"
+        nodeFilters:
+          - agent:*

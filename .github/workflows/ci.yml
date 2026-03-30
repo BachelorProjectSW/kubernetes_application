@@ -32,22 +32,24 @@ jobs:
 
       - name: Install k3d and kubectl
         run: |
-          bash test/k3d/setup_kubernetes.sh 
+          python test/k3d/setup_kubernetes.py 
 
-      - name: Create cluster
+      - name: Create clusters and global scheduler
         run: |
-          sudo bash test/k3d/create_cluster.sh
+          python test/k3d/create_clusters.py
 
       - name: Deploy manifests
         run: |
-          bash test/k3d/deploy.sh
+          python test/k3d/deploy.py
+
+      - name: Run servers and port-forward
+        run: |
+          python test/k3d/run_servers.py &
 
       - name: Run tests with llama port-forward
         run: |
-          kubectl port-forward svc/llama-service 8888:8080 &
-
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:8888/v1/models; then
+            if curl -fsS http://127.0.0.1:8888/v1/models && curl -fsS http://127.0.0.1:8889/v1/models; then
               pytest
               exit 0
             fi
@@ -55,5 +57,3 @@ jobs:
           done
 
           exit 1
-        env:
-          KUBECONFIG: src/cluster_api/auth/k3d-devcluster.yaml
