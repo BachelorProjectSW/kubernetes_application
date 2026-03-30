@@ -12,7 +12,7 @@ def deploy_clusters():
 
         run_cmd("kubectl wait --for=condition=Ready nodes --all --timeout=120s")
         run_cmd("kubectl apply -f src/cluster_api/manifest/")
-        for _ in range(10)
+        for _ in range(10):
             sleep(10)
             run_cmd("kubectl get pods -o wide")
         run_cmd("kubectl wait --for=condition=Ready pod -l name=llama-server --timeout=180s")
