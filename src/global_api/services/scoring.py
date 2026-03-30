@@ -18,3 +18,21 @@ def compute_grid_fraction(renewable_output_w: float, cluster_load_w: float) -> f
 
     renewable_fraction = min((renewable_output_w / cluster_load_w), 1.0)
     return 1.0 - renewable_fraction
+
+
+def compute_carbon_blend(
+    renewable_output_w: float, cluster_load_w: float, grid_carbon_intensity: float
+) -> float:
+    """Compute blended carbon intensity accounting for microgrid production.
+
+    Args:
+        renewable_output_w: Current renewable production in watts.
+        cluster_load_w: Current cluster power consumption in watts.
+        grid_carbon_intensity: Carbon intensity (gCO2/kWh) of the grid.
+
+    Returns:
+        Blended carbon intensity in gCO2/kWh.
+
+    """
+    grid_fraction = compute_grid_fraction(renewable_output_w, cluster_load_w)
+    return grid_carbon_intensity * grid_fraction
