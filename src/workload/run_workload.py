@@ -6,10 +6,21 @@ from generator import generate_workload
 
 
 class WorkloadExecutor:
+    """Execute HTTP requests according to a scheduled workload."""
+
     def __init__(self, base_url: str):
+        """Initialise host for global request scheduler."""
         self.base_url = base_url
 
     async def run(self, timestamps, endpoint, payload):
+        """Execute scheduled requests concurrently based on timestamps.
+
+        Args:
+            timestamps (list[float]): Times (in seconds) to send requests.
+            endpoint (str): API endpoint path.
+            payload (dict): JSON payload for each request.
+
+        """
         start_time = time.perf_counter()
 
         async with aiohttp.ClientSession(base_url=self.base_url) as session:
@@ -26,6 +37,7 @@ class WorkloadExecutor:
             print(f"Completed requests: success={success_count}, failure={failure_count}")
 
     async def _schedule_request(self, session, ts, start_time, endpoint, payload):
+        """Wait until the scheduled timestamp, then send the request."""
         now = time.perf_counter()
         delay = ts - (now - start_time)
 
@@ -35,6 +47,7 @@ class WorkloadExecutor:
         return await self._send_request(session, endpoint, payload)
 
     async def _send_request(self, session, endpoint, payload):
+        """Send a POST request and return success status and response data."""
         start = time.perf_counter()
 
         try:
@@ -51,6 +64,7 @@ class WorkloadExecutor:
             print(f"request.failure error={e} latency={latency:.4f}s")
             return {"ok": False, "error": str(e)}
 
+
 # Simple configuration
 HOST = "http://192.168.50.100:8020"
 ENDPOINT = "/handle_llm_question"
@@ -63,7 +77,8 @@ SEED = 42
 PEAKINESS = 0.5
 
 
-async def main() -> None:
+async def main():
+    """Generate a workload and execute it against the configured endpoint."""
     timestamps = generate_workload(
         duration_s=DURATION_S,
         rpm=RPM,

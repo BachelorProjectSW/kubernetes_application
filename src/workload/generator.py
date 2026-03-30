@@ -3,6 +3,28 @@ import math
 
 
 def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5):
+    """Generate request timestamps over a given duration.
+
+    This function simulates incoming request timestamps based on a specified
+    workload pattern. It supports steady traffic as well peaks
+    generated from sine waves.
+
+    Args:
+        duration_s (int): Total duration of the workload in seconds.
+        rpm (float): Target requests per minute.
+        pattern (str, optional): Traffic pattern to generate. Supported values:
+            - "steady": Evenly spaced requests with slight randomness.
+            - "peaks": Bursty traffic based on overlapping sine waves.
+            Defaults to "steady".
+        seed (int, optional): Random seed for reproducibility. Defaults to 42.
+        peakiness (float, optional): Controls the variability and number of peaks
+            in the "peaks" pattern. Higher values produce more intense and complex
+            bursts. Defaults to 0.5.
+
+    Returns:
+        list[float]: Sorted list of request timestamps (in seconds).
+
+    """
     random.seed(seed)
 
     if rpm <= 0 or duration_s <= 0:
@@ -17,15 +39,14 @@ def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5)
     if pattern == "steady":
         interval = 60 / rpm
         for i in range(total_requests):
-            jitter = random.uniform(-0.05, 0.05) * interval
-            timestamps.append(i * interval + jitter)
+            timestamps.append(i * interval + random.uniform(0, 1))
 
     elif pattern == "peaks":
         intensity = []
 
-        # --- generate multiple waves with random properties ---
+        # Generate multiple waves
         waves = []
-        num_waves = 3 + int(peakiness * 3)  # more peakiness = more complexity
+        num_waves = 3 + int(peakiness * 3)
 
         for _ in range(num_waves):
             wave_length = random.uniform(duration_s * 0.1, duration_s * 0.8)
@@ -35,17 +56,17 @@ def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5)
 
             waves.append((frequency, phase, amplitude))
 
-        # --- build intensity curve ---
+        # Build intensity curve
         for t in range(duration_s):
             value = 1.0  # baseline
 
             for freq, phase, amp in waves:
                 value += amp * math.sin(t * freq + phase)
 
-            intensity.append(value)
+            intensity.append(max(value, 0.1))
 
-        # --- allocate requests by weighted sampling so low-RPM workloads
-        # still keep the exact request count ---
+        # Allocate requests by weighted sampling so low-RPM workloads
+        # Still keep the exact request count
         second_choices = random.choices(
             population=range(duration_s),
             weights=intensity,
