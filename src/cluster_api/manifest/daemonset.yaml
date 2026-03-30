@@ -13,16 +13,11 @@ spec:
       labels:
         name: llama-server
     spec:
-      initContainers: #runs before "normal" containers
-        - name: download-model
-          image: alpine
-          command: ["sh", "-lc", "sh /scripts/init-download.sh"] #run the .sh script for downloading a model
-          envFrom:
-            - configMapRef:
-                name: llama-settings
+      initContainers:
+        - name: build-llama
+          image: ubuntu:22.04
+          command: ["sh", "-c", "git clone https://github.com/ggerganov/llama.cpp && cd llama.cpp && make server && mv llama-server /models/"]
           volumeMounts:
-            - name: init-scripts
-              mountPath: /scripts
             - name: model-storage
               mountPath: /models
 
@@ -55,4 +50,3 @@ spec:
           hostPath:
             path: /var/lib/llama-models
             type: DirectoryOrCreate
-
