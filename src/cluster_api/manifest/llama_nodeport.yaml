@@ -1,12 +1,10 @@
+#ClusterIp for testing
 apiVersion: v1
 kind: Service
 metadata:
   name: llama-service
-  annotations:
-     tailscale.com/proxy-class: rpi-proxy
 spec:
-  type: LoadBalancer
-  loadBalancerClass: tailscale
+  type: ClusterIP
   selector:
     name: llama-server
   ports:
