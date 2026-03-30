@@ -3,6 +3,7 @@ import pytest
 from collections import Counter
 from workload.generator import generate_workload
 
+
 @pytest.mark.unit
 def test_returns_empty_on_invalid_input():
     """Test errorhandling."""
