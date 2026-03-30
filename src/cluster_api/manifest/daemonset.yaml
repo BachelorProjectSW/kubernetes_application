@@ -5,28 +5,63 @@ metadata:
   labels:
     app: llama-server
 spec:
-  selector: #manages pods with the given label
+  selector:
     matchLabels:
       name: llama-server
-  template: #template for all pods
+  template:
     metadata:
       labels:
         name: llama-server
     spec:
       initContainers:
-        - name: build-llama
+        - name: build-and-download
           image: ubuntu:22.04
-          command: ["sh", "-c", "git clone https://github.com/ggerganov/llama.cpp && cd llama.cpp && make server && mv llama-server /models/"]
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+
+              # Install build tools
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y git build-essential cmake wget curl libgomp1
+
+              # Detect architecture
+              ARCH=$(uname -m)
+              echo "Node architecture: $ARCH"
+
+              # Clone & build llama-server if not exists
+              if [ ! -f /models/llama-server ]; then
+                git clone https://github.com/ggerganov/llama.cpp /tmp/llama.cpp
+                cd /tmp/llama.cpp
+                make server
+                mv llama-server /models/
+              fi
+
+              # Download small GGUF model if not exists
+              MODEL_NAME=${MODEL_NAME:-"tinyllama-1.1b-chat-v1.0.Q2_K.gguf"}
+              MODEL_URL=${MODEL_URL:-"https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/$MODEL_NAME"}
+              if [ ! -f /models/$MODEL_NAME ]; then
+                echo "Downloading model..."
+                wget -O /models/$MODEL_NAME $MODEL_URL
+              fi
+
+          envFrom:
+            - configMapRef:
+                name: llama-settings
           volumeMounts:
             - name: model-storage
               mountPath: /models
 
       containers:
         - name: llama
-          image: ghcr.io/ggml-org/llama.cpp:server # official llama server image
+          image: ghcr.io/ggml-org/llama.cpp:server
           env:
             - name: LLAMA_ARG_MODEL
-              value: /models/model.gguf
+              valueFrom:
+                configMapKeyRef:
+                  name: llama-settings
+                  key: MODEL_NAME
             - name: LLAMA_ARG_CTX_SIZE
               valueFrom:
                 configMapKeyRef:
@@ -38,11 +73,11 @@ spec:
               value: "8080"
             - name: LLAMA_ARG_THINK_BUDGET
               value: "0"
-          volumeMounts: #/models inside the container maps to ../llama-models on the node disk.
+          volumeMounts:
             - name: model-storage
               mountPath: /models
 
-      volumes: #these are the shared folders the containers can use (scripts + model files)
+      volumes:
         - name: init-scripts
           configMap:
             name: llama-init
