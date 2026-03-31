@@ -47,4 +47,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/cluster-api:latest
-            ghcr.io/${{ env.OWNER_LC }}/cluster-api:${{ github.event.workflow_run.head_sha }}
