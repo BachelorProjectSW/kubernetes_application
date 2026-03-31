@@ -9,7 +9,6 @@ def get_cluster_working_nodes():
     try:
         api_client = get_api_client()
         nodes = api_client.list_node()
-        return nodes
         worker_nodes = []
         for node in nodes.items:
             # Skip control plane
