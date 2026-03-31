@@ -7,7 +7,7 @@ metadata:
     app: llama-server
     arch: arm64
 spec:
-  selector: #manages pods with the given label
+  selector: #manages pods with the given label, arm64
     matchLabels:
       app: llama-server
       arch: arm64
