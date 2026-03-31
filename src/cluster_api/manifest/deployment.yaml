@@ -16,6 +16,8 @@ spec:
         app: cluster-api
 
     spec:
+      serviceAccountName: cluster-api-sa
+
       nodeSelector:
         node-role.kubernetes.io/control-plane: "true"
 
@@ -50,6 +52,16 @@ spec:
     
             - name: TS_HOSTNAME
               value: cluster-api
+
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
 
         #Where the storage is at in the container
           volumeMounts:

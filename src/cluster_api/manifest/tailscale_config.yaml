@@ -22,8 +22,5 @@ data:
             }
           }
         }
-      },
-      "AllowFunnel": {
-        "${TS_CERT_DOMAIN}:443": true 
       }
     }
