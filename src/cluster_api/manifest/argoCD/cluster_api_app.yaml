@@ -1,0 +1,16 @@
+project: default
+source:
+  repoURL: https://github.com/BachelorProjectSW/kubernetes_application
+  path: src/cluster_api/manifest
+  targetRevision: random
+  directory:
+    jsonnet: {}
+    include: '{*.yml,*.yaml}'
+destination:
+  server: https://kubernetes.default.svc
+  namespace: default
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+    enabled: true
