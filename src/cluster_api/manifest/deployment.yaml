@@ -42,9 +42,6 @@ spec:
                 secretKeyRef:
                   name: tailscale-auth
                   key: TS_AUTHKEY
-          #Where to store identity (persist same machine, even if pod dies)
-            - name: TS_STATE_DIR
-              value: /var/lib/tailscale
 
           #Serve config
             - name: TS_SERVE_CONFIG
@@ -53,29 +50,13 @@ spec:
             - name: TS_HOSTNAME
               value: cluster-api
 
-          #The pod name (tailscale debugging)  
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-          #The pod identity  
-            - name: POD_UID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.uid
-
-        #Where the storage is at in the container
+          #Where the storage is at in the container
           volumeMounts:
-            - name: tailscale-state
-              mountPath: /var/lib/tailscale
             - name: tailscale-config
               mountPath: /config
 
     #What storage/config sources the pod have available
       volumes:
-        - name: tailscale-state
-          persistentVolumeClaim: #same Tailscale machine identity, instead of registering as a new device after a restart
-            claimName: cluster-api-tailscale-state
         - name: tailscale-config
           configMap:
             name: cluster-api-tailscale-config
