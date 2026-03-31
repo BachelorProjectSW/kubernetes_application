@@ -61,10 +61,11 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
         log.error("Electricity Maps API error", status=e.response.status_code, zone=zone)
         raise
 
+    except Exception:
+        log.error("Unexpected error while fetching API data, zone=zone")
+        raise
+
     entries = response.json().get("data", [])
     log.info("Prices fetched", count=len(entries))
 
-    return [
-        (datetime.fromisoformat(e["datetime"]), e["value"])
-        for e in entries
-    ]
+    return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]
