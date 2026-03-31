@@ -18,9 +18,10 @@ def get_cluster_working_nodes():
                 continue
 
             name = node.metadata.name
-
+            status = "active" if "active" in labels.lower() else "powered off" #NOT TESTED
             worker_nodes.append({
-                "name": name
+                "name": name,
+                "status": status,
                 })
 
         node_names = [n["name"] for n in worker_nodes]
