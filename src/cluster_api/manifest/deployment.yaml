@@ -46,7 +46,7 @@ spec:
             - name: TS_STATE_DIR
               value: /var/lib/tailscale
 
-          #Funnel config
+          #Serve config
             - name: TS_SERVE_CONFIG
               value: /config/serve.json
     

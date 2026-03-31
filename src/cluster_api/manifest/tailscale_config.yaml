@@ -5,7 +5,6 @@ metadata:
 
 data:
   #HTTPS, tailscale forwards trafic from the tailscale-url to our localhost at port 8040, 
-  #funnel is allowed (public access, no need to have strato join the tailnet)
   #TS_CERT_DOMAIN = DNS = Tailscale fills it themselves
   serve.json: |
     {
