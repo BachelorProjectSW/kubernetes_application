@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   build_and_push:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
