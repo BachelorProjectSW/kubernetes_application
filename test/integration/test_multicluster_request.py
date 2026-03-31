@@ -18,3 +18,4 @@ def test_multi_cluster_request(monkeypatch):
 
     assert response
     assert content
+    assert 'kubernetes' in content.lower()
