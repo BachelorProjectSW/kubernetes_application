@@ -28,7 +28,7 @@ spec:
 
       containers:
         - name: llama
-          image: ghcr.io/ggml-org/llama.cpp:server # official llama server image
+          image: ghcr.io/ggml-org/llama.cpp:server-b8508
           env:
             - name: LLAMA_ARG_MODEL
               value: /models/model.gguf
