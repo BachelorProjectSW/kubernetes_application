@@ -1,9 +1,8 @@
 name: Build and push Docker image
-
 on:
-  workflow_run:
-    workflows: ["ci"]
-    types: [completed]
+  push:
+    branches:
+      - random
 
 permissions:
   contents: read #Allow reading repository contents
@@ -11,7 +10,6 @@ permissions:
 
 jobs:
   build_and_push:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -23,8 +21,6 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }} # Build an image for this commit exactly
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -48,4 +44,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/cluster-api:latest
-            ghcr.io/${{ env.OWNER_LC }}/cluster-api:${{ github.event.workflow_run.head_sha }}
