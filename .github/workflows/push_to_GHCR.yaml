@@ -3,7 +3,7 @@ name: Build and push Docker image
 on:
   push:
     branches:
-      - main
+      - GHCR-pushs
 
 permissions:
   contents: read #Allow reading repository contents
