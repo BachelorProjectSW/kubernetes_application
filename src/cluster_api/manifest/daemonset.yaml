@@ -1,4 +1,5 @@
 apiVersion: apps/v1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: llama-server-arm64
@@ -6,7 +7,7 @@ metadata:
     app: llama-server
     arch: arm64
 spec:
-  selector:
+  selector: #manages pods with the given label
     matchLabels:
       app: llama-server
       arch: arm64
@@ -33,8 +34,7 @@ spec:
               mountPath: /models
       containers:
         - name: llama
-          image: ghcr.io/kyroninja/llamacpp-arm64:latest
-          command: ["/app/llama-server"]
+          image: ghcr.io/ggml-org/llama.cpp:server-b8508
           env:
             - name: LLAMA_ARG_MODEL
               value: /models/model.gguf
@@ -49,7 +49,7 @@ spec:
               value: "8080"
             - name: LLAMA_ARG_THINK_BUDGET
               value: "0"
-          volumeMounts:
+          volumeMounts: #/models inside the container maps to ../llama-models on the node disk.
             - name: model-storage
               mountPath: /models
       volumes:
