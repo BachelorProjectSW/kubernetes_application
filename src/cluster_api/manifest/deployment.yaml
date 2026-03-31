@@ -53,11 +53,12 @@ spec:
             - name: TS_HOSTNAME
               value: cluster-api
 
+          #The pod name (tailscale debugging)  
             - name: POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            
+          #The pod identity  
             - name: POD_UID
               valueFrom:
                 fieldRef:

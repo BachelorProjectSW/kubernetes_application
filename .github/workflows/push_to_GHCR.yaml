@@ -22,9 +22,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      #QEMU lets us emulate another CPU architecture so we can build an image for it
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
+      #Builds a multi arch version
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

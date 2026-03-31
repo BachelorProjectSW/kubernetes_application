@@ -1,20 +1,23 @@
+#Kubernetes permission
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cluster-api-node-reader
 rules:
-  - apiGroups: [""]
-    resources: ["nodes"]
-    verbs: ["get", "list", "watch"]
+  - apiGroups: [""] #Core API group (pods, nodes, services)
+    resources: ["nodes"] #node scope permissions
+    verbs: ["get", "list", "watch"] #Get nodes, list nodes, watch changes in nodes
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: cluster-api-node-reader-binding
+#Who gets the permissions
 subjects:
   - kind: ServiceAccount
     name: cluster-api-sa
-    namespace: default
+    namespace: default #All resources lives in the default namespace (unless specified otherwise)
+#These permissions are granted
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

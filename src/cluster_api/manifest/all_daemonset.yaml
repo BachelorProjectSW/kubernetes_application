@@ -44,9 +44,9 @@ spec:
                   name: llama-settings
                   key: CTX_SIZE
             - name: LLAMA_ARG_HOST
-              value: "0.0.0.0"
+              value: "0.0.0.0" #listen on all available IP addresses/interfaces
             - name: LLAMA_ARG_PORT
-              value: "8080"
+              value: "8080" #only on port 8080
             - name: LLAMA_ARG_THINK_BUDGET
               value: "0"
           volumeMounts: #/models inside the container maps to ../llama-models on the node disk.
@@ -61,6 +61,7 @@ spec:
             path: /var/lib/llama-models
             type: DirectoryOrCreate
 ---
+#There will be created a kubernetes object for both of these daemonset, but one of them can be tied to no nodes
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:

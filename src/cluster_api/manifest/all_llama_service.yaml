@@ -6,6 +6,6 @@ spec:
   selector:
     app: llama-server
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 8080 #listens on port 8080
+      targetPort: 8080 #forwards traffic to any llama pod on port 8080 (daemonset)
   type: ClusterIP
