@@ -34,7 +34,7 @@ spec:
               mountPath: /models
       containers:
         - name: llama
-          image: ghcr.io/ggml-org/llama.cpp:server-b8508
+          image: ghcr.io/kyroninja/llamacpp-arm64:latest
           env:
             - name: LLAMA_ARG_MODEL
               value: /models/model.gguf
@@ -96,7 +96,7 @@ spec:
               mountPath: /models
       containers:
         - name: llama
-          image: ghcr.io/ggml-org/llama.cpp:server
+          image: ghcr.io/ggml-org/llama.cpp:server-b8508
           command: ["/app/llama-server"]
           env:
             - name: LLAMA_ARG_MODEL
