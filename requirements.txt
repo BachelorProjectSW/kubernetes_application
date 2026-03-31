@@ -6,4 +6,5 @@ kubernetes
 requests
 structlog
 pydantic
+python-dotenv
 aiohttp
