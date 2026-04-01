@@ -28,8 +28,8 @@ spec:
 
       containers:
         - name: cluster-api
-          image: ghcr.io/bachelorprojectsw/cluster-api:latest
-          imagePullPolicy: Always
+          image: ghcr.io/bachelorprojectsw/cluster-api:REPLACED_BY_WORKFLOW
+          imagePullPolicy: IfNotPresent
 
         - name: tailscale
           image: tailscale/tailscale:latest
