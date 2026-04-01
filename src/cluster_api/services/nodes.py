@@ -102,12 +102,12 @@ def get_cluster_working_nodes(cluster_name: str):
     return cluster.to_dict()
 
 
-def get_cluster(cluster_name: str, refresh: bool = False):
+def get_cluster(cluster_name: str = None, refresh: bool = False):
     """Return a cached Cluster instance for this process."""
     global _CLUSTER
 
-    if _CLUSTER is None:
-        _CLUSTER = Cluster("cluster_name")
+    if _CLUSTER is None and cluster_name is not None:
+        _CLUSTER = Cluster(cluster_name)
     elif refresh:
         _CLUSTER.refresh_nodes()
 
