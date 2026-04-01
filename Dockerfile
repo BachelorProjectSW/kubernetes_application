@@ -13,5 +13,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY src/cluster_api /app/src/cluster_api
 COPY src/custom_logging /app/src/custom_logging
 COPY src/models /app/src/models
+COPY src/global_api /app/src/global_api
 
 CMD ["uvicorn", "src.cluster_api.app:app", "--host", "0.0.0.0", "--port", "8040"]

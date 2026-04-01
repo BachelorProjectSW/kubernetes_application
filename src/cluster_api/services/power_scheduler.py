@@ -52,7 +52,7 @@ def change_node_status(number_of_nodes: int, status: str):
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, cluster)
         for node in nodes_to_change:
-            turn_off_node(node, cluster.name, cluster.name)
+            turn_off_node(node, node.name, node.name)
 
     return {
         "cluster": cluster.name,
