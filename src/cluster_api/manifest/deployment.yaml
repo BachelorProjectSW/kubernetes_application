@@ -28,7 +28,7 @@ spec:
 
       containers:
         - name: cluster-api
-          image: ghcr.io/bachelorprojectsw/cluster-api:22f20be89447be70aba8cc943b649a069ad99748
+          image: ghcr.io/bachelorprojectsw/cluster-api:75a73f17966d177e5309ce7cb2b0aa3ddf8571c3
           imagePullPolicy: IfNotPresent
 
         - name: tailscale
