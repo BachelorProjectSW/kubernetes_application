@@ -7,10 +7,12 @@ log = structlog.get_logger()
 
 _CLUSTER = None
 
+
 class WorkerNode:
-    """All information of a worker node"""
+    """All information of a worker node."""
 
     def __init__(self, name, ip, status):
+        """Init worker node."""
         self.name = name
         self.ip = ip
         self.status = status
@@ -22,6 +24,7 @@ class WorkerNode:
         return f"{self.__class__.__name__}({self.__dict__})"
 
     def to_dict(self):
+        """Print the worker node as dict."""
         return {
             "name": self.name,
             "ip": self.ip,
@@ -32,20 +35,26 @@ class WorkerNode:
 
 
 class Cluster:
+    """All cluster information."""
+
     def __init__(self, name):
+        """Init cluster."""
         self.name = name
         self.nodes = self.get_cluster_working_nodes()
         self.assign_gpios()
 
     def refresh_nodes(self):
+        """Refresh nodes using v1 node_list()."""
         self.nodes = self.get_cluster_working_nodes()
         self.assign_gpios()
         return self.nodes
 
     def to_dict(self):
+        """List all worker nodes into list of dict."""
         return [node.to_dict() for node in self.nodes]
 
     def assign_gpios(self):
+        """Assign gpio to each worker node."""
         all_worker_nodes = self.nodes
         gpios = get_all_clusters_config()[self.name]["gpio"]
 
@@ -53,7 +62,7 @@ class Cluster:
         gpios_len = len(gpios)
         if gpios_len != worker_len:
             raise ValueError(
-                f"""Worker nodes and assigned gpios is not the same 
+                f"""Worker nodes and assigned gpios is not the same
                 nodes={worker_len} gpios={gpios_len}"""
             )
         for i in range(worker_len):

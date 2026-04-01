@@ -1,5 +1,3 @@
-from gpiozero import LED as IO
-import paramiko
 import structlog
 from .nodes import Cluster, WorkerNode, get_cluster
 
@@ -9,12 +7,14 @@ log = structlog.get_logger()
 def turn_on_node(worker_node: WorkerNode):
     """Turn on the node."""
     gpio = worker_node.gpio
-    #IO(gpio).on()
+    log.debug("gpio to turn on", gpio=gpio)
+    # IO(gpio).on()
     log.debug("turning node on", node=worker_node.to_dict)
     worker_node.status = "active"
 
 
 def turn_off_node(worker_node: WorkerNode, username: str, password: str):
+    """Turn off the node with ssh shutdown."""
     try:
         # client = paramiko.SSHClient()
         # client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -38,7 +38,9 @@ def turn_off_node(worker_node: WorkerNode, username: str, password: str):
 
 def change_node_status(number_of_nodes: int, status: str):
     """Turn on up to number_of_nodes inactive nodes in a cluster.
-    status is either 'on' of 'off' """
+
+    status is either 'on' of 'off'.
+    """
     cluster = get_cluster()
 
     if status == "on":
@@ -49,7 +51,7 @@ def change_node_status(number_of_nodes: int, status: str):
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, cluster)
         for node in nodes_to_change:
             turn_off_node(node, cluster.name, cluster.name)
-    
+
     return {
         "cluster": cluster.name,
         "requested": number_of_nodes,
@@ -60,7 +62,7 @@ def change_node_status(number_of_nodes: int, status: str):
 
 
 def select_nodes_to_turn_on(number_of_nodes: int, cluster: Cluster) -> list[WorkerNode]:
-    """This is just template code."""
+    """Template code."""
     nodes_to_turn_on = []
     for node in cluster.nodes:
         if len(nodes_to_turn_on) >= number_of_nodes:
@@ -71,7 +73,7 @@ def select_nodes_to_turn_on(number_of_nodes: int, cluster: Cluster) -> list[Work
 
 
 def select_nodes_to_turn_off(number_of_nodes: int, cluster: Cluster) -> list[WorkerNode]:
-    """This is just template code."""
+    """Template code."""
     nodes_to_turn_off = []
     for node in cluster.nodes:
         if len(nodes_to_turn_off) >= number_of_nodes:
@@ -79,5 +81,3 @@ def select_nodes_to_turn_off(number_of_nodes: int, cluster: Cluster) -> list[Wor
         if node.status == "active":
             nodes_to_turn_off.append(node)
     return nodes_to_turn_off
-
-

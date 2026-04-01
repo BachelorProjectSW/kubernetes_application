@@ -15,7 +15,8 @@ def turn_on_node_endpoint(number_of_nodes: int):
     """Return status of turning on nodes."""
     return change_node_status(number_of_nodes, "on")
 
+
 @router.post("/turn_off_nodes/")
-def turn_on_node_endpoint(number_of_nodes: int):
+def turn_off_node_endpoint(number_of_nodes: int):
     """Return status of turned off nodes."""
     return change_node_status(number_of_nodes, "off")
