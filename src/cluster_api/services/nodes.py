@@ -92,14 +92,14 @@ class Cluster:
             worker_nodes.append(
                 WorkerNode(name, ip, status, )
             )
-
         return worker_nodes
 
 
 def get_cluster_working_nodes(cluster_name="dk"):
     """Compatibility wrapper used by routes."""
     cluster = get_cluster(cluster_name, refresh=True)
-    return cluster.to_dict()
+    print(cluster)
+    return cluster
 
 
 def get_cluster(cluster_name, refresh=False):
