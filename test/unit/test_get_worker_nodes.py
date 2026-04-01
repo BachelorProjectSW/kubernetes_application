@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, Mock
-from cluster_api.services.get_worker_nodes import get_cluster_working_nodes
+from cluster_api.services.nodes import get_cluster_working_nodes
 from kubernetes.client import V1NodeList, V1Node, V1ObjectMeta, V1NodeStatus, V1NodeCondition
 
 

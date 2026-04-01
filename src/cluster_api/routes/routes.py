@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from ..services.get_worker_nodes import get_cluster_working_nodes
-from ..services.power_scheduler import turn_on_node
+from ..services.nodes import get_cluster_working_nodes
+from ..services.power_scheduler import turn_on_nodes
 router = APIRouter()
 
 
@@ -9,7 +9,8 @@ def nodes():
     """Return all working nodes."""
     return get_cluster_working_nodes()
 
-@router.post("turn_on_node/{gpio}")
-def turn_on_node_endpoint(gpio: int):
+
+@router.post("/turn_on_nodes/{number_of_nodes}")
+def turn_on_node_endpoint(number_of_nodes: int):
     """Return status of turning on node."""
-    return turn_on_node(gpio) 
+    return turn_on_nodes(number_of_nodes)
