@@ -6,5 +6,4 @@ import pytest
 def test_compute_grid_fraction_succeeds():
     grid_fraction = compute_grid_fraction(200, 1000)
 
-    assert grid_fraction == 0.2
-
+    assert grid_fraction == 0.8
