@@ -111,4 +111,4 @@ def get_cluster(cluster_name, refresh=False):
     elif refresh:
         cluster.refresh_nodes()
 
-    return cluster
+    return cluster.to_dict()
