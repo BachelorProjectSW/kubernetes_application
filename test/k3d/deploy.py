@@ -12,7 +12,6 @@ def deploy_clusters():
     if not manifest_files:
         raise FileNotFoundError("No files matched src/cluster_api/manifest/all_*")
 
-
     for cluster_name in cluster_names:
         kubeconfig = f"src/cluster_api/auth/k3d-devcluster-{cluster_name}.yaml"
         os.environ["KUBECONFIG"] = kubeconfig
