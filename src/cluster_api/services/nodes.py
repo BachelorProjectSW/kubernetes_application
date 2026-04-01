@@ -104,19 +104,12 @@ def get_cluster_working_nodes(cluster_name="dk"):
 
 def get_cluster(cluster_name, refresh=False):
     """Return a cached Cluster instance for this process."""
-    try:
-        cluster = _CLUSTERS.get(cluster_name)
-        if cluster is None:
-            log.debug("creating cluster")
-            cluster = Cluster(cluster_name)
-            log.debug("cluster created")
+    cluster = _CLUSTERS.get(cluster_name)
+    if cluster is None:
+        cluster = Cluster(cluster_name)
+        _CLUSTERS[cluster_name] = cluster
+    elif refresh:
+        cluster.refresh_nodes()
+    log.debug("cluster", cluster=cluster.to_dict())
 
-            log.debug("cluster.added", cluster=cluster.to_dict())
-            _CLUSTERS[cluster_name] = cluster
-        elif refresh:
-            cluster.refresh_nodes()
-        log.debug("cluster", cluster=cluster.to_dict())
-
-        return cluster.to_dict()
-    except Exception as e:
-        log.debug("error loading cluster", error=e)
+    return cluster.to_dict()
