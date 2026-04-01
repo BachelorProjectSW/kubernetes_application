@@ -6,5 +6,7 @@ kubernetes
 requests
 structlog
 pydantic
-python-dotenv
 aiohttp
+gpiozero
+paramiko
+python-dotenv
