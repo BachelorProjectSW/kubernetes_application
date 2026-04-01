@@ -99,7 +99,6 @@ class Cluster:
 def get_cluster_working_nodes(cluster_name="dk"):
     """Compatibility wrapper used by routes."""
     cluster = get_cluster(cluster_name, refresh=True)
-    log.debug("cluster", cluster=cluster)
     return cluster
 
 
@@ -107,9 +106,12 @@ def get_cluster(cluster_name, refresh=False):
     """Return a cached Cluster instance for this process."""
     cluster = _CLUSTERS.get(cluster_name)
     if cluster is None:
+        log.debug("creating cluster")
         cluster = Cluster(cluster_name)
+        log.debug("cluster.added", cluster=cluster)
         _CLUSTERS[cluster_name] = cluster
     elif refresh:
         cluster.refresh_nodes()
+    log.debug("cluster", cluster=cluster)
 
     return cluster.to_dict()
