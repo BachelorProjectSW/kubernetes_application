@@ -1,3 +1,5 @@
+from gpiozero import LED as IO
+import paramiko
 import structlog
 from .nodes import Cluster, WorkerNode, get_cluster
 
@@ -8,7 +10,7 @@ def turn_on_node(worker_node: WorkerNode):
     """Turn on the node."""
     gpio = worker_node.gpio
     log.debug("gpio to turn on", gpio=gpio)
-    # IO(gpio).on()
+    IO(gpio).on()
     log.debug("turning node on", node=worker_node.to_dict)
     worker_node.status = "active"
 
@@ -16,20 +18,20 @@ def turn_on_node(worker_node: WorkerNode):
 def turn_off_node(worker_node: WorkerNode, username: str, password: str):
     """Turn off the node with ssh shutdown."""
     try:
-        # client = paramiko.SSHClient()
-        # client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        # client.connect(hostname=worker_node.ip, username=username, password=password)
+        client.connect(hostname=worker_node.ip, username=username, password=password)
 
-        # stdin, stdout, stderr = client.exec_command("sudo shutdown now")
+        stdin, stdout, stderr = client.exec_command("sudo shutdown now")
 
-        # stdin.write(password + "\n")
-        # stdin.flush()
+        stdin.write(password + "\n")
+        stdin.flush()
 
-        # log.debug(stdout.read().decode())
-        # log.debug(stderr.read().decode())
+        log.debug(stdout.read().decode())
+        log.debug(stderr.read().decode())
 
-        # client.close()
+        client.close()
         log.debug("turning node off", node=worker_node.to_dict)
         worker_node.status = 'inactive'
     except Exception as e:
