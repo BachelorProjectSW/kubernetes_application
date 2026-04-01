@@ -12,7 +12,7 @@ def turn_on_node(worker_node: WorkerNode):
 
 def turn_on_nodes(number_of_nodes: int, cluster_name: str = "dk"):
     """Turn on up to number_of_nodes inactive nodes in a cluster."""
-    cluster = get_cluster(cluster_name, refresh=True)
+    cluster = get_cluster(cluster_name)
     nodes_to_turn_on = select_nodes_to_turn_on(number_of_nodes, cluster)
 
     for node in nodes_to_turn_on:
