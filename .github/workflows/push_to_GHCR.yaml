@@ -16,7 +16,15 @@ jobs:
   build_and_push:
     runs-on: ubuntu-latest
 
+    
+
     steps:
+      - name: Create app token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.DEPLOY_APP_ID }}
+          private-key: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
       - name: Set owner name to lowercase
         env:
           OWNER: ${{ github.repository_owner }}
@@ -25,6 +33,8 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
       #QEMU lets us emulate another CPU architecture so we can build an image for it
       - name: Set up QEMU
@@ -53,12 +63,12 @@ jobs:
 
       - name: Update manifest image tag
         run: |
-              sed -i "s|image: ghcr.io/bachelorprojectsw/cluster-api:.*|image: ghcr.io/bachelorprojectsw/cluster-api:${GITHUB_SHA}|" src/cluster_api/manifest/deployment.yaml
+          sed -i "s|image: ghcr.io/bachelorprojectsw/cluster-api:.*|image: ghcr.io/bachelorprojectsw/cluster-api:${GITHUB_SHA}|" src/cluster_api/manifest/deployment.yaml
 
       - name: Commit manifest update
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "cluster-api-deploy-bot[bot]"
+          git config user.email "cluster-api-deploy-bot[bot]@users.noreply.github.com"
           git add src/cluster_api/manifest/deployment.yaml
           git commit -m "Deploy cluster-api ${GITHUB_SHA}" || exit 0
           git push
