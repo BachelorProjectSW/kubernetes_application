@@ -14,16 +14,16 @@ def turn_on_node(worker_node: WorkerNode):
     worker_node.status = "Turning on"
 
 
-def change_node_status(number_of_nodes: int, cluster_name: str, status: str):
+def change_node_status(number_of_nodes: int, status: str):
     """Turn on up to number_of_nodes inactive nodes in a cluster.
     status is either 'on' of 'off' """
     cluster = get_cluster(cluster_name)
 
-    if status == 'on':
+    if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, cluster)
         for node in nodes_to_change:
             turn_on_node(node)
-    elif status == 'off':
+    elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, cluster)
         for node in nodes_to_change:
             turn_off_node(node, cluster_name, cluster_name)

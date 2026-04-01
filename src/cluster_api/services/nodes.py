@@ -4,8 +4,7 @@ from ...global_api.util.cluster_connection import get_all_clusters_config
 from ..util.client_setup import get_api_client
 
 log = structlog.get_logger()
-_CLUSTERS: dict[str, "Cluster"] = {}
-
+_CLUSTER: "Cluster" | None = None
 
 class WorkerNode:
     """All information of a worker node"""
@@ -96,20 +95,21 @@ class Cluster:
         return worker_nodes
 
 
-def get_cluster_working_nodes(cluster_name="dk"):
+def get_cluster_working_nodes(cluster_name: str):
     """Compatibility wrapper used by routes."""
     cluster = get_cluster(cluster_name, refresh=True)
     return cluster.to_dict()
 
 
-def get_cluster(cluster_name, refresh=False):
+def get_cluster(cluster_name: str, refresh: bool = False):
     """Return a cached Cluster instance for this process."""
-    cluster = _CLUSTERS.get(cluster_name)
-    if cluster is None:
-        cluster = Cluster(cluster_name)
-        _CLUSTERS[cluster_name] = cluster
-    elif refresh:
-        cluster.refresh_nodes()
-    log.debug("cluster", cluster=cluster.to_dict())
+    global _CLUSTER
 
-    return cluster
+    if _CLUSTER is None:
+        _CLUSTER = Cluster("cluster_name")
+    elif refresh:
+        _CLUSTER.refresh_nodes()
+
+    log.debug("cluster", cluster=_CLUSTER.to_dict())
+
+    return _CLUSTER
