@@ -53,7 +53,7 @@ def compute_cost_blend(
 
     """
     grid_fraction = compute_grid_fraction(renewable_output_w, cluster_load_w)
-    return grid_electricity_price * grid_fraction
+    return round(grid_electricity_price * grid_fraction, 4)
 
 
 def normalize_value(value: float, ref_max: float) -> float:
@@ -68,7 +68,7 @@ def normalize_value(value: float, ref_max: float) -> float:
 
     """
     score = 1.0 - (value / ref_max)
-    return max(score, 0.0)
+    return round(max(score, 0.0), 4)
 
 
 def score_cluster(
@@ -99,4 +99,4 @@ def score_cluster(
     blended_carbon_normalized = normalize_value(blended_carbon, CARBON_REF_MAX)
     blended_cost_normalized = normalize_value(blended_cost, COST_REF_MAX)
 
-    return (carbon_weight * blended_carbon_normalized) + (cost_weight * blended_cost_normalized)
+    return round((carbon_weight * blended_carbon_normalized) + (cost_weight * blended_cost_normalized), 4)
