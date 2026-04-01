@@ -9,7 +9,8 @@ def nodes():
     """Return all working nodes."""
     return get_cluster_working_nodes()
 
-@router.post("/turn_on_nodes/{number_of_nodes}")
+
+@router.post("/turn_on_nodes/")
 def turn_on_node_endpoint(number_of_nodes: int):
     """Return status of turning on node."""
     return turn_on_nodes(number_of_nodes)
