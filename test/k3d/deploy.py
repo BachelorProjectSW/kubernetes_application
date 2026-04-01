@@ -11,7 +11,7 @@ def deploy_clusters():
         os.environ["KUBECONFIG"] = kubeconfig
 
         run_cmd("kubectl wait --for=condition=Ready nodes --all --timeout=120s")
-        run_cmd("kubectl apply -f src/cluster_api/manifest/")
+        run_cmd("kubectl apply -f src/cluster_api/manifest/all_*")
         run_cmd("kubectl wait --for=condition=Ready pod -l name=llama-server --timeout=180s")
 
 

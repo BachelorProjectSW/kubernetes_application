@@ -1,4 +1,4 @@
-apiVersion: v1 #Defines the given LLM (where to download it from, and some args)
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: llama-settings

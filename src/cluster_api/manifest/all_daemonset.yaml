@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: llama-server-arm64
+  labels:
+    app: llama-server
+    arch: arm64
+spec:
+  selector: #manages pods with the given label, arm64
+    matchLabels:
+      app: llama-server
+      arch: arm64
+  template:
+    metadata:
+      labels:
+        app: llama-server
+        arch: arm64
+    spec:
+      dnsPolicy: Default
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      initContainers:
+        - name: download-model
+          image: alpine
+          command: ["sh", "-lc", "sh /scripts/init-download.sh"]
+          envFrom:
+            - configMapRef:
+                name: llama-settings
+          volumeMounts:
+            - name: init-scripts
+              mountPath: /scripts
+            - name: model-storage
+              mountPath: /models
+      containers:
+        - name: llama
+          image: ghcr.io/kyroninja/llamacpp-arm64:latest
+          command: ["/app/llama-server"]
+          env:
+            - name: LLAMA_ARG_MODEL
+              value: /models/model.gguf
+            - name: LLAMA_ARG_CTX_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: llama-settings
+                  key: CTX_SIZE
+            - name: LLAMA_ARG_HOST
+              value: "0.0.0.0" #listen on all available IP addresses/interfaces
+            - name: LLAMA_ARG_PORT
+              value: "8080" #only on port 8080
+            - name: LLAMA_ARG_THINK_BUDGET
+              value: "0"
+          volumeMounts: #/models inside the container maps to ../llama-models on the node disk.
+            - name: model-storage
+              mountPath: /models
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: llama-init
+        - name: model-storage
+          hostPath:
+            path: /var/lib/llama-models
+            type: DirectoryOrCreate
+---
+#There will be created a kubernetes object for both of these daemonset, but one of them can be tied to no nodes
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: llama-server-amd64
+  labels:
+    app: llama-server
+    arch: amd64
+spec:
+  selector:
+    matchLabels:
+      app: llama-server
+      arch: amd64
+  template:
+    metadata:
+      labels:
+        app: llama-server
+        arch: amd64
+    spec:
+      dnsPolicy: Default
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      initContainers:
+        - name: download-model
+          image: alpine
+          command: ["sh", "-lc", "sh /scripts/init-download.sh"]
+          envFrom:
+            - configMapRef:
+                name: llama-settings
+          volumeMounts:
+            - name: init-scripts
+              mountPath: /scripts
+            - name: model-storage
+              mountPath: /models
+      containers:
+        - name: llama
+          image: ghcr.io/ggml-org/llama.cpp:server-b8508
+          env:
+            - name: LLAMA_ARG_MODEL
+              value: /models/model.gguf
+            - name: LLAMA_ARG_CTX_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: llama-settings
+                  key: CTX_SIZE
+            - name: LLAMA_ARG_HOST
+              value: "0.0.0.0"
+            - name: LLAMA_ARG_PORT
+              value: "8080"
+            - name: LLAMA_ARG_THINK_BUDGET
+              value: "0"
+          volumeMounts:
+            - name: model-storage
+              mountPath: /models
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: llama-init
+        - name: model-storage
+          hostPath:
+            path: /var/lib/llama-models
+            type: DirectoryOrCreate

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-api
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: cluster-api
+
+  template:
+    metadata:
+      labels:
+        app: cluster-api
+
+    spec:
+      serviceAccountName: cluster-api-sa
+
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+      containers:
+        - name: cluster-api
+          image: ghcr.io/bachelorprojectsw/cluster-api:REPLACED_BY_WORKFLOW
+          imagePullPolicy: IfNotPresent
+
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          imagePullPolicy: Always
+
+          env:
+          #Auth key to join the tailnet
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale-auth
+                  key: TS_AUTHKEY
+
+          #Serve config
+            - name: TS_SERVE_CONFIG
+              value: /config/serve.json
+    
+            - name: TS_HOSTNAME
+              value: cluster-api
+
+          #Where the storage is at in the container
+          volumeMounts:
+            - name: tailscale-config
+              mountPath: /config
+
+    #What storage/config sources the pod have available
+      volumes:
+        - name: tailscale-config
+          configMap:
+            name: cluster-api-tailscale-config
