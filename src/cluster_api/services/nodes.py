@@ -108,6 +108,8 @@ def get_cluster(cluster_name, refresh=False):
     if cluster is None:
         log.debug("creating cluster")
         cluster = Cluster(cluster_name)
+        log.debug("cluster created")
+
         log.debug("cluster.added", cluster=cluster.to_dict())
         _CLUSTERS[cluster_name] = cluster
     elif refresh:
