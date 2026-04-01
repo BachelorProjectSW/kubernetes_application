@@ -2,7 +2,7 @@ from global_api.services.scoring import CARBON_REF_MAX, COST_REF_MAX, compute_gr
 import pytest
 
 
-@pytest.mark.unittest
+@pytest.mark.unit
 def test_compute_grid_fraction_succeeds():
     grid_fraction = compute_grid_fraction(200, 1000)
 
