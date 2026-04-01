@@ -88,9 +88,10 @@ class Cluster:
                     if condition.type == "Ready":
                         status = "active" if condition.status == "True" else "inactive"
                         break
-
+            worker_node = WorkerNode(name, ip, status, )
+            log.debug("node.added", worker_node=worker_node)
             worker_nodes.append(
-                WorkerNode(name, ip, status, )
+                worker_node
             )
         return worker_nodes
 
