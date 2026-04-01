@@ -6,6 +6,7 @@ on:
     branches:
       - main
 jobs:
+  if: github.actor != 'github-actions[bot]'
   test:
     name: Run Tests
     runs-on: ubuntu-latest
