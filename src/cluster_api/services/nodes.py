@@ -4,7 +4,8 @@ from ...global_api.util.cluster_connection import get_all_clusters_config
 from ..util.client_setup import get_api_client
 
 log = structlog.get_logger()
-_CLUSTER: "Cluster" | None = None
+
+_CLUSTER = None
 
 class WorkerNode:
     """All information of a worker node"""
