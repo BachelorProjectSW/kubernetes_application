@@ -18,7 +18,7 @@ def get_cluster_working_nodes():
                 continue
 
             name = node.metadata.name
-            status = node.condition.status
+            status = "ready"
             worker_nodes.append({
                 "name": name,
                 "status": status,
