@@ -7,10 +7,7 @@ router = APIRouter()
 @router.get("/get_cluster_working_nodes")
 def nodes():
     """Return all working nodes."""
-    try:
-        return get_cluster_working_nodes()
-    except Exception as e:
-        return e
+    return get_cluster_working_nodes()
 
 @router.post("/turn_on_nodes/{number_of_nodes}")
 def turn_on_node_endpoint(number_of_nodes: int):
