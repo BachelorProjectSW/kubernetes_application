@@ -1,5 +1,5 @@
 import requests
-from ..util.cluster_connection import get_all_clusters_config
+from ..util.all_configuration import get_all_clusters_config
 
 
 def get_all_worker_nodes():

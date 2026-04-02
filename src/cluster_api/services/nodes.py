@@ -1,6 +1,6 @@
 import structlog
 
-from ...global_api.util.cluster_connection import get_all_clusters_config
+from ...global_api.util.all_configuration import get_all_clusters_config
 from ..util.client_setup import get_api_client
 
 log = structlog.get_logger()

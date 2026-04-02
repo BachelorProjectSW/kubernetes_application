@@ -1,39 +1,21 @@
 import random
 import requests
-from ..util.cluster_connection import get_all_clusters_config
+from ..util.all_configuration import config_store
 
 
 def choose_cluster():
     """Choose cluster is temp."""
-    clusters = get_all_clusters_config()
-    return random.choice(list(clusters.values()))
+    clusters = config_store.get_clusters()
+    return random.choice(clusters)
 
 
 def handle_llm_request(question: str):
-    """Send the question to the port-forwarded llama-service."""
+    """Send the question to the local cluster request scheduler llama-service."""
     cluster = choose_cluster()
-    ip = cluster["ip"]
-    llama_port = cluster["llama-service"]
+    ip = cluster.ip
+    port = cluster.port
+    url = f"http://{ip}:{port}/handle_llm_request"
 
-    url = f"http://{ip}:{llama_port}/v1/chat/completions"
+    response = requests.post(url, json={"question": question})
 
-    payload = {
-        "model": "model",
-        "messages": [
-            {"role": "user", "content": question}
-        ],
-        "temperature": 0.7,
-        "max_tokens": 500
-    }
-
-    headers = {
-        "Content-Type": "application/json"
-    }
-
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()  # Raises error for HTTP codes >= 400
-        data = response.json()
-        return data
-    except Exception as e:
-        return e
+    return response.json()

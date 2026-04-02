@@ -1,5 +1,5 @@
 from pathlib import Path
-import global_api.util.cluster_connection as cluster_connection
+import global_api.util.all_configuration as all_configuration
 
 
 def test_multi_cluster_request(monkeypatch):
@@ -7,7 +7,7 @@ def test_multi_cluster_request(monkeypatch):
     test_config_path = Path(__file__).parents[1] / "k3d" / "cluster_configs" / "test_clusters.yaml"
 
     # Patch CONFIG_PATH to the test_config
-    monkeypatch.setattr(cluster_connection, "CONFIG_PATH", test_config_path)
+    monkeypatch.setattr(all_configuration, "CONFIG_PATH", test_config_path)
 
     # Now after patch get the function as CONFIG_PATH is constant and read when imported.
     from global_api.services.handle_llm_request import handle_llm_request

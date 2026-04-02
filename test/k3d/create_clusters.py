@@ -1,9 +1,9 @@
-from utils import get_test_cluster_config, run_cmd
+from utils import get_cluster_names, run_cmd
 
 
 def create_clusters():
     """Create clusters."""
-    cluster_names = get_test_cluster_config()['clusters']
+    cluster_names = get_cluster_names
 
     try:
         run_cmd("k3d cluster delete -a")

@@ -2,7 +2,7 @@ import asyncio
 import time
 import aiohttp
 
-from generator import generate_workload
+from strato_api.services.workload.generator import generate_workload
 
 
 class WorkloadExecutor:
