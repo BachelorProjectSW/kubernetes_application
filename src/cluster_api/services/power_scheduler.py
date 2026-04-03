@@ -9,11 +9,14 @@ log = structlog.get_logger()
 
 def turn_on_node(worker_node: WorkerNode):
     """Turn on the node via GPIO."""
-    gpio = worker_node.gpio 
-    log.debug("gpio to turn on", gpio=gpio)
-    IO(gpio).on()
-    log.debug("turning node on", node=worker_node.dict())
-    worker_node.status = "on"
+    try:
+        gpio = worker_node.gpio 
+        log.debug("gpio to turn on", gpio=gpio)
+        IO(gpio).on()
+        log.debug("turning node on", node=worker_node.dict())
+        worker_node.status = "on"
+    except Exception as e:
+        log.debug(f"failed to turn on node: {e}")
 
 
 def turn_off_node(worker_node: WorkerNode, username: str, password: str):
