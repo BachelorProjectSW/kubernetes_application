@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from multiprocessing import Process
 import uvicorn
-from utils import get_cluster_config
+from .utils import get_cluster_config
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT_DIR / "src"
