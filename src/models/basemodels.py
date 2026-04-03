@@ -7,8 +7,6 @@ from typing import Literal
 class StartConfig(BaseModel):
     duration_time_s: int
     start_time: str 
-    simulated_country_code: str
-
 
 class WeightsConfig(BaseModel):
     gco2: float
@@ -45,6 +43,8 @@ class ClusterConfig(BaseModel):
     ip: str
     port: str
     gpio_list: list[int]
+    simulated_country_code: str
+
 
 class ClusterInformation(BaseModel):
     """All information the clusters need."""

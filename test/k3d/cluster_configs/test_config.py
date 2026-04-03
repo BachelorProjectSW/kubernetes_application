@@ -7,8 +7,7 @@ def get_test_config():
         name="demo test",
         start=StartConfig(
             duration_time_s=1000,
-            start_time="01/10/2021",
-            simulated_country_code="PT"
+            start_time="01/10/2021"
         ),
         weights=WeightsConfig(
             gco2=0.1,
@@ -37,13 +36,16 @@ def get_test_config():
                 name="dk",
                 ip="127.0.0.1",
                 port="8040",
-                gpio_list=[21, 20, 16]
+                gpio_list=[21, 20, 16],
+                simulated_country_code="dk-dk1"
+
             ),
             ClusterConfig(
                 name="pt",
                 ip="127.0.0.1",
                 port="8050",
-                gpio_list=[21, 20, 16]
+                gpio_list=[21, 20, 16],
+                simulated_country_code="pt"
             )
         ]
     )
