@@ -7,8 +7,7 @@ from typing import Literal
 class StartConfig(BaseModel):
     duration_time_s: int
     start_time: str 
-    global_scheduler_ip: str
-    global_scheduler_port: str
+
 
 class WeightsConfig(BaseModel):
     gco2: float
