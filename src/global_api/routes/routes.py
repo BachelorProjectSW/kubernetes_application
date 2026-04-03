@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from ..services.get_all_worker_nodes import get_all_worker_nodes
 from ..services.handle_llm_request import handle_llm_request
 from ..services.start_test import start_test, stop_test
-from ...models.basemodels import Config
+from ...models.basemodels import Config, QuestionConfig
 router = APIRouter()
 
 
@@ -13,7 +13,7 @@ def nodes():
 
 
 @router.post("/handle_llm_question")
-def handle_llm_question(question: str):
+def handle_llm_question(question: QuestionConfig):
     """Handle llm question."""
     return handle_llm_request(question)
 
