@@ -1,7 +1,6 @@
 import requests
 from ...models.basemodels import *
-from ....test.k3d.cluster_configs.test_config import get_test_config
-
+from test.k3d.cluster_configs.test_config import get_test_config
 def start_test(config: Config):
     """Start test to the global scheduler. Further this should run chron job ensure the next in queue begins"""
     
