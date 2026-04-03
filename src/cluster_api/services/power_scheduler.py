@@ -34,8 +34,7 @@ def turn_off_node(worker_node: WorkerNode, username: str, password: str):
         log.debug("turning node off", node=worker_node.dict())
         worker_node.status = "off"
     except Exception as e:
-        log.debug("failed to shutdown node", e)
-
+        log.debug(f"failed to shutdown node: {e}")
 
 def change_node_status(number_of_nodes: int, status: str):
     """
