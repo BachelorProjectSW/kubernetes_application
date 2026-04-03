@@ -47,14 +47,14 @@ def get_test_config():
                 gpio_list=[21, 20, 16],
                 simulated_country_code="pt"
             ),
-            GlobalSchedulerConfig(
-                ip="127.0.0.1",
-                port="8020"
-            ),
-            StratoConfig(
-                ip="127.0.0.1",
-                port="8090"
-            )
-        ]
+        ],
+        global_scheduler=GlobalSchedulerConfig(
+            ip="127.0.0.1",
+            port="8020"
+        ),
+        strato=StratoConfig(
+            ip="127.0.0.1",
+            port="8090"
+        )
     )
     return test_config
