@@ -9,7 +9,8 @@ def start_test(config: Config):
 
         cluster_information = ClusterInformation(
             cluster_config=cluster,
-            question_config=config.question
+            question_config=config.question,
+            worker_nodes=[]
         )
         ip = cluster.ip
         port = cluster.port
