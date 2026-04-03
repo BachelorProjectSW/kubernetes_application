@@ -46,14 +46,17 @@ class ClusterConfig(BaseModel):
     gpio_list: list[int]
     simulated_country_code: str
 
-class GlobalSchedulerConfig(BaseModel):
-    ip: str
-    port: str
 
 class ClusterInformation(BaseModel):
     """All information the clusters need."""
     cluster_config: ClusterConfig
     question_config: QuestionConfig
+
+
+class GlobalSchedulerConfig(BaseModel):
+    ip: str
+    port: str
+
 
 class StratoConfig(BaseModel):
     ip: str
@@ -70,4 +73,4 @@ class Config(BaseModel):
     question: QuestionConfig
     clusters: list[ClusterConfig]
     global_scheduler: GlobalSchedulerConfig
-    strato: StartConfig
+    strato: StratoConfig
