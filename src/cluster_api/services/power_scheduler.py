@@ -42,9 +42,7 @@ def change_node_status(number_of_nodes: int, status: str):
     Change status of up to number_of_nodes in the cluster.
     status: 'on' or 'off'
     """
-    # ensure we have the latest nodes
-    cluster_service.refresh_worker_nodes()
-    nodes = cluster_service.get_worker_nodes()
+    nodes = cluster_service.worker_nodes
 
     if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, nodes)
@@ -53,7 +51,6 @@ def change_node_status(number_of_nodes: int, status: str):
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, nodes)
         for node in nodes_to_change:
-            # here using username/password as node.name placeholder
             turn_off_node(node, username=node.name, password=node.name)
     else:
         raise ValueError("status must be 'on' or 'off'")
