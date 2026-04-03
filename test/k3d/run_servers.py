@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from multiprocessing import Process
 import uvicorn
-from .utils import get_cluster_config
+from .utils import get_cluster_config, get_test_config
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT_DIR / "src"
@@ -33,16 +33,17 @@ def run_cluster_server(cluster_name, port):
 
 def start_all_servers():
     """Start strato, global scheduler, all cluster control planes, and port-forward the llama-services."""
+    configs = get_test_config()
     cluster_config = get_cluster_config()
     server_processes = []
 
     # Start the global scheduler API server
-    g_server = Process(target=run_global_server, args=(cluster_config.global_scheduler.port,))
+    g_server = Process(target=run_global_server, args=(configs.global_scheduler.port,))
     g_server.start()
     server_processes.append(g_server)
 
     # Start the Strato API server
-    g_server = Process(target=run_strato_server, args=(cluster_config.strato.port,))
+    g_server = Process(target=run_strato_server, args=(configs.strato.port,))
     g_server.start()
     server_processes.append(g_server)
 

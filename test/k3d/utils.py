@@ -2,6 +2,8 @@ import subprocess
 from src.models.basemodels import *
 from .cluster_configs.test_config import get_test_config
 
+def get_config():
+    return get_test_config()
 
 def get_cluster_config():
     config = get_test_config()
