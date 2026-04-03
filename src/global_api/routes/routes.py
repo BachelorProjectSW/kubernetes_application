@@ -21,8 +21,6 @@ def handle_llm_question(question: str):
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
     """Start the test"""
-    print("GGG")
-    return "WORKS"
     return start_test(config)
 
 @router.post("/stop_test")
