@@ -43,7 +43,7 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
         requests.HTTPError: If the Electricity Maps API returns an error response.
 
     """
-    log.info("Fetching prices", zone=zone, start=str(start), end=str(end))
+    log.info("prices.fetching", zone=zone, start=str(start), end=str(end))
     try:
         response = requests.get(
             f"{BASE_URL}/price-day-ahead/past-range",
@@ -58,14 +58,59 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
         )
         response.raise_for_status()
     except requests.HTTPError as e:
-        log.error("Electricity Maps API error", status=e.response.status_code, zone=zone)
+        log.error("prices.api_error", status=e.response.status_code, zone=zone)
         raise
 
     except Exception:
-        log.error("Unexpected error while fetching API data, zone=zone")
+        log.error("prices.unexpected_error", zone=zone)
         raise
 
     entries = response.json().get("data", [])
-    log.info("Prices fetched", count=len(entries))
+    log.info("prices.fetched", count=len(entries))
 
     return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]
+
+
+def get_carbon_intensity_by_time(start: datetime, end: datetime, zone: str) -> list[tuple[datetime, float]]:
+    """Fetch hourly direct carbon intensity from the Electricity Maps API.
+
+    Args:
+        start: Start of the time range (timezone-aware datetime).
+        end: End of the time range (timezone-aware datetime).
+        zone: Electricity Maps zone identifier, e.g. "PT" or "DK-DK1".
+
+    Returns:
+        List of (timestamp, gCO2eq_per_kwh) tuples.
+
+    Raises:
+        RuntimeError: If the API key is not set.
+        requests.HTTPError: If the Electricity Maps API returns an error response.
+
+    """
+    log.info("carbon_intensity.fetching", zone=zone, start=str(start), end=str(end))
+    try:
+        response = requests.get(
+            f"{BASE_URL}/carbon-intensity/past-range",
+            headers=_get_headers(),
+            params={
+                "zone": zone,
+                "start": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "end": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "temporalGranularity": "hourly",
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+
+    except requests.HTTPError as e:
+        log.error("carbon_intensity.api_error", status=e.response.status_code, zone=zone)
+        raise
+
+    except Exception:
+        log.error("carbon_intensity.unexpected_error", zone=zone)
+        raise
+
+    entries = response.json().get("data", [])
+    log.info("carbon_intensity.fetched", count=len(entries))
+
+    return [(datetime.fromisoformat(e["datetime"]), e["carbonIntensity"]) for e in entries]
