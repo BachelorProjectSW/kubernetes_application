@@ -37,6 +37,10 @@ class QuestionConfig(BaseModel):
     max_output_tokens: int
     context_window: int 
 
+class WorkerNode(BaseModel):
+    name: str
+    ip: str
+    status: Literal["on", "off", "turning_on", "turning_off"]
 
 class ClusterConfig(BaseModel):
     """Cluster class."""
@@ -51,7 +55,7 @@ class ClusterInformation(BaseModel):
     """All information the clusters need."""
     cluster_config: ClusterConfig
     question_config: QuestionConfig
-
+    worker_nodes: list[WorkerNode]
 
 class GlobalSchedulerConfig(BaseModel):
     ip: str
