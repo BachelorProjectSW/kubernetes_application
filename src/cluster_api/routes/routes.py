@@ -28,8 +28,9 @@ def turn_off_node_endpoint(number_of_nodes: int):
 @router.post("/set_config")
 def set_config(cluster_information: ClusterInformation):
     """Set the config in util."""
-
-    return config_store.set(cluster_information)
+    config = config_store.set(cluster_information)
+    cluster_service.build_worker_nodes() 
+    return config
 
 
 @router.post("/handle_llm_request")
