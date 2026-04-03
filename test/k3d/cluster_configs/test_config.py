@@ -49,11 +49,11 @@ def get_test_config():
             ),
             GlobalSchedulerConfig(
                 ip="127.0.0.1",
-                port="8020",
+                port="8020"
             ),
             StratoConfig(
                 ip="127.0.0.1",
-                port="8090",
+                port="8090"
             )
         ]
     )
