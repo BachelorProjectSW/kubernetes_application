@@ -35,7 +35,7 @@ class QuestionConfig(BaseModel):
     """Question class."""
     question: str
     max_output_tokens: int
-    context_window: int 
+    context_window: int
 
 class WorkerNode(BaseModel):
     name: str

@@ -4,8 +4,8 @@ from ...models.basemodels import QuestionConfig
 
 def handle_llm(question: QuestionConfig):
     try:
-        url = "http://llama-service:8080/completion"
-
+        # url = "http://llama-service:8085/completion"
+        url = "http://localhost:8085"
         payload = {
             "prompt": question.question,
             "n_predict": question.max_output_tokens,
