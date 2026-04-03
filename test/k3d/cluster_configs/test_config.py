@@ -36,7 +36,7 @@ def get_test_config():
                 name="dk",
                 ip="127.0.0.1",
                 port="8040",
-                gpio_list=[21, 20, 16],
+                gpio_list=[21],
                 simulated_country_code="dk-dk1"
 
             ),
@@ -44,7 +44,7 @@ def get_test_config():
                 name="pt",
                 ip="127.0.0.1",
                 port="8050",
-                gpio_list=[21, 20, 16],
+                gpio_list=[21],
                 simulated_country_code="pt"
             ),
         ],
