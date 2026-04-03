@@ -15,7 +15,6 @@ def handle_llm_request(question: str):
     ip = cluster.ip
     port = cluster.port
     url = f"http://{ip}:{port}/handle_llm_request"
-    return "success"
     response = requests.post(url, json={"question": question.question})
 
     return response.json()
