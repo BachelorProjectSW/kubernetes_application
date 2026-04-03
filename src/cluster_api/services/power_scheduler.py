@@ -43,8 +43,6 @@ def change_node_status(number_of_nodes: int, status: str):
     status: 'on' or 'off'
     """
     nodes = cluster_service.worker_nodes
-    print(len(nodes))
-    print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, nodes)
         for node in nodes_to_change:
