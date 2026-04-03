@@ -77,3 +77,6 @@ class Cluster:
     def to_dict(self):
         """Return nodes as list of dictionaries."""
         return [node.to_dict() for node in self.nodes]
+    
+
+cluster_store = Cluster()
