@@ -1,4 +1,4 @@
-from ....src.models.basemodels import *
+from src.models.basemodels import *
 
 def get_test_config():
     """Start test test"""
