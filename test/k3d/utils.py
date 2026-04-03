@@ -16,7 +16,7 @@ def get_cluster_names():
         name = cluster.name
         print(name)
         names.append(name)
-
+    return names
 
 def run_cmd(cmd):
     """Run bash command."""
