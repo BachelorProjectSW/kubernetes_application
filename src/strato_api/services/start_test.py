@@ -8,7 +8,7 @@ def start_test(config: Config):
     url = f"http://{ip}:{port}/start_test" #url should be to global scheduler
 
     response = requests.post(url, json=config.model_dump())
-
+    return "GG"
     return response.json()
 
 
