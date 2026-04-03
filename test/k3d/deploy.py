@@ -18,7 +18,7 @@ def deploy_clusters():
 
         run_cmd("kubectl wait --for=condition=Ready nodes --all --timeout=120s")
         for manifest in manifest_files:
-            print(manifest)
+            print(type(manifest))
             # run_cmd("kubectl", "apply", "-f", manifest)
         run_cmd("kubectl wait --for=condition=Ready pod -l name=llama-server --timeout=180s")
 
