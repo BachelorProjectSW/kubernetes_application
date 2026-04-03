@@ -60,7 +60,7 @@ class ClusterService:
                 name=name,
                 ip=ip,
                 status=status,
-                idle_time_s=0  # placeholder, will assign GPIO next
+                gpio=0 #will later be assigned  
             )
             worker_nodes.append(worker_node)
 
@@ -81,7 +81,7 @@ class ClusterService:
             )
 
         for node, gpio in zip(self.worker_nodes, gpios):
-            node.idle_time_s = gpio
+            node.gpio = gpio
             log.debug("node.gpio_assigned", node=node)
 
 

@@ -41,6 +41,7 @@ class WorkerNode(BaseModel):
     name: str
     ip: str
     status: Literal["on", "off", "turning_on", "turning_off"]
+    gpio: int
 
 class ClusterConfig(BaseModel):
     """Cluster class."""
