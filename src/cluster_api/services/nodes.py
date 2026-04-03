@@ -1,6 +1,6 @@
 import structlog
 
-from ...global_api.util.all_configuration import get_all_clusters_config
+from ...global_api.util.all_configuration import config_store
 from ..util.client_setup import get_api_client
 
 log = structlog.get_logger()
@@ -56,7 +56,11 @@ class Cluster:
     def assign_gpios(self):
         """Assign gpio to each worker node."""
         all_worker_nodes = self.nodes
-        gpios = get_all_clusters_config()[self.name]["gpio"]
+        clusters = config_store.get_clusters()
+        gpios = []
+        for cluster in clusters:
+            if cluster.name == self.name:
+                gpios = cluster.gpio_list 
 
         worker_len = len(all_worker_nodes)
         gpios_len = len(gpios)
