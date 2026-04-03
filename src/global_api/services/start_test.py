@@ -20,16 +20,12 @@ def start_test(config: Config):
         print(response)
         #TODO handle response
 
-        #TODO boot up all clusters
-
-
-    #TODO send configuration to cluster API (waits for its to be applied correctly)
     name = config.name
     return f"{name} test are running succesfully"
 
 
 def stop_test():
     """Stop the test."""
-    #code for shutdown on clusters and return logs
+    #TODO code for shutdown on worker_nodes and return logs
     logs = "logs"
     return logs
