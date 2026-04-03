@@ -4,7 +4,7 @@ from ...models.basemodels import QuestionConfig
 
 def handle_llm(question: QuestionConfig):
     try:
-        # url = "http://llama-service:8085/completion"
+        # url = "http://llama-service:8080/completion"
         url = "http://127.0.0.1:8085/completion"
         payload = {
             "prompt": question.question,
