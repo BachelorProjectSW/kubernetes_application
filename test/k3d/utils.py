@@ -10,9 +10,11 @@ def get_cluster_config():
 
 def get_cluster_names():
     clusters = get_cluster_config()
+    print(clusters)
     names = []
     for cluster in clusters:
         name = cluster.name
+        print(name)
         names.append(name)
 
 
