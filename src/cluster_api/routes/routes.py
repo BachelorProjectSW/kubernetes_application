@@ -36,4 +36,4 @@ def set_config(cluster_information: ClusterInformation):
 @router.post("/handle_llm_request")
 def handle_llm_request_endpoint(question: QuestionConfig):
     """Handle llm request."""
-    return handle_llm(question.question)
+    return handle_llm(question)
