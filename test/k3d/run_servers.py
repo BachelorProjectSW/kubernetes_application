@@ -36,17 +36,20 @@ def start_all_servers():
     cluster_config = get_cluster_config()
     server_processes = []
 
+    print("global scheduler on 8020")
     # Start the global scheduler API server
     g_server = Process(target=run_global_server, args=(8020,))
     g_server.start()
     server_processes.append(g_server)
 
+    print("strato on 8020")
     # Start the Strato API server
     g_server = Process(target=run_global_server, args=(8090,))
     g_server.start()
     server_processes.append(g_server)
 
     for cluster in cluster_config:
+        print(f"{cluster.name} cluster on {cluster.port}")
         # Start the cluster API server
         p_server = Process(target=run_cluster_server, args=(cluster.name, int(cluster.port)))
         p_server.start()
