@@ -8,7 +8,9 @@ def get_all_worker_nodes():
     clusters = config_store.get_clusters()
     for cluster in clusters:
         url = f"http://{cluster.ip}:{cluster.port}/get_cluster_working_nodes"
+        print("url:", url)
         response = requests.get(url, timeout=5)
+        print("reponse", response)
         worker_nodes.extend(response.json())
 
     return worker_nodes
