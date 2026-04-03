@@ -10,8 +10,6 @@ router = APIRouter()
 @router.get("/get_cluster_working_nodes/")
 def nodes(cluster_name: str):
     """Return all working nodes."""
-    print("YESEESESESESES", cluster_name)
-    return {"works": "YES"}
     return get_cluster_working_nodes(cluster_name)
 
 

@@ -1,18 +1,14 @@
 import structlog
-
-from ...global_api.util.all_configuration import config_store
-from ..util.client_setup import get_api_client
+from ...models.basemodels import ClusterInformation
+from ..util.cluster_config import config_store
 
 log = structlog.get_logger()
 
-_CLUSTER = None
-
 
 class WorkerNode:
-    """All information of a worker node."""
+    """Information about a worker node."""
 
-    def __init__(self, name, ip, status):
-        """Init worker node."""
+    def __init__(self, name: str, ip: str, status: str):
         self.name = name
         self.ip = ip
         self.status = status
@@ -20,11 +16,9 @@ class WorkerNode:
         self.logs = ""
 
     def __repr__(self):
-        """Use this to print all self using print()."""
         return f"{self.__class__.__name__}({self.__dict__})"
 
     def to_dict(self):
-        """Print the worker node as dict."""
         return {
             "name": self.name,
             "ip": self.ip,
@@ -35,95 +29,51 @@ class WorkerNode:
 
 
 class Cluster:
-    """All cluster information."""
+    """Single cluster using its own ClusterInformation from config_store."""
 
-    def __init__(self, name):
-        """Init cluster."""
-        self.name = name
-        self.nodes = self.get_cluster_working_nodes()
-        self.assign_gpios()
+    def __init__(self):
+        self.config: ClusterInformation | None = config_store.get()
+        if self.config is None:
+            raise ValueError("No cluster config found in config_store")
+
+        # Build worker nodes and assign GPIOs
+        self.nodes = self._build_nodes()
+        self._assign_gpios()
+
+    def _build_nodes(self):
+        """Create WorkerNode instances based on GPIO list count."""
+        gpio_count = len(self.config.cluster_config.gpio_list)
+        nodes = []
+        for i in range(gpio_count):
+            # Node name and IP are placeholders, can be updated later
+            node = WorkerNode(
+                name=f"{self.config.cluster_config.name}-node-{i+1}",
+                ip=f"{self.config.cluster_config.ip[:-1]}{100+i}",  # basic IP assignment
+                status="active",
+            )
+            nodes.append(node)
+        return nodes
+
+    def _assign_gpios(self):
+        """Assign GPIOs from config to worker nodes."""
+        gpios = self.config.cluster_config.gpio_list
+        if len(gpios) != len(self.nodes):
+            raise ValueError(
+                f"Worker nodes and GPIOs count mismatch: "
+                f"nodes={len(self.nodes)} gpios={len(gpios)}"
+            )
+        for node, gpio in zip(self.nodes, gpios):
+            node.gpio = gpio
+            log.debug("node.gpio_assigned", node=node)
 
     def refresh_nodes(self):
-        """Refresh nodes using v1 node_list()."""
-        self.nodes = self.get_cluster_working_nodes()
-        self.assign_gpios()
-        return self.nodes
+        """Rebuild nodes if config changed."""
+        self.config = config_store.get()
+        if self.config is None:
+            raise ValueError("No cluster config found in config_store")
+        self.nodes = self._build_nodes()
+        self._assign_gpios()
 
     def to_dict(self):
-        """List all worker nodes into list of dict."""
+        """Return nodes as list of dictionaries."""
         return [node.to_dict() for node in self.nodes]
-
-    def assign_gpios(self):
-        """Assign gpio to each worker node."""
-        all_worker_nodes = self.nodes
-        clusters = config_store.get_clusters()
-        gpios = []
-        for cluster in clusters:
-            if cluster.name == self.name:
-                gpios = cluster.gpio_list 
-
-        worker_len = len(all_worker_nodes)
-        gpios_len = len(gpios)
-        if gpios_len != worker_len:
-            raise ValueError(
-                f"""Worker nodes and assigned gpios is not the same
-                nodes={worker_len} gpios={gpios_len}"""
-            )
-        for i in range(worker_len):
-            all_worker_nodes[i].gpio = gpios[i]
-            print(all_worker_nodes[i])
-
-    def get_cluster_working_nodes(self):
-        """Return a JSON object with all the active working nodes."""
-        api_client = get_api_client()
-        nodes = api_client.list_node()
-        worker_nodes = []
-        for node in nodes.items:
-            # Skip control plane
-            labels = node.metadata.labels or {}
-            if labels.get("node-role.kubernetes.io/control-plane") == "true":
-                log.debug("node.skipped", name=node.metadata.name, reason="control-plane")
-                continue
-
-            name = node.metadata.name
-            ip = ""
-            if getattr(node.status, "addresses", None):
-                for address in node.status.addresses:
-                    if address.type == "InternalIP":
-                        ip = address.address
-                        break
-                if not ip:
-                    ip = node.status.addresses[0].address
-
-            status = "unknown"
-            if getattr(node.status, "conditions", None):
-                for condition in node.status.conditions:
-                    if condition.type == "Ready":
-                        status = "active" if condition.status == "True" else "inactive"
-                        break
-            worker_node = WorkerNode(name, ip, status, )
-            log.debug("node.added", worker_node=worker_node)
-            worker_nodes.append(
-                worker_node
-            )
-        return worker_nodes
-
-
-def get_cluster_working_nodes(cluster_name: str):
-    """Compatibility wrapper used by routes."""
-    cluster = get_cluster(cluster_name, refresh=True)
-    return cluster.to_dict()
-
-
-def get_cluster(cluster_name: str = None, refresh: bool = False):
-    """Return a cached Cluster instance for this process."""
-    global _CLUSTER
-
-    if _CLUSTER is None and cluster_name is not None:
-        _CLUSTER = Cluster(cluster_name)
-    elif refresh:
-        _CLUSTER.refresh_nodes()
-
-    log.debug("cluster", cluster=_CLUSTER.to_dict())
-
-    return _CLUSTER
