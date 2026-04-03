@@ -38,12 +38,12 @@ def start_all_servers():
     server_processes = []
 
     # Start the global scheduler API server
-    g_server = Process(target=run_global_server, args=(configs.global_scheduler.port,))
+    g_server = Process(target=run_global_server, args=(int(configs.global_scheduler.port),))
     g_server.start()
     server_processes.append(g_server)
 
     # Start the Strato API server
-    g_server = Process(target=run_strato_server, args=(configs.strato.port,))
+    g_server = Process(target=run_strato_server, args=(int(configs.strato.port),))
     g_server.start()
     server_processes.append(g_server)
 
