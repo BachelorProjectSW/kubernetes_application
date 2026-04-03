@@ -7,7 +7,7 @@ def get_test_config():
         name="demo test",
         start=StartConfig(
             duration_time_s=1000,
-            start_time="01/10/2021"
+            start_time="01/10/2021"    
         ),
         weights=WeightsConfig(
             gco2=0.1,
@@ -46,6 +46,14 @@ def get_test_config():
                 port="8050",
                 gpio_list=[21, 20, 16],
                 simulated_country_code="pt"
+            ),
+            GlobalSchedulerConfig(
+                ip="127.0.0.1",
+                port="8020",
+            ),
+            StratoConfig(
+                ip="127.0.0.1",
+                port="8090",
             )
         ]
     )

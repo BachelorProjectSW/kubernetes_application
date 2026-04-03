@@ -7,6 +7,8 @@ from typing import Literal
 class StartConfig(BaseModel):
     duration_time_s: int
     start_time: str 
+    global_scheduler_ip: str
+    global_scheduler_port: str
 
 class WeightsConfig(BaseModel):
     gco2: float
@@ -45,11 +47,18 @@ class ClusterConfig(BaseModel):
     gpio_list: list[int]
     simulated_country_code: str
 
+class GlobalSchedulerConfig(BaseModel):
+    ip: str
+    port: str
 
 class ClusterInformation(BaseModel):
     """All information the clusters need."""
     cluster_config: ClusterConfig
     question_config: QuestionConfig
+
+class StratoConfig(BaseModel):
+    ip: str
+    port: str
 
 class Config(BaseModel):
     id: str
@@ -61,3 +70,5 @@ class Config(BaseModel):
     workload: WorkloadConfig
     question: QuestionConfig
     clusters: list[ClusterConfig]
+    global_scheduler: GlobalSchedulerConfig
+    strato: StartConfig
