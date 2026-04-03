@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from ..services.nodes import cluster_service 
 from ..services.power_scheduler import change_node_status
 from ..services.llm import handle_llm
-from ...models.basemodels import ClusterInformation
+from ...models.basemodels import ClusterInformation, QuestionConfig
 from ..util.cluster_config import config_store
 router = APIRouter()
 
@@ -34,6 +34,6 @@ def set_config(cluster_information: ClusterInformation):
 
 
 @router.post("/handle_llm_request")
-def handle_llm_request_endpoint(question: str):
+def handle_llm_request_endpoint(question: QuestionConfig):
     """Handle llm request."""
-    return handle_llm(question)
+    return handle_llm(question.question)
