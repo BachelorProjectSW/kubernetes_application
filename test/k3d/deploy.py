@@ -5,7 +5,7 @@ from .utils import get_cluster_names, run_cmd
 
 def deploy_clusters():
     """Deploy clusters."""
-    cluster_names = get_cluster_names
+    cluster_names = get_cluster_names()
 
     manifest_files = sorted(glob.glob("src/cluster_api/manifest/all_*"))
 
