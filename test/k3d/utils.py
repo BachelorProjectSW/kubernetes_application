@@ -1,5 +1,5 @@
 import subprocess
-from ...src.models.basemodels import *
+from src.models.basemodels import *
 from .cluster_configs.test_config import get_test_config
 
 
