@@ -1,6 +1,6 @@
 import glob
 import os
-from utils import get_cluster_names, run_cmd
+from .utils import get_cluster_names, run_cmd
 
 
 def deploy_clusters():
