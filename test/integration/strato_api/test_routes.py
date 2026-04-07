@@ -1,6 +1,6 @@
 import pytest
 import requests
-from k3d.cluster_configs.test_config import get_test_config
+from ...k3d.cluster_configs.test_config import get_test_config
 
 @pytest.mark.integration
 def test_add_and_remove_test_to_queue_endpoint():
