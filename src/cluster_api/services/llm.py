@@ -11,11 +11,10 @@ def handle_llm(question: QuestionConfig):
         config = config_store.get()
         worker_node = choose_worker_node(config.worker_nodes)
         # url = "http://llama-service:8080/completion"
-        url = f"http://127.0.0.1:{config.cluster_config.llama_service_port}/v1/models"
+        url = f"http://127.0.0.1:{config.cluster_config.llama_service_port}/completion"
         payload = {
             "prompt": question.question,
-            "n_predict": question.max_output_tokens,
-            "temperature": 0
+            "n_predict": question.max_output_tokens
         }
 
         response = requests.post(
@@ -24,15 +23,7 @@ def handle_llm(question: QuestionConfig):
             timeout=60,
         )
 
-        response.raise_for_status()
-
-        try:
-            return response.json()
-        except Exception:
-            # fallback: read raw text
-            text = response.text
-            print("RAW RESPONSE:", text)
-            return {"raw": text}
+        return response
     except Exception as e:
         return f"failed: {e}"
     
