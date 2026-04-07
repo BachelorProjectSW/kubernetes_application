@@ -16,7 +16,8 @@ def deploy_clusters():
         kubeconfig = f"src/cluster_api/auth/k3d-devcluster-{cluster_name}.yaml"
         os.environ["KUBECONFIG"] = kubeconfig
 
-        run_cmd(["kubectl", "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=120s"])        for manifest in manifest_files:
+        run_cmd(["kubectl", "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=120s"])
+        for manifest in manifest_files:
             run_cmd(["kubectl", "apply", "-f", manifest])
         run_cmd([
             "kubectl",
