@@ -22,10 +22,17 @@ def handle_llm(question: QuestionConfig):
             url,
             json=payload,
             timeout=60,
+            stream=True  # 👈 IMPORTANT
         )
+
         response.raise_for_status()
-        return response.json()
-    except requests.HTTPError as e:
-        raise RuntimeError(f"Llama service returned HTTP error: {e}") from e
-    except requests.RequestException as e:
-        raise RuntimeError(f"Failed to contact llama service: {e}") from e
+
+        try:
+            return response.json()
+        except Exception:
+            # fallback: read raw text
+            text = response.text
+            print("RAW RESPONSE:", text)
+            return {"raw": text}
+    except Exception as e:
+        return f"failed: {e}"
