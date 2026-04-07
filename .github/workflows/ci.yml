@@ -47,6 +47,6 @@ jobs:
       - name: Run servers and port-forward
         run: |
           python -m test.k3d.run_servers &
-          sleep(10)
+          sleep 10
           python -m pytest
 
