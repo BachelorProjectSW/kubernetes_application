@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
-from global_api.services.energy_price import fetch_price_data
+from global_api.services.price_and_carbon_intensity import fetch_price_data
 
 FAKE_RESPONSE = {
     "zone": "PT",
