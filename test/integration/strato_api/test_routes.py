@@ -6,6 +6,7 @@ import requests
 @pytest.mark.integration
 def test_add_and_remove_test_to_queue_endpoint():
     """Test."""
+    config = get_test_config()
     #add
     url = f"http://{config.strato.ip}:{config.strato.port}/add_test_to_queue"
     for i in range(3):
