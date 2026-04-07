@@ -50,8 +50,11 @@ def get_test_config():
                 port="8040",
                 gpio_list=[21],
                 simulated_country_code="dk-dk1",
-                llama_service_port="8083"
-
+                llama_service_port="8083",
+                renewable_output_w=200,
+                cluster_load_w=1000,
+                grid_carbon_intensity=100,
+                grid_electricity_price=0.12
 
             ),
             ClusterConfig(
@@ -60,7 +63,11 @@ def get_test_config():
                 port="8050",
                 gpio_list=[21],
                 simulated_country_code="pt",
-                llama_service_port="8082"
+                llama_service_port="8082",
+                renewable_output_w=400,
+                cluster_load_w=1000,
+                grid_carbon_intensity=300,
+                grid_electricity_price=0.14
             ),
         ],
         global_scheduler=GlobalSchedulerConfig(

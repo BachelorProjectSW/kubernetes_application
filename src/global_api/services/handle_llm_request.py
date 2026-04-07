@@ -2,12 +2,7 @@ import random
 import requests
 from ..util.all_configuration import config_store
 from ...models.basemodels import QuestionConfig
-
-
-def choose_cluster():
-    """Choose cluster is temp."""
-    clusters = config_store.get_clusters()
-    return random.choice(clusters)
+from .scoring import choose_cluster
 
 
 def handle_llm_request(question: QuestionConfig):

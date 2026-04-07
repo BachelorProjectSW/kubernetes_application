@@ -66,7 +66,10 @@ class ClusterConfig(BaseModel):
     gpio_list: list[int]
     simulated_country_code: str
     llama_service_port: str
-
+    renewable_output_w: float
+    cluster_load_w: float
+    grid_carbon_intensity: float
+    grid_electricity_price: float
 
 class ClusterInformation(BaseModel):
     """All information the clusters need."""
