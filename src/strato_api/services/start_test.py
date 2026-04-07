@@ -12,9 +12,10 @@ def start_test(config: Config):
     response = requests.post(url, json=config.model_dump())
     response.raise_for_status()
 
+    host = f"http://{config.global_scheduler.ip}:{config.global_scheduler.port}"
     results  = run_workload(
-        config.global_scheduler.ip,
-        config.global_scheduler.port,
+        host,
+        "/handle_llm_question",
         {"question": config.question.question},
         config.start.duration_time_s,
         config.workload.request_per_minute,
