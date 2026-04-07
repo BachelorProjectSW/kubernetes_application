@@ -15,7 +15,7 @@ def test_add_and_remove_test_to_queue_endpoint():
         response = requests.post(url, json=config.model_dump()).json()
         print(response)
         assert len(response) == i + 1
-        assert response[i]['id'] == i
+        assert response[i]['id'] == str(i)
     
 
     #delete
@@ -23,8 +23,8 @@ def test_add_and_remove_test_to_queue_endpoint():
     assert response.json()[0]['id'] == 0
     assert len(response) == 3
     response = requests.delete(url, json={"config_id": "0"}).json()
-    assert response[0]['id'] != 0
-    assert response[0]['id'] == 1
+    assert response[0]['id'] != str(0)
+    assert response[0]['id'] == str(1)
     assert len(response) == 2
     response = requests.delete(url, json={"config_id": "1"}).json()
     response = requests.delete(url, json={"config_id": "1"}).json()
