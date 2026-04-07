@@ -6,7 +6,7 @@ from ..util.cluster_config import config_store
 router = APIRouter()
 
 
-@router.get("/get_cluster_working_nodes/")
+@router.get("/get_cluster_working_nodes")
 def nodes():
     """Return all working nodes."""
     return config_store.get_worker_nodes_dict()
