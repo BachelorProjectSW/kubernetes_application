@@ -10,6 +10,9 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode:
 def handle_llm(question: QuestionConfig):
     try:
         config = config_store.get()
+        print(config.cluster_config.name)
+        print(len(config.worker_nodes))
+        return "hey"
         worker_node = choose_worker_node(config.worker_nodes)
         # url = "http://llama-service:8080/completion"
         url = f"http://{worker_node.ip}:{config.cluster_config.llama_service_port}/completion"
