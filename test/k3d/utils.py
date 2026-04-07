@@ -39,4 +39,4 @@ def run_cmd_bg(cmd):
 def run_cmd(cmd):
     """Run bash command."""
     print(f"Running: {cmd}")
-    subprocess.run(cmd, shell=True)
+    subprocess.run(cmd)
