@@ -2,7 +2,7 @@ from gpiozero import LED as IO
 import paramiko
 import structlog
 from ...models.basemodels import WorkerNode
-from ..util.worker_nodes import cluster_service  
+from ..util.cluster_config import config_store
 
 log = structlog.get_logger()
 
@@ -44,7 +44,7 @@ def change_node_status(number_of_nodes: int, status: str):
     Change status of up to number_of_nodes in the cluster.
     status: 'on' or 'off'
     """
-    nodes = cluster_service.worker_nodes
+    nodes = config_store.worker_nodes
     if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, nodes)
         for node in nodes_to_change:
