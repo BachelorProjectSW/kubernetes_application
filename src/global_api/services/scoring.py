@@ -129,12 +129,11 @@ def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig):
     best_score = -1.0
 
     for cluster in clusters:
-        #TODO change all constants to API calls.
         cluster_score = score_cluster(
-            200,
-            1000,
-            100,
-            0.12,
+            cluster.renewable_output_w,
+            cluster.cluster_load_w,
+            cluster.grid_carbon_intensity,
+            cluster.grid_electricity_price,
             weights.gco2,
             weights.cost,
         )
@@ -143,8 +142,8 @@ def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig):
             "cluster.scored",
             cluster=cluster.name,
             score=cluster_score,
-            renewable_output_w=200,
-            grid_electricity_price=0.12,
+            renewable_output_w=cluster.renewable_output_w,
+            grid_electricity_price=cluster.grid_electricity_price,
         )
 
         if cluster_score > best_score:
