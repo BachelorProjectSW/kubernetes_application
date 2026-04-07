@@ -2,11 +2,12 @@ import asyncio
 import time
 import aiohttp
 from .generator import generate_workload
+from ....models.basemodels import QuestionConfig
 
 async def execute_workload(
     host: str,
     endpoint: str,
-    question: dict,
+    question: QuestionConfig,
     duration_s: int,
     rpm: int,
     pattern: str,
@@ -38,7 +39,7 @@ async def execute_workload(
 
             start = time.perf_counter()
             try:
-                async with session.post(endpoint, json=question) as resp:
+                async with session.post(endpoint, json=question.model_dump_json()) as resp:
                     body = await resp.text()
                     latency = time.perf_counter() - start
                     print(f"request.success status={resp.status} latency={latency:.4f}s body={body}")
@@ -60,7 +61,7 @@ async def execute_workload(
 def run_workload(
     host: str,
     endpoint: str,
-    question: dict,
+    question: QuestionConfig,
     duration_s: int,
     rpm: int,
     pattern: str,

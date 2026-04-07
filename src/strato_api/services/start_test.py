@@ -13,20 +13,16 @@ def start_test(config: Config):
     response.raise_for_status()
 
     host = f"http://{config.global_scheduler.ip}:{config.global_scheduler.port}"
-    results = run_workload(
+    results  = run_workload(
         host,
         "/handle_llm_question",
-        {
-            "question": config.question.question,
-            "max_output_tokens": config.question.max_output_tokens,
-            "context_window": config.question.context_window
-        },
+        config.question,
         config.start.duration_time_s,
         config.workload.request_per_minute,
         config.workload.pattern,
         config.workload.seed,
         config.workload.peakiness
-    )
+        )
     return f"Got {len(results)} responses"
     
 
