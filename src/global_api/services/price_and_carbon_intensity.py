@@ -71,7 +71,7 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
     return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]
 
 
-def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tuple[datetime, float]]:
+def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tuple[datetime, int]]:
     """Fetch hourly direct carbon intensity from the Electricity Maps API.
 
     Args:
