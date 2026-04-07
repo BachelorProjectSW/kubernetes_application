@@ -1,8 +1,7 @@
 import asyncio
 import time
 import aiohttp
-from strato_api.services.workload.generator import generate_workload
-
+from .generator import generate_workload
 
 async def execute_workload(
     host: str,
