@@ -3,6 +3,17 @@ import requests
 from ...k3d.cluster_configs.test_config import get_test_config
 
 @pytest.mark.integration
+@pytest.mark.slow
+def test_start_test():
+    """Full end to end tests"""
+    config = get_test_config()
+    base_url = f"http://{config.strato.ip}:{config.strato.port}"
+
+    response = requests.post(f"{base_url}/start_test")
+    assert response.status_code == 200
+
+
+@pytest.mark.integration
 def test_add_and_remove_test_to_queue_endpoint():
     """Integration test for add/delete queue."""
 
@@ -34,3 +45,6 @@ def test_add_and_remove_test_to_queue_endpoint():
     # Delete last item
     response = requests.delete(f"{base_url}/delete_test_from_queue", params={"config_id": "2"}).json()
     assert response == []
+
+
+    
