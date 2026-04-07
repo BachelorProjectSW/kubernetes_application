@@ -19,6 +19,7 @@ async def execute_workload(
 
     start_time = time.perf_counter()
 
+    # Generate timestamps for requests
     timestamps = generate_workload(
         duration_s=duration_s,
         rpm=rpm,
@@ -30,6 +31,10 @@ async def execute_workload(
     print(f"Generated {len(timestamps)} requests over {duration_s}s")
     print(f"Target: {host}{endpoint}")
 
+    # Serialize the Pydantic model once
+    payload_json = json.dumps(question.model_dump())
+    headers = {"Content-Type": "application/json"}
+
     async with aiohttp.ClientSession(base_url=host) as session:
 
         async def _send_request(ts: float):
@@ -40,9 +45,6 @@ async def execute_workload(
 
             start = time.perf_counter()
             try:
-                payload_json = json.dumps(question.model_dump())
-                headers = {"Content-Type": "application/json"}  # ensure FastAPI parses it
-
                 async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                     body = await resp.text()
                     latency = time.perf_counter() - start
@@ -53,7 +55,6 @@ async def execute_workload(
                 print(f"request.failure error={e} latency={latency:.4f}s")
                 return {"ok": False, "error": str(e)}
 
-        # Schedule all requests
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
         results = await asyncio.gather(*tasks)
 
