@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'src/cluster_api/manifest/deployment.yaml'
 
 permissions:
   contents: write 
@@ -10,13 +12,11 @@ permissions:
 
 concurrency:
   group: build-and-deploy-main
-  cancel-in-progress: false
-
+  cancel-in-progress: true
 jobs:
   build_and_push:
+    if: ${{ github.actor != 'cluster-api-deploy-bot[bot]' }}
     runs-on: ubuntu-latest
-
-    
 
     steps:
       - name: Create app token
