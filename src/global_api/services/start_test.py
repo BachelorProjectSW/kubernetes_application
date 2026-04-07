@@ -4,25 +4,26 @@ import requests
 
 def start_test(config: Config):
     """Start the test and send configs"""
-    config_store.set(config)
-    for cluster in config.clusters:
+    try:
+        config_store.set(config)
+        for cluster in config.clusters:
 
-        cluster_information = ClusterInformation(
-            cluster_config=cluster,
-            question_config=config.question,
-            worker_nodes=[]
-        )
-        ip = cluster.ip
-        port = cluster.port
-        url = f"http://{ip}:{port}/set_config" 
+            cluster_information = ClusterInformation(
+                cluster_config=cluster,
+                question_config=config.question,
+                worker_nodes=[]
+            )
+            ip = cluster.ip
+            port = cluster.port
+            url = f"http://{ip}:{port}/set_config" 
 
-        response = requests.post(url, json=cluster_information.model_dump())
-        print(response)
-        #TODO handle response
+            response = requests.post(url, json=cluster_information.model_dump())
+            response.raise_for_status()        
 
-    name = config.name
-    return f"{name} test are running succesfully"
-
+        name = config.name
+        return f"{name} test are running succesfully"
+    except Exception as e:
+        raise Exception(f"test failed: {e}")
 
 def stop_test():
     """Stop the test."""

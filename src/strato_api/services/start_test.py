@@ -1,6 +1,8 @@
 import requests
 from ...models.basemodels import *
 from test.k3d.cluster_configs.test_config import get_test_config
+from workload.run_workload import run_workload
+
 def start_test(config: Config):
     """Start test to the global scheduler. Further this should run chron job ensure the next in queue begins"""
     ip = config.global_scheduler.ip
@@ -8,9 +10,20 @@ def start_test(config: Config):
     url = f"http://{ip}:{port}/start_test" #url should be to global scheduler
 
     response = requests.post(url, json=config.model_dump())
+    response.raise_for_status()
 
-    return response.json()
-
+    results  = run_workload(
+        config.global_scheduler.ip,
+        config.global_scheduler.port,
+        {"question": config.question.question},
+        config.start.duration_time_s,
+        config.workload.request_per_minute,
+        config.workload.pattern,
+        config.workload.seed,
+        config.workload.peakiness
+        )
+    return f"Got {len(results)} responses"
+    
 
 def start_test_test():
     """Start test test"""
