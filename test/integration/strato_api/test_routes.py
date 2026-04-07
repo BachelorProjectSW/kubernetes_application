@@ -11,4 +11,4 @@ def test_add_test_to_queue_endpoint():
     response = requests.post(url, json=config.model_dump())
     print(response.json())
     assert len(response.json()) == 1
-    assert response.json()['test_config']['id'] == '123'
+    assert response.json()[0]['test_config']['id'] == '123'
