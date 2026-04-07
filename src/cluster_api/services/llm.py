@@ -2,7 +2,6 @@ import requests
 from ...models.basemodels import QuestionConfig, WorkerNode
 from ..util.cluster_config import config_store
 
-
 def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode:
     worker_node = worker_node_list[0] #find a better solution
     return worker_node

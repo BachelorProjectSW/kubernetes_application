@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from ..services.nodes import cluster_service 
+from ..util.worker_nodes import cluster_service 
 from ..services.power_scheduler import change_node_status
 from ..services.llm import handle_llm
 from ...models.basemodels import ClusterInformation, QuestionConfig

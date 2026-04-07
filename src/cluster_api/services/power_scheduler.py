@@ -2,7 +2,7 @@ from gpiozero import LED as IO
 import paramiko
 import structlog
 from ...models.basemodels import WorkerNode
-from .nodes import cluster_service  
+from ..util.worker_nodes import cluster_service  
 
 log = structlog.get_logger()
 
