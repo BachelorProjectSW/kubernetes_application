@@ -11,7 +11,7 @@ def handle_llm(question: QuestionConfig):
         config = config_store.get()
         worker_node = choose_worker_node(config.worker_nodes)
         # url = "http://llama-service:8080/completion"
-        url = f"http://127.0.0.1:{config.cluster_config.llama_service_port}/models"
+        url = f"http://127.0.0.1:{config.cluster_config.llama_service_port}/v1/models"
         payload = {
             "prompt": question.question,
             "n_predict": question.max_output_tokens,
