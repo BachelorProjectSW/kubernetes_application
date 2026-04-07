@@ -13,6 +13,7 @@ def test_add_and_remove_test_to_queue_endpoint():
         config = get_test_config()
         config.id=i
         response = requests.post(url, json=config.model_dump()).json()
+        print(response)
         assert len(response) == i + 1
         assert response[i]['id'] == i
     
