@@ -4,17 +4,31 @@ import requests
 
 
 @pytest.mark.integration
-def test_add_test_to_queue_endpoint():
+def test_add_and_remove_test_to_queue_endpoint():
     """Test."""
-    config = get_test_config()
+    #add
     url = f"http://{config.strato.ip}:{config.strato.port}/add_test_to_queue"
-    response = requests.post(url, json=config.model_dump())
-    print(response.json())
-    assert len(response.json()) == 1
-    assert response.json()[0]['id'] == '123'
+    for i in range(3):
+        config = get_test_config()
+        config.id=i
+        response = requests.post(url, json=config.model_dump()).json()
+        assert len(response) == i
+        assert response[i]['id'] == i
+    
 
-    config.id="123456"
-    response = requests.post(url, json=config.model_dump())
-    assert len(response.json()) == 2
-    assert response.json()[0]['id'] == '123'
-    assert response.json()[1]['id'] == '123456'
+    #delete
+    url = f"http://{config.strato.ip}:{config.strato.port}/delete_test_from_queue"
+    assert response.json()[0]['id'] == 0
+    assert len(response) == 3
+    response = requests.delete(url, json={"config_id": "0"}).json()
+    assert response[0]['id'] != 0
+    assert response[0]['id'] == 1
+    assert len(response) == 2
+    response = requests.delete(url, json={"config_id": "1"}).json()
+    response = requests.delete(url, json={"config_id": "1"}).json()
+    assert len(response) == 0
+    assert response == []
+
+
+
+
