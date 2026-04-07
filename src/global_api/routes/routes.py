@@ -20,13 +20,14 @@ def handle_llm_question(question: QuestionConfig):
 
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
-    """Start the test"""
+    """Start the test."""
     try:
         return start_test(config)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/stop_test")
 def stop_test_endpoint():
-    """Stop current test"""
+    """Stop current test."""
     return stop_test()

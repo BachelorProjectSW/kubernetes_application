@@ -19,12 +19,11 @@ def delete_test_from_queue_endpoint(config_id: str):
 
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
-    """Start the test"""
+    """Start the test."""
     return start_test(config)
 
 
 @router.post("/start_test_test")
 def start_test_test_endpoint():
-    """Start the test test"""
+    """Start the test test."""
     return start_test_test()
-

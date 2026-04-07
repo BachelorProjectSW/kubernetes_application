@@ -10,7 +10,7 @@ log = structlog.get_logger()
 def turn_on_node(worker_node: WorkerNode):
     """Turn on the node via GPIO."""
     try:
-        gpio = worker_node.gpio 
+        gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
         IO(gpio).on()
         log.debug("turning node on", node=worker_node.dict())
@@ -39,10 +39,11 @@ def turn_off_node(worker_node: WorkerNode, username: str, password: str):
     except Exception as e:
         log.debug(f"failed to shutdown node: {e}")
 
+
 def change_node_status(number_of_nodes: int, status: str):
-    """
-    Change status of up to number_of_nodes in the cluster.
-    status: 'on' or 'off'
+    """Change status of up to number_of_nodes in the cluster.
+
+    status: 'on' or 'off'.
     """
     nodes = config_store.worker_nodes
     if status == "on":

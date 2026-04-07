@@ -7,9 +7,9 @@ log = structlog.get_logger()
 
 class ConfigStore:
     """Store for the current cluster config."""
-    
+
     def __init__(self):
-        """init config to none."""
+        """Init config to none."""
         self.config: ClusterInformation | None = None
 
     def set(self, config: ClusterInformation):
@@ -19,7 +19,6 @@ class ConfigStore:
     def get(self):
         """Get the current config."""
         return self.config
-    
 
     def build_worker_nodes(self):
         """Build worker nodes using Kubernetes API or config defaults."""
@@ -59,7 +58,7 @@ class ConfigStore:
                 name=name,
                 ip=ip,
                 status=status,
-                gpio=0 #will later be assigned  
+                gpio=0  # will later be assigned
             )
             self.config.worker_nodes.append(worker_node)
 
@@ -82,11 +81,11 @@ class ConfigStore:
             node.gpio = gpio
             log.debug("node.gpio_assigned", node=node)
 
-
     def get_worker_nodes_dict(self):
-            """Return worker nodes only, as list of dicts."""
-            if self.config.worker_nodes is None:
-                self.build_worker_nodes()
-            return [node.model_dump() for node in self.config.worker_nodes]
+        """Return worker nodes only, as list of dicts."""
+        if self.config.worker_nodes is None:
+            self.build_worker_nodes()
+        return [node.model_dump() for node in self.config.worker_nodes]
+
 
 config_store = ConfigStore()

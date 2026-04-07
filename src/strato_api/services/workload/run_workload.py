@@ -5,6 +5,7 @@ import json
 from .generator import generate_workload
 from ....models.basemodels import QuestionConfig
 
+
 async def execute_workload(
     host: str,
     endpoint: str,
@@ -16,7 +17,6 @@ async def execute_workload(
     peakiness: float,
 ):
     """Generate and execute scheduled HTTP requests against an endpoint."""
-
     start_time = time.perf_counter()
 
     timestamps = generate_workload(
@@ -73,7 +73,7 @@ def run_workload(
     seed: int,
     peakiness: float,
 ):
-    """Synchronous wrapper to run the async workload executor."""
+    """Run workload executor."""
     print(question.question, question.context_window, question.max_output_tokens)
     print("Dumped JSON:", question.model_dump())
     return asyncio.run(

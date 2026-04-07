@@ -1,11 +1,12 @@
 from ...models.basemodels import Config
-from typing import List, Optional
+from typing import List
+
 
 class ConfigQueue:
     """Manage a queue of Config objects."""
 
     def __init__(self):
-        """Init queue"""
+        """Init queue."""
         self.queue: List[Config] = []
 
     # --- Queue management ---
@@ -25,5 +26,6 @@ class ConfigQueue:
     def get_queue(self) -> List[Config]:
         """Return the current queue."""
         return self.queue
-    
+
+
 config_manager = ConfigQueue()

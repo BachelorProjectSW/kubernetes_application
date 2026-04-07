@@ -28,7 +28,7 @@ def turn_off_node_endpoint(number_of_nodes: int):
 def set_config(cluster_information: ClusterInformation):
     """Set the config in util."""
     config_store.set(cluster_information)
-    config_store.build_worker_nodes() 
+    config_store.build_worker_nodes()
     return config_store.get()
 
 

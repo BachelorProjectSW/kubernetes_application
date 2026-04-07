@@ -1,13 +1,25 @@
-from src.models.basemodels import *
+from src.models.basemodels import (
+    Config,
+    StartConfig,
+    WeightsConfig,
+    PowerSchedulerConfig,
+    LatencyConfig,
+    WorkloadConfig,
+    QuestionConfig,
+    ClusterConfig,
+    GlobalSchedulerConfig,
+    StratoConfig,
+)
+
 
 def get_test_config():
-    """Start test test"""
+    """Start test test."""
     test_config = Config(
         id="123",
         name="demo test",
         start=StartConfig(
             duration_time_s=30,
-            start_time="01/10/2021"    
+            start_time="01/10/2021"
         ),
         weights=WeightsConfig(
             gco2=0.1,

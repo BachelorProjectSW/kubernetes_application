@@ -4,27 +4,37 @@ from typing import Literal
 
 # --- user input ---
 class StartConfig(BaseModel):
+    """Basic."""
+
     duration_time_s: int
-    start_time: str 
+    start_time: str
 
 
 class WeightsConfig(BaseModel):
+    """Weights."""
+
     gco2: float
     cost: float
 
 
 class PowerSchedulerConfig(BaseModel):
+    """Power Scheduler inputs."""
+
     timeout_s: int
     idle_time_for_turn_off_s: int
 
 
 class LatencyConfig(BaseModel):
+    """Max Latency pr request."""
+
     max_ms: int
 
 
 class WorkloadConfig(BaseModel):
+    """Workload."""
+
     request_per_minute: int
-    pattern: Literal["steady", "peaks"] 
+    pattern: Literal["steady", "peaks"]
     seed: int
     peakiness: int
 
@@ -32,18 +42,24 @@ class WorkloadConfig(BaseModel):
 # --- Advanced user input
 class QuestionConfig(BaseModel):
     """Question class."""
+
     question: str
     max_output_tokens: int
     context_window: int
 
+
 class WorkerNode(BaseModel):
+    """Worker Node."""
+
     name: str
     ip: str
     status: Literal["on", "off", "turning_on", "turning_off"]
     gpio: int
 
+
 class ClusterConfig(BaseModel):
     """Cluster class."""
+
     name: str
     ip: str
     port: str
@@ -54,22 +70,31 @@ class ClusterConfig(BaseModel):
 
 class ClusterInformation(BaseModel):
     """All information the clusters need."""
+
     cluster_config: ClusterConfig
     question_config: QuestionConfig
     worker_nodes: list[WorkerNode]
 
+
 class GlobalSchedulerConfig(BaseModel):
+    """Global."""
+
     ip: str
     port: str
 
 
 class StratoConfig(BaseModel):
+    """Frontend."""
+
     ip: str
     port: str
 
+
 class Config(BaseModel):
+    """Config."""
+
     id: str
-    name: str 
+    name: str
     start: StartConfig
     weights: WeightsConfig
     power_scheduler: PowerSchedulerConfig
