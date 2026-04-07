@@ -1,7 +1,7 @@
 import requests
 from ...models.basemodels import *
 from test.k3d.cluster_configs.test_config import get_test_config
-from workload.run_workload import run_workload
+from strato_api.services.workload.run_workload import run_workload
 
 def start_test(config: Config):
     """Start test to the global scheduler. Further this should run chron job ensure the next in queue begins"""
