@@ -1,7 +1,7 @@
 import random
 import pytest
 from collections import Counter
-from strato_api.services.workload.generator import generate_workload
+from src.strato_api.services.workload.generator import generate_workload
 
 
 @pytest.mark.unit

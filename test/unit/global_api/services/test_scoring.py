@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from global_api.services.scoring import (
+from src.global_api.services.scoring import (
     compute_carbon_blend,
     compute_cost_blend,
     compute_grid_fraction,
