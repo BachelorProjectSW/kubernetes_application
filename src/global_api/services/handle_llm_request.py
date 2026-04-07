@@ -1,7 +1,7 @@
 import requests
 from ...models.basemodels import QuestionConfig
 from .scoring import choose_cluster
-from util.all_configuration import config_store
+from ..util.all_configuration import config_store
 
 
 def handle_llm_request(question: QuestionConfig):
