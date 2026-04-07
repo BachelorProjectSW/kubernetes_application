@@ -37,7 +37,9 @@ def get_test_config():
                 ip="127.0.0.1",
                 port="8040",
                 gpio_list=[21],
-                simulated_country_code="dk-dk1"
+                simulated_country_code="dk-dk1",
+                llama_service_port="8081"
+
 
             ),
             ClusterConfig(
@@ -45,7 +47,8 @@ def get_test_config():
                 ip="127.0.0.1",
                 port="8050",
                 gpio_list=[21],
-                simulated_country_code="pt"
+                simulated_country_code="pt",
+                llama_service_port="8082"
             ),
         ],
         global_scheduler=GlobalSchedulerConfig(

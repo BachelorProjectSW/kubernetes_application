@@ -50,6 +50,7 @@ class ClusterConfig(BaseModel):
     port: str
     gpio_list: list[int]
     simulated_country_code: str
+    llama_service_port: str
 
 
 class ClusterInformation(BaseModel):
