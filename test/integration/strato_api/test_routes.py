@@ -9,7 +9,7 @@ def test_start_test():
     config = get_test_config()
     base_url = f"http://{config.strato.ip}:{config.strato.port}"
 
-    response = requests.post(f"{base_url}/start_test")
+    response = requests.post(f"{base_url}/start_test", json=config.model_dump())
     assert response.status_code == 200
 
 
