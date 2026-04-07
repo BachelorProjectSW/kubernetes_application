@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from multiprocessing import Process
 import uvicorn
-from .utils import get_cluster_config, get_test_config
+from .utils import get_cluster_config, get_test_config, run_cmd_bg
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT_DIR / "src"
@@ -31,6 +31,19 @@ def run_cluster_server(cluster_name, port):
     uvicorn.run("src.cluster_api.app:app", host="0.0.0.0", port=port)
 
 
+def run_port_forward(cluster_name, local_port, service_port):
+    """Start kubectl port-forward for the llama-service."""
+    service_name = "llama-service"
+    kubeconfig = SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"
+    cmd = [
+        "kubectl",
+        "--kubeconfig", str(kubeconfig),
+        "port-forward",
+        f"services/{service_name}",
+        f"{local_port}:{service_port}"
+    ]
+    run_cmd_bg(cmd)
+
 def start_all_servers():
     """Start strato, global scheduler, all cluster control planes, and port-forward the llama-services."""
     configs = get_test_config()
@@ -53,6 +66,16 @@ def start_all_servers():
         p_server.start()
         server_processes.append(p_server)
 
+        # Start port-forward directly (non-blocking)
+        service_port = 8080
+        local_port = int(cluster.llama_service_port)
+        run_cmd_bg([
+            "kubectl",
+            "--kubeconfig", str(SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster.name}.yaml"),
+            "port-forward",
+            "services/llama-service",
+            f"{local_port}:{service_port}"
+        ])
 
     # Wait for Uvicorn servers to finish
     for p in server_processes:

@@ -26,3 +26,16 @@ def run_cmd(cmd):
 
     print(f"Running: {cmd}")
     subprocess.run(cmd, shell=True)
+
+def run_cmd_bg(cmd):
+    """Run a command in the background (non-blocking) and print stdout/stderr in real time.
+
+    Designed for long-running commands like kubectl port-forward.
+    """
+    print(f"Running (background): {cmd}")
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True  # decode output as string
+    )
