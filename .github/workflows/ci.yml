@@ -38,15 +38,15 @@ jobs:
 
       - name: Create clusters and global scheduler
         run: |
-          python -m test.k3d.create_clusters.py
+          python -m test.k3d.create_clusters
 
       - name: Deploy manifests
         run: |
-          python -m test.k3d.deploy.py
+          python -m test.k3d.deploy
 
       - name: Run servers and port-forward
         run: |
-          python -m test.k3d.run_servers.py &
+          python -m test.k3d.run_servers &
           sleep(10)
           python -m pytest
 
