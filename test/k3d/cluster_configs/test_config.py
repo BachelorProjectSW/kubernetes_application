@@ -38,7 +38,7 @@ def get_test_config():
                 port="8040",
                 gpio_list=[21],
                 simulated_country_code="dk-dk1",
-                llama_service_port="8081"
+                llama_service_port="8083"
 
 
             ),
