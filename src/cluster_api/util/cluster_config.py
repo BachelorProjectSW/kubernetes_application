@@ -26,12 +26,10 @@ class ConfigStore:
         if self.config is None:
             raise Exception("Config is not set yet")
 
-        if self.config.worker_nodes is not None:
-            return self.config.worker_nodes
+        self.config.worker_nodes = []
 
         api_client = get_api_client()
         nodes = api_client.list_node()
-        worker_nodes = []
 
         for i, node in enumerate(nodes.items):
             labels = node.metadata.labels or {}
@@ -63,11 +61,9 @@ class ConfigStore:
                 status=status,
                 gpio=0 #will later be assigned  
             )
-            worker_nodes.append(worker_node)
+            self.config.worker_nodes.append(worker_node)
 
-        self.config.worker_nodes = worker_nodes
         self.assign_gpios()
-        print([node.model_dump() for node in worker_nodes])
         return self.config.worker_nodes
 
     def assign_gpios(self):
