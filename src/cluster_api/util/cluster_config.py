@@ -20,17 +20,11 @@ class ConfigStore:
         """Get the current config."""
         return self.config
     
-    def refresh_config(self):
-        """Fetch the current config from util."""
-        self.config = config_store.get()
-        if self.config is None:
-            raise ValueError("No cluster config set in store")
-        self.config.worker_nodes = None  
 
     def build_worker_nodes(self):
         """Build worker nodes using Kubernetes API or config defaults."""
         if self.config is None:
-            self.refresh_config()
+            raise Exception("Config is not set yet")
 
         if self.config.worker_nodes is not None:
             return self.config.worker_nodes
