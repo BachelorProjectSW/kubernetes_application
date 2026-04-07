@@ -1,10 +1,11 @@
+import asyncio
 import time
-import requests
+import aiohttp
 import json
-from ....models.basemodels import QuestionConfig
 from .generator import generate_workload
+from ....models.basemodels import QuestionConfig
 
-def run_workload(
+async def execute_workload(
     host: str,
     endpoint: str,
     question: QuestionConfig,
@@ -14,12 +15,10 @@ def run_workload(
     seed: int,
     peakiness: float,
 ):
-    """Run workload using synchronous requests."""
-    print(question.question, question.context_window, question.max_output_tokens)
-    payload_json = json.dumps(question.model_dump())
-    headers = {"Content-Type": "application/json"}
+    """Generate and execute scheduled HTTP requests against an endpoint."""
 
-    # Generate request timestamps
+    start_time = time.perf_counter()
+
     timestamps = generate_workload(
         duration_s=duration_s,
         rpm=rpm,
@@ -31,27 +30,52 @@ def run_workload(
     print(f"Generated {len(timestamps)} requests over {duration_s}s")
     print(f"Target: {host}{endpoint}")
 
-    start_time = time.perf_counter()
-    results = []
+    async with aiohttp.ClientSession(base_url=host) as session:
 
-    for ts in timestamps:
-        # Wait until scheduled timestamp
-        delay = ts - (time.perf_counter() - start_time)
-        if delay > 0:
-            time.sleep(delay)
+        async def _send_request(ts: float):
+            """Wait until the scheduled timestamp, then send the request."""
+            delay = ts - (time.perf_counter() - start_time)
+            if delay > 0:
+                await asyncio.sleep(delay)
 
-        start = time.perf_counter()
-        try:
-            resp = requests.post(f"{host}{endpoint}", data=payload_json, headers=headers)
-            latency = time.perf_counter() - start
-            print(f"request.success status={resp.status_code} latency={latency:.4f}s body={resp.text}")
-            results.append({"ok": 200 <= resp.status_code < 300, "status": resp.status_code, "body": resp.text})
-        except Exception as e:
-            latency = time.perf_counter() - start
-            print(f"request.failure error={e} latency={latency:.4f}s")
-            results.append({"ok": False, "error": str(e)})
+            start = time.perf_counter()
+            try:
+                payload_json = json.dumps(question.model_dump())
+                headers = {"Content-Type": "application/json"}  # ensure FastAPI parses it
+
+                async with session.post(endpoint, data=payload_json, headers=headers) as resp:
+                    body = await resp.text()
+                    latency = time.perf_counter() - start
+                    print(f"request.success status={resp.status} latency={latency:.4f}s body={body}")
+                    return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
+            except Exception as e:
+                latency = time.perf_counter() - start
+                print(f"request.failure error={e} latency={latency:.4f}s")
+                return {"ok": False, "error": str(e)}
+
+        # Schedule all requests
+        tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
+        results = await asyncio.gather(*tasks)
 
     success_count = sum(1 for r in results if r.get("ok"))
     failure_count = len(results) - success_count
     print(f"Completed requests: success={success_count}, failure={failure_count}")
     return results
+
+
+def run_workload(
+    host: str,
+    endpoint: str,
+    question: QuestionConfig,
+    duration_s: int,
+    rpm: int,
+    pattern: str,
+    seed: int,
+    peakiness: float,
+):
+    """Synchronous wrapper to run the async workload executor."""
+    print(question.question, question.context_window, question.max_output_tokens)
+    print("Dumped JSON:", question.model_dump())
+    return asyncio.run(
+        execute_workload(host, endpoint, question, duration_s, rpm, pattern, seed, peakiness)
+    )
