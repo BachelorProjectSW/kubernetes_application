@@ -6,7 +6,7 @@ def get_test_config():
         id="123",
         name="demo test",
         start=StartConfig(
-            duration_time_s=1000,
+            duration_time_s=30,
             start_time="01/10/2021"    
         ),
         weights=WeightsConfig(
@@ -21,7 +21,7 @@ def get_test_config():
             max_ms=12000
         ),
         workload=WorkloadConfig(
-            request_per_minute=10,
+            request_per_minute=20,
             pattern="steady",
             seed=10,
             peakiness=0
