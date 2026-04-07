@@ -39,7 +39,7 @@ async def execute_workload(
 
             start = time.perf_counter()
             try:
-                async with session.post(endpoint, json=question.model_dump_json()) as resp:
+                async with session.post(endpoint, json=question.model_dump()) as resp:
                     body = await resp.text()
                     latency = time.perf_counter() - start
                     print(f"request.success status={resp.status} latency={latency:.4f}s body={body}")

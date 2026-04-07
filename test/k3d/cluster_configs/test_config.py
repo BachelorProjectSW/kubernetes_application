@@ -52,7 +52,7 @@ def get_test_config():
             ),
         ],
         global_scheduler=GlobalSchedulerConfig(
-            ip="127.0.0.1",
+            ip="192.168.50.100",
             port="8020"
         ),
         strato=StratoConfig(
