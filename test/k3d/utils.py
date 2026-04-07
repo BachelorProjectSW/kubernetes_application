@@ -1,3 +1,4 @@
+from shlex import shlex
 import subprocess
 import threading
 from pathlib import Path
@@ -38,5 +39,8 @@ def run_cmd_bg(cmd):
 
 def run_cmd(cmd):
     """Run bash command."""
+    if isinstance(cmd, list):
+        cmd = shlex.join(cmd)
+
     print(f"Running: {cmd}")
-    subprocess.run(cmd)
+    subprocess.run(cmd, shell=True)
