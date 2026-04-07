@@ -1,11 +1,31 @@
 from ...models.basemodels import ClusterConfig, WeightsConfig
 import structlog
-
-CARBON_REF_MAX = 800  # gCO2/kWh (need to find reference for)
-COST_REF_MAX = 0.30  # EUR/kWh (need to find reference for)
+from global_api.config.energy_config import (
+    CARBON_REF_MAX,
+    COST_REF_MAX,
+    NODE_POWER_IDLE_W,
+    NODE_POWER_ACTIVE_W,
+    POWER_SCALE_FACTOR,
+)
 
 
 log = structlog.get_logger()
+
+
+def compute_cluster_load(active_nodes: int, idle_nodes: int) -> float:
+    """Compute cluster power consumption in watts when scaled.
+
+    Args:
+        active_nodes: Number of nodes currently running workload.
+        idle_nodes: Number of nodes on but not running workload.
+
+    Returns:
+        Total cluster load in watts.
+
+    """
+    active_power = active_nodes * NODE_POWER_ACTIVE_W * POWER_SCALE_FACTOR
+    idle_power = idle_nodes * NODE_POWER_IDLE_W * POWER_SCALE_FACTOR
+    return active_power + idle_power
 
 
 def compute_grid_fraction(renewable_output_w: float, cluster_load_w: float) -> float:

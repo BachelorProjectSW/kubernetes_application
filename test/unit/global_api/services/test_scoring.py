@@ -1,12 +1,21 @@
 from unittest.mock import patch
 from src.global_api.services.scoring import (
     compute_carbon_blend,
+    compute_cluster_load,
     compute_cost_blend,
     compute_grid_fraction,
     normalize_value,
     score_cluster,
 )
 import pytest
+
+
+@pytest.mark.unit
+def test_compute_cluster_load_succeeds():
+    """Test that compute cluster load works."""
+    cluster_load = compute_cluster_load(2, 1)
+
+    assert cluster_load == 1050
 
 
 @pytest.mark.unit

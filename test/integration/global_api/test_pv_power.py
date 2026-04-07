@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime
-from src.global_api.services.pv_power import get_power_factor_by_time, get_power, POWER_CAPACITY
+from global_api.services.pv_power import get_power_factor_by_time, get_power
+from global_api.config.energy_config import PV_CAPACITY_W
 
 
 @pytest.mark.integration
@@ -21,6 +22,6 @@ def test_get_pt_power_reads_real_csv_and_calculates_power():
     result = get_power(datetime(2010, 6, 1, 10), datetime(2010, 6, 1, 12), "PT")
 
     assert len(result) == 3
-    assert result[0] == (datetime(2010, 6, 1, 10), POWER_CAPACITY * 0.6989)
-    assert result[1] == (datetime(2010, 6, 1, 11), POWER_CAPACITY * 0.7994)
-    assert result[2] == (datetime(2010, 6, 1, 12), POWER_CAPACITY * 0.8415)
+    assert result[0] == (datetime(2010, 6, 1, 10), PV_CAPACITY_W * 0.6989)
+    assert result[1] == (datetime(2010, 6, 1, 11), PV_CAPACITY_W * 0.7994)
+    assert result[2] == (datetime(2010, 6, 1, 12), PV_CAPACITY_W * 0.8415)
