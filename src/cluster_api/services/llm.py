@@ -16,7 +16,6 @@ def handle_llm(question: QuestionConfig):
             "prompt": question.question,
             "n_predict": question.max_output_tokens,
             "temperature": 0
-
         }
 
         response = requests.post(
