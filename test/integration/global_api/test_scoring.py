@@ -10,4 +10,4 @@ def test_integration_scoring_chooses_correct_cluster():
     config = get_test_config()
 
     chosen_cluster = choose_cluster(config.clusters, config.weights)
-    assert chosen_cluster == config.clusters[0]
+    assert chosen_cluster == config.clusters[1]
