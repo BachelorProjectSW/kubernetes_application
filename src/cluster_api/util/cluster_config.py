@@ -96,6 +96,6 @@ class ConfigStore:
             """Return worker nodes only, as list of dicts."""
             if self.config.worker_nodes is None:
                 self.build_worker_nodes()
-            return [node.dict() for node in self.config.worker_nodes]
+            return [node.model_dump() for node in self.config.worker_nodes]
 
 config_store = ConfigStore()
