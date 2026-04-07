@@ -16,7 +16,7 @@ def start_test(config: Config):
     results  = run_workload(
         host,
         "/handle_llm_question",
-        {"question": config.question.question},
+        config.question,
         config.start.duration_time_s,
         config.workload.request_per_minute,
         config.workload.pattern,
