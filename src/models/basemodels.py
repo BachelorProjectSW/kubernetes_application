@@ -71,6 +71,7 @@ class ClusterConfig(BaseModel):
     grid_carbon_intensity: float
     grid_electricity_price: float
 
+
 class ClusterInformation(BaseModel):
     """All information the clusters need."""
 

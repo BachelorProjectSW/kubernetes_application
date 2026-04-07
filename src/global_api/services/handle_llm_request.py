@@ -1,6 +1,4 @@
-import random
 import requests
-from ..util.all_configuration import config_store
 from ...models.basemodels import QuestionConfig
 from .scoring import choose_cluster
 

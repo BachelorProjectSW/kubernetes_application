@@ -111,16 +111,6 @@ def score_cluster(
 def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig):
     """Choose the best cluster based on scoring.
 
-    Args:
-        clusters: List of cluster dicts, each containing:
-            - cluster: Cluster name (str).
-            - renewable_output_w: Current renewable production in watts (float).
-            - cluster_load_w: Current cluster power consumption in watts (float).
-            - grid_carbon_intensity: Carbon intensity in gCO2/kWh (float).
-            - grid_electricity_price: Electricity price in EUR/kWh (float).
-        carbon_weight: Operator's carbon weight (0-1).
-        cost_weight: Operator's cost weight (0-1).
-
     Returns:
         The cluster dict with the highest score.
 
