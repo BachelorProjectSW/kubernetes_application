@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from ..util.worker_nodes import cluster_service 
 from ..services.power_scheduler import change_node_status
 from ..services.llm import handle_llm
 from ...models.basemodels import ClusterInformation, QuestionConfig
@@ -10,7 +9,7 @@ router = APIRouter()
 @router.get("/get_cluster_working_nodes/")
 def nodes():
     """Return all working nodes."""
-    return cluster_service.get_worker_nodes_dict()
+    return config_store.get_worker_nodes_dict()
 
 
 @router.post("/turn_on_nodes/")
@@ -29,7 +28,7 @@ def turn_off_node_endpoint(number_of_nodes: int):
 def set_config(cluster_information: ClusterInformation):
     """Set the config in util."""
     config_store.set(cluster_information)
-    cluster_service.build_worker_nodes() 
+    config_store.build_worker_nodes() 
     return config_store.get()
 
 
