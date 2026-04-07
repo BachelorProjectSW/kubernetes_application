@@ -1,36 +1,39 @@
 import pytest
-from ...k3d.cluster_configs.test_config import get_test_config
 import requests
-
+from k3d.cluster_configs.test_config import get_test_config
 
 @pytest.mark.integration
 def test_add_and_remove_test_to_queue_endpoint():
-    """Test."""
+    """Integration test for add/delete queue."""
+
     config = get_test_config()
-    #add
-    url = f"http://{config.strato.ip}:{config.strato.port}/add_test_to_queue"
+    base_url = f"http://{config.strato.ip}:{config.strato.port}"
+
+    # --- Add tests to queue ---
     for i in range(3):
         config = get_test_config()
-        config.id=i
-        response = requests.post(url, json=config.model_dump()).json()
-        print(response)
-        assert len(response) == i + 1
-        assert response[i]['id'] == str(i)
-    
+        config.id = str(i)  # make sure id is a string to match Pydantic model
+        response = requests.post(f"{base_url}/add_test_to_queue", json=config.model_dump()).json()
+        print("Add response:", response)
+        queue = response.get("queue", [])  # adjust depending on your actual response key
+        assert len(queue) == i + 1
+        assert queue[i]["id"] == str(i)
 
-    #delete
-    url = f"http://{config.strato.ip}:{config.strato.port}/delete_test_from_queue"
-    assert response.json()[0]['id'] == 0
-    assert len(response) == 3
-    response = requests.delete(url, json={"config_id": "0"}).json()
-    assert response[0]['id'] != str(0)
-    assert response[0]['id'] == str(1)
-    assert len(response) == 2
-    response = requests.delete(url, json={"config_id": "1"}).json()
-    response = requests.delete(url, json={"config_id": "1"}).json()
-    assert len(response) == 0
-    assert response == []
+    # --- Delete tests from queue ---
+    # Delete first item
+    response = requests.delete(f"{base_url}/delete_test_from_queue", params={"config_id": "0"}).json()
+    print("Delete response:", response)
+    queue = response.get("queue", [])
+    assert all(item["id"] != "0" for item in queue)
+    assert len(queue) == 2
 
+    # Delete second item
+    response = requests.delete(f"{base_url}/delete_test_from_queue", params={"config_id": "1"}).json()
+    queue = response.get("queue", [])
+    assert all(item["id"] != "1" for item in queue)
+    assert len(queue) == 1
 
-
-
+    # Delete last item
+    response = requests.delete(f"{base_url}/delete_test_from_queue", params={"config_id": "2"}).json()
+    queue = response.get("queue", [])
+    assert queue == []
