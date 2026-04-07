@@ -9,5 +9,6 @@ def test_add_test_to_queue_endpoint():
     config = get_test_config()
     url = f"http://{config.strato.ip}:{config.strato.port}/add_test_to_queue"
     response = requests.post(url, json=config.model_dump())
+    print(response)
     assert len(response) == 1
     assert response['test_config']['id'] == '123'
