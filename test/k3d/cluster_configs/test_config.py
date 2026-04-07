@@ -27,7 +27,7 @@ def get_test_config():
             peakiness=0
         ),
         question=QuestionConfig(
-            question="What is kubernetes?",
+            question="hey",
             max_output_tokens=200,
             context_window=200
         ),
