@@ -1,6 +1,7 @@
 import asyncio
 import time
 import aiohttp
+import json
 from .generator import generate_workload
 from ....models.basemodels import QuestionConfig
 
@@ -39,7 +40,10 @@ async def execute_workload(
 
             start = time.perf_counter()
             try:
-                async with session.post(endpoint, json=question.model_dump()) as resp:
+                payload_json = json.dumps(question.model_dump())
+                headers = {"Content-Type": "application/json"}  # ensure FastAPI parses it
+
+                async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                     body = await resp.text()
                     latency = time.perf_counter() - start
                     print(f"request.success status={resp.status} latency={latency:.4f}s body={body}")
@@ -49,6 +53,7 @@ async def execute_workload(
                 print(f"request.failure error={e} latency={latency:.4f}s")
                 return {"ok": False, "error": str(e)}
 
+        # Schedule all requests
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
         results = await asyncio.gather(*tasks)
 
