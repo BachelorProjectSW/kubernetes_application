@@ -1,4 +1,4 @@
-from shlex import shlex
+import shlex
 import subprocess
 import threading
 from pathlib import Path
