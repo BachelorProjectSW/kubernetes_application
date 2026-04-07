@@ -69,6 +69,7 @@ def run_workload(
     peakiness: float,
 ):
     """Synchronous wrapper to run the async workload executor."""
+    print(question.question, question.context_window, question.max_output_tokens)
     return asyncio.run(
         execute_workload(host, endpoint, question, duration_s, rpm, pattern, seed, peakiness)
     )

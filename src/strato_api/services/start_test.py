@@ -15,7 +15,7 @@ def start_test(config: Config):
     host = f"http://{config.global_scheduler.ip}:{config.global_scheduler.port}"
     results  = run_workload(
         host,
-        "/handle_llm_request",
+        "/handle_llm_question",
         config.question,
         config.start.duration_time_s,
         config.workload.request_per_minute,
