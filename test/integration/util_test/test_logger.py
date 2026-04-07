@@ -2,7 +2,7 @@ import csv
 import json
 import os
 import pytest
-from custom_logging.logger import (
+from src.custom_logging.logger import (
     init_csv,
     reset_logs,
     log_request,

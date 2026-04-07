@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timezone, timedelta
-from global_api.services.price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
+from src.global_api.services.price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 
 
 @pytest.mark.integration

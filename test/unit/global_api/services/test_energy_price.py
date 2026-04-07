@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
-from global_api.services.price_and_carbon_intensity import fetch_price_data
+from src.global_api.services.price_and_carbon_intensity import fetch_price_data
 
 FAKE_RESPONSE = {
     "zone": "PT",
@@ -23,7 +23,7 @@ def test_fetch_price_data_returns_correct_tuples(monkeypatch):
     mock_response.json.return_value = FAKE_RESPONSE
     mock_response.raise_for_status.return_value = None
 
-    with patch("global_api.services.price_and_carbon_intensity.requests.get", return_value=mock_response):
+    with patch("src.global_api.services.price_and_carbon_intensity.requests.get", return_value=mock_response):
         result = fetch_price_data(
             start=datetime(2026, 3, 1, tzinfo=timezone.utc),
             end=datetime(2026, 3, 2, tzinfo=timezone.utc),

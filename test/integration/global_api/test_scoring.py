@@ -1,6 +1,6 @@
 import pytest
 
-from global_api.services.scoring import choose_cluster
+from src.global_api.services.scoring import choose_cluster
 from ...k3d.cluster_configs.test_config import get_test_config
 
 @pytest.mark.integration
