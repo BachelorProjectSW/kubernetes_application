@@ -29,7 +29,7 @@ def get_test_config():
         question=QuestionConfig(
             question="What is kubernetes?",
             max_output_tokens=200,
-            context_window=4000
+            context_window=200
         ),
         clusters=[
             ClusterConfig(
