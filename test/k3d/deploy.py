@@ -20,6 +20,8 @@ def deploy_clusters():
         for manifest in manifest_files:
             run_cmd(["kubectl", "apply", "-f", manifest])
         run_cmd("kubectl wait --for=condition=Ready pod -l name=llama-server --timeout=180s")
+        run_cmd("kubectl get svc llama-service")
+        run_cmd("kubectl wait --for=jsonpath='{.subsets[0].addresses[0].ip}' endpoints/llama-service --timeout=180s")
 
 
 if __name__ == "__main__":
