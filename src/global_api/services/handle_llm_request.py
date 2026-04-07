@@ -1,11 +1,13 @@
 import requests
 from ...models.basemodels import QuestionConfig
 from .scoring import choose_cluster
+from util.all_configuration import config_store
 
 
 def handle_llm_request(question: QuestionConfig):
     """Send the question to the local cluster request scheduler llama-service."""
-    cluster = choose_cluster()
+    config = config_store.get()
+    cluster = choose_cluster(config.clusters, config.weights)
     ip = cluster.ip
     port = cluster.port
     url = f"http://{ip}:{port}/handle_llm_request"
