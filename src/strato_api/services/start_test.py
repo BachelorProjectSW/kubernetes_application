@@ -27,7 +27,7 @@ def start_test(config: Config):
         config.workload.peakiness
         )
     return f"Got {len(results)} responses"
-
+    #TODO return analysed logs to frontend. 
 
 def start_test_test():
     """Start test test."""

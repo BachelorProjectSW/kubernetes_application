@@ -22,10 +22,13 @@ def start_test(config: Config):
 
             response = requests.post(url, json=cluster_information.model_dump())
             response.raise_for_status()
+        
+        #TODO setup powershcheduler (remeber to use basemodel PowerSchedulerConfig)
         name = config.name
         return f"{name} test are running succesfully"
     except Exception as e:
         raise Exception(f"test failed: {e}")
+        
 
 
 def stop_test():

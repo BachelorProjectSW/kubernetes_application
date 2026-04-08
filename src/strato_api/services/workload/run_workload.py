@@ -39,19 +39,16 @@ async def execute_workload(
             if delay > 0:
                 await asyncio.sleep(delay)
 
-            start = time.perf_counter()
             try:
                 payload_json = json.dumps(question.model_dump())
                 headers = {"Content-Type": "application/json"}  # ensure FastAPI parses it
 
                 async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                     body = await resp.text()
-                    latency = time.perf_counter() - start
-                    print(f"request.success status={resp.status} latency={latency:.4f}s body={body}")
+                    print(f"request.success status={resp.status} body={body}")
                     return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
             except Exception as e:
-                latency = time.perf_counter() - start
-                print(f"request.failure error={e} latency={latency:.4f}s")
+                print(f"request.failure error={e} ")
                 return {"ok": False, "error": str(e)}
 
         # Schedule all requests
