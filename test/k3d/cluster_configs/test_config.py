@@ -1,3 +1,5 @@
+from datetime import datetime
+import Op
 from src.models.basemodels import (
     Config,
     StartConfig,
@@ -19,7 +21,8 @@ def get_test_config():
         name="demo test",
         start=StartConfig(
             duration_time_s=30,
-            start_time="01/10/2021"
+            start_time_simulated=datetime(2024, 5, 17, 14, 30, 0),
+            start_time_real=None
         ),
         weights=WeightsConfig(
             gco2=0.1,

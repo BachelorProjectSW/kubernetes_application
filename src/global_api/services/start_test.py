@@ -1,5 +1,6 @@
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
+from datetime import datetime
 import requests
 
 
@@ -7,6 +8,9 @@ def start_test(config: Config):
     """Start the test and send configs."""
     try:
         config_store.set(config)
+        config_store.start.start_time_real = datetime.now()
+        print(config_store.start.start_time_real)
+        #TODO get cost and energy from API and store it somewhere.
         for cluster in config.clusters:
 
             cluster_information = ClusterInformation(
