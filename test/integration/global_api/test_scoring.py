@@ -9,5 +9,5 @@ def test_integration_scoring_chooses_correct_cluster():
     """Test that scoring works as intended and returns the cluster with the highest value."""
     config = get_test_config()
 
-    chosen_cluster = choose_cluster(config.clusters, config.weights)
+    chosen_cluster = choose_cluster(config.clusters, config.weights, config.energy)
     assert chosen_cluster == config.clusters[1]

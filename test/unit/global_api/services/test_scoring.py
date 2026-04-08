@@ -1,12 +1,22 @@
 from unittest.mock import patch
 from src.global_api.services.scoring import (
     compute_carbon_blend,
+    compute_cluster_load,
     compute_cost_blend,
     compute_grid_fraction,
     normalize_value,
     score_cluster,
 )
+from src.models.basemodels import EnergyConfig
 import pytest
+
+
+@pytest.mark.unit
+def test_compute_cluster_load_succeeds():
+    """Test that compute cluster load works."""
+    cluster_load = compute_cluster_load(2, 1, EnergyConfig())
+
+    assert cluster_load == 1050
 
 
 @pytest.mark.unit
@@ -63,6 +73,7 @@ def test_score_cluster():
             grid_electricity_price=0.2,
             carbon_weight=0.7,
             cost_weight=0.3,
+            energy=EnergyConfig(),
         )
 
         assert result == 0.46

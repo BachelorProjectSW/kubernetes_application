@@ -95,6 +95,25 @@ class StratoConfig(BaseModel):
     port: str
 
 
+class EnergyConfig(BaseModel):
+    """Energy consumption and scoring normalization constants."""
+
+    # Power consumption per node (watts)
+    node_power_off_w: float = 0
+    node_power_idle_w: float = 5
+    node_power_active_w: float = 8
+
+    # How many nanos each nano is scaled up to
+    power_scale_factor: int = 50
+
+    # Capacity of PV installation per cluster (watts)
+    pv_capacity_w: float = 1500
+
+    # Reference maximums for scoring normalization
+    carbon_ref_max: float = 800  # gCO2/kWh
+    cost_ref_max: float = 0.30  # EUR/kWh
+
+
 class Config(BaseModel):
     """Config."""
 
@@ -109,3 +128,4 @@ class Config(BaseModel):
     clusters: list[ClusterConfig]
     global_scheduler: GlobalSchedulerConfig
     strato: StratoConfig
+    energy: EnergyConfig = EnergyConfig()

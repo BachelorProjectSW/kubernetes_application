@@ -1,11 +1,25 @@
-from ...models.basemodels import ClusterConfig, WeightsConfig
+from ...models.basemodels import ClusterConfig, EnergyConfig, WeightsConfig
 import structlog
-
-CARBON_REF_MAX = 800  # gCO2/kWh (need to find reference for)
-COST_REF_MAX = 0.30  # EUR/kWh (need to find reference for)
 
 
 log = structlog.get_logger()
+
+
+def compute_cluster_load(active_nodes: int, idle_nodes: int, energy: EnergyConfig) -> float:
+    """Compute cluster power consumption in watts when scaled.
+
+    Args:
+        active_nodes: Number of nodes currently running workload.
+        idle_nodes: Number of nodes on but not running workload.
+        energy: Energy configuration constants.
+
+    Returns:
+        Total cluster load in watts.
+
+    """
+    active_power = active_nodes * energy.node_power_active_w * energy.power_scale_factor
+    idle_power = idle_nodes * energy.node_power_idle_w * energy.power_scale_factor
+    return active_power + idle_power
 
 
 def compute_grid_fraction(renewable_output_w: float, cluster_load_w: float) -> float:
@@ -84,6 +98,7 @@ def score_cluster(
     grid_electricity_price: float,
     carbon_weight: float,
     cost_weight: float,
+    energy: EnergyConfig,
 ) -> float:
     """Compute the score for a cluster.
 
@@ -94,6 +109,7 @@ def score_cluster(
         grid_electricity_price: Current grid electricity price (EUR/kWh).
         carbon_weight: weight specified by the user on carbon.
         cost_weight: weight specified by the user on cost.
+        energy: Energy configuration constants.
 
     Returns:
         Score between 1.0 and 0.0. Higher is best.
@@ -102,13 +118,13 @@ def score_cluster(
     blended_carbon = compute_carbon_blend(renewable_output_w, cluster_load_w, grid_carbon_intensity)
     blended_cost = compute_cost_blend(renewable_output_w, cluster_load_w, grid_electricity_price)
 
-    blended_carbon_normalized = normalize_value(blended_carbon, CARBON_REF_MAX)
-    blended_cost_normalized = normalize_value(blended_cost, COST_REF_MAX)
+    blended_carbon_normalized = normalize_value(blended_carbon, energy.carbon_ref_max)
+    blended_cost_normalized = normalize_value(blended_cost, energy.cost_ref_max)
 
     return round((carbon_weight * blended_carbon_normalized) + (cost_weight * blended_cost_normalized), 4)
 
 
-def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig):
+def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig, energy: EnergyConfig):
     """Choose the best cluster based on scoring.
 
     Returns:
@@ -126,6 +142,7 @@ def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig):
             cluster.grid_electricity_price,
             weights.gco2,
             weights.cost,
+            energy,
         )
 
         log.debug(
