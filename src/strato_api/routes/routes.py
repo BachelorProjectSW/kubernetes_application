@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from ..services.queue import config_manager
 from ..services.start_test import start_test, start_test_test
 from ...models.basemodels import Config
 router = APIRouter()
