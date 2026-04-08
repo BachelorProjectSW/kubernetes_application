@@ -1,5 +1,4 @@
 from datetime import datetime
-import Op
 from src.models.basemodels import (
     Config,
     StartConfig,
