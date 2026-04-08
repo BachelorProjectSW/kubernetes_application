@@ -20,7 +20,6 @@ def start_test(config: Config):
 
             response = requests.post(url, json=cluster_information.model_dump())
             response.raise_for_status()
-
         name = config.name
         return f"{name} test are running succesfully"
     except Exception as e:

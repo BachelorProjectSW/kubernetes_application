@@ -17,6 +17,7 @@ async def execute_workload(
     peakiness: float,
 ):
     """Generate and execute scheduled HTTP requests against an endpoint."""
+    #TODO setup logging matching for our output. Logs should be appended to a global log file. 
     start_time = time.perf_counter()
 
     timestamps = generate_workload(

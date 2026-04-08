@@ -140,10 +140,10 @@ def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig):
             best_score = cluster_score
             best_cluster = cluster
 
-        log.info(
-            "cluster.selected",
-            cluster=best_cluster.name,
-            score=best_score,
-        )
+    log.info(
+        "cluster.selected",
+        cluster=best_cluster.name,
+        score=best_score,
+    )
 
     return best_cluster
