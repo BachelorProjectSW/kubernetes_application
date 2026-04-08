@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from typing import Literal
-from datetime import datetime
 
 
 # --- user input ---
@@ -8,8 +7,8 @@ class StartConfig(BaseModel):
     """Basic."""
 
     duration_time_s: int
-    start_time_simulated: datetime
-    start_time_real: datetime | None = None
+    start_time_simulated: str
+    start_time_real: str | None = None
 
 class WeightsConfig(BaseModel):
     """Weights."""
