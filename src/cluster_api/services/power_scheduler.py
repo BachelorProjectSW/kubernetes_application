@@ -3,6 +3,7 @@ import paramiko
 import structlog
 from ...models.basemodels import WorkerNode
 from ..util.cluster_config import config_store
+from ...models.enum import WorkerStatus
 
 log = structlog.get_logger()
 
@@ -14,7 +15,7 @@ def turn_on_node(worker_node: WorkerNode):
         log.debug("gpio to turn on", gpio=gpio)
         IO(gpio).on()
         log.debug("turning node on", node=worker_node.dict())
-        worker_node.status = "on"
+        worker_node.status = WorkerStatus.IDLE
     except Exception as e:
         log.debug(f"failed to turn on node: {e}")
 
@@ -35,7 +36,7 @@ def turn_off_node(worker_node: WorkerNode, username: str, password: str):
 
         client.close()
         log.debug("turning node off", node=worker_node.dict())
-        worker_node.status = "off"
+        worker_node.status = WorkerStatus.OFF
     except Exception as e:
         log.debug(f"failed to shutdown node: {e}")
 

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Literal
-
+from .enum import WorkerStatus
 
 # --- user input ---
 class StartConfig(BaseModel):
@@ -54,7 +54,7 @@ class WorkerNode(BaseModel):
 
     name: str
     ip: str
-    status: Literal["off", "turning_on", "turning_off", "working", "idle"]
+    status: WorkerStatus
     gpio: int
 
 
