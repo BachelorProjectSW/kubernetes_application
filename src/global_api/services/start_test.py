@@ -9,7 +9,7 @@ def start_test(config: Config):
     try:
         config_store.set(config)
         config_store.set_current_time()
-        print(config_store.start.start_time_real)
+        # print(config_store.start.start_time_real)
         #TODO get cost and energy from API and store it somewhere.
         for cluster in config.clusters:
 
