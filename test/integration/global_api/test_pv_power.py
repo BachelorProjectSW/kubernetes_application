@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from global_api.services.pv_power import get_power_factor_by_time, get_power, POWER_CAPACITY
+from src.global_api.services.pv_power import get_power_factor_by_time, get_power, POWER_CAPACITY
 
 
 @pytest.mark.integration

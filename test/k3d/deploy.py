@@ -1,11 +1,11 @@
 import glob
 import os
-from utils import get_test_cluster_config, run_cmd
+from .utils import get_cluster_names, run_cmd
 
 
 def deploy_clusters():
     """Deploy clusters."""
-    cluster_names = get_test_cluster_config()['clusters']
+    cluster_names = get_cluster_names()
 
     manifest_files = sorted(glob.glob("src/cluster_api/manifest/all_*"))
 

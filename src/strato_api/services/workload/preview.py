@@ -1,5 +1,5 @@
 from collections import Counter
-from generator import generate_workload
+from strato_api.services.workload.generator import generate_workload
 
 
 def preview(timestamps):

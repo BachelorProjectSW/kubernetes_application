@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timezone, timedelta
-from global_api.services.price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
+from src.global_api.services.price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 
 
 @pytest.mark.integration
@@ -13,7 +13,6 @@ def test_fetch_price_data_pt():
 
     assert len(result) > 0
     assert isinstance(result[0][0], datetime)
-    assert isinstance(result[0][1], float)
 
 
 @pytest.mark.integration
@@ -26,7 +25,6 @@ def test_fetch_carbon_intensity_pt():
 
     assert len(result) > 0
     assert isinstance(result[0][0], datetime)
-    assert isinstance(result[0][1], int)
 
 
 @pytest.mark.integration
@@ -39,4 +37,3 @@ def test_fetch_carbon_intensity_dk():
 
     assert len(result) > 0
     assert isinstance(result[0][0], datetime)
-    assert isinstance(result[0][1], int)

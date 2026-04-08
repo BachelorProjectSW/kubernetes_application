@@ -1,12 +1,12 @@
 apiVersion: k3d.io/v1alpha5
 kind: Simple
 metadata:
-  name: devcluster-po
+  name: devcluster-pt
 
 servers: 1
 agents: 1
 
-network: k3d-network-po
+network: k3d-network-pt
 
 ports:
   - port: 8081:80

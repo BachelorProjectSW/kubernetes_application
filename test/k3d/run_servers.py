@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from multiprocessing import Process
 import uvicorn
-from utils import get_test_cluster_config, run_cmd_bg
+from .utils import get_cluster_config, get_test_config, run_cmd_bg
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT_DIR / "src"
@@ -17,6 +17,11 @@ if str(ROOT_DIR) not in sys.path:
 def run_global_server(port):
     """Run Global server."""
     uvicorn.run("src.global_api.app:app", host="0.0.0.0", port=port)
+
+
+def run_strato_server(port):
+    """Run Strato server."""
+    uvicorn.run("src.strato_api.app:app", host="0.0.0.0", port=port)
 
 
 def run_cluster_server(cluster_name, port):
@@ -41,27 +46,33 @@ def run_port_forward(cluster_name, local_port, service_port):
 
 
 def start_all_servers():
-    """Start global scheduler, all cluster control planes, and port-forward the llama-services."""
-    cluster_config = get_test_cluster_config()
+    """Start strato, global scheduler, all cluster control planes, and port-forward the llama-services."""
+    configs = get_test_config()
+    cluster_config = get_cluster_config()
     server_processes = []
 
     # Start the global scheduler API server
-    g_server = Process(target=run_global_server, args=(8020,))
+    g_server = Process(target=run_global_server, args=(int(configs.global_scheduler.port),))
     g_server.start()
     server_processes.append(g_server)
 
-    for cluster_name, cluster_info in cluster_config['clusters'].items():
+    # Start the Strato API server
+    g_server = Process(target=run_strato_server, args=(int(configs.strato.port),))
+    g_server.start()
+    server_processes.append(g_server)
+
+    for cluster in cluster_config:
         # Start the cluster API server
-        p_server = Process(target=run_cluster_server, args=(cluster_name, int(cluster_info['port'])))
+        p_server = Process(target=run_cluster_server, args=(cluster.name, int(cluster.port)))
         p_server.start()
         server_processes.append(p_server)
 
         # Start port-forward directly (non-blocking)
         service_port = 8080
-        local_port = int(cluster_info['llama-service'])
+        local_port = int(cluster.llama_service_port)
         run_cmd_bg([
             "kubectl",
-            "--kubeconfig", str(SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"),
+            "--kubeconfig", str(SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster.name}.yaml"),
             "port-forward",
             "services/llama-service",
             f"{local_port}:{service_port}"

@@ -1,3 +1,4 @@
+from ...models.basemodels import ClusterConfig, WeightsConfig
 import structlog
 
 CARBON_REF_MAX = 800  # gCO2/kWh (need to find reference for)
@@ -107,52 +108,42 @@ def score_cluster(
     return round((carbon_weight * blended_carbon_normalized) + (cost_weight * blended_cost_normalized), 4)
 
 
-def choose_cluster(clusters: list[dict], carbon_weight: float, cost_weight: float):
+def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig):
     """Choose the best cluster based on scoring.
-
-    Args:
-        clusters: List of cluster dicts, each containing:
-            - cluster: Cluster name (str).
-            - renewable_output_w: Current renewable production in watts (float).
-            - cluster_load_w: Current cluster power consumption in watts (float).
-            - grid_carbon_intensity: Carbon intensity in gCO2/kWh (float).
-            - grid_electricity_price: Electricity price in EUR/kWh (float).
-        carbon_weight: Operator's carbon weight (0-1).
-        cost_weight: Operator's cost weight (0-1).
 
     Returns:
         The cluster dict with the highest score.
 
     """
-    best_cluster = {}
+    best_cluster = None
     best_score = -1.0
 
     for cluster in clusters:
         cluster_score = score_cluster(
-            cluster["renewable_output_w"],
-            cluster["cluster_load_w"],
-            cluster["grid_carbon_intensity"],
-            cluster["grid_electricity_price"],
-            carbon_weight,
-            cost_weight,
+            cluster.renewable_output_w,
+            cluster.cluster_load_w,
+            cluster.grid_carbon_intensity,
+            cluster.grid_electricity_price,
+            weights.gco2,
+            weights.cost,
         )
 
         log.debug(
             "cluster.scored",
-            cluster=cluster["cluster"],
+            cluster=cluster.name,
             score=cluster_score,
-            renewable_output_w=cluster["renewable_output_w"],
-            grid_electricity_price=cluster["grid_electricity_price"],
+            renewable_output_w=cluster.renewable_output_w,
+            grid_electricity_price=cluster.grid_electricity_price,
         )
 
         if cluster_score > best_score:
             best_score = cluster_score
             best_cluster = cluster
 
-        log.info(
-            "cluster.selected",
-            cluster=best_cluster["cluster"],
-            score=best_score,
-        )
+    log.info(
+        "cluster.selected",
+        cluster=best_cluster.name,
+        score=best_score,
+    )
 
     return best_cluster
