@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Literal
 from .enum import WorkerStatus
 
+
 # --- user input ---
 class StartConfig(BaseModel):
     """Basic."""
