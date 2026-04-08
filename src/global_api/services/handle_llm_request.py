@@ -13,7 +13,7 @@ def handle_llm_request(question: QuestionConfig):
 
     # TODO make a function to determine if the workernodes are active or idle in each cluster.
     # TODO ^active nodes and idle nodes for each cluster.
-    cluster = choose_cluster(config.clusters, config.weights)
+    cluster = choose_cluster(config.clusters, config.weights, config.energy)
     ip = cluster.ip
     port = cluster.port
     url = f"http://{ip}:{port}/handle_llm_request"
