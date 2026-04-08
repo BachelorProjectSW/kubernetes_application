@@ -1,8 +1,10 @@
 import time
 from ...models.basemodels import Config, ClusterInformation
+from ...models.enum import WorkerStatus
 from scoring import score_cluster
 from ..util.all_configuration import config_store
 import math
+import requests
 
 #TODO this should be in util and return worker nodes logs for each cluster.
 def get_worker_nodes_logs():
@@ -15,10 +17,11 @@ def get_avg_latency(time_interval: int, ):
     """Return avg latency from now and {time_interval} seconds ago."""
     pass
 
-def get_avg_latency_per_node_s():
+
+def get_avg_latency_per_node_ms():
     """Analise logs."""
     #TODO analyse logs
-    return 17
+    return 10000
 
 
 def get_current_active_nodes(clusters: list[ClusterInformation]):
@@ -27,20 +30,20 @@ def get_current_active_nodes(clusters: list[ClusterInformation]):
     for cluster in clusters:
         for worker_node in cluster.worker_nodes:
             status = worker_node.status
-            if status == 'working' or status == 'idle':
-                
+            if status == WorkerStatus.WORKING or status == WorkerStatus.IDLE:
+                active_nodes_counter+= 1
 
     return active_nodes_counter
 
 
 def get_current_rps():
-    """Analise logs."""
+    """Analyse logs."""
     #TODO analyse logs
-    return 17
+    return 1
 
 def estimate_nodes_to_add(
-    avg_latency_per_node_s: float,
-    max_latency_s: float,
+    avg_latency_per_node_ms: float,
+    max_latency_ms: float,
     current_active_nodes: int,
     current_rps: float,
 ) -> int:
@@ -49,7 +52,7 @@ def estimate_nodes_to_add(
     to keep latency under max_latency_s.
     """
     # how many nodes needed in total
-    required_nodes = math.ceil((avg_latency_per_node_s * current_rps) / max_latency_s)
+    required_nodes = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
     
     # how many more to add
     nodes_to_add = max(0, required_nodes - current_active_nodes)
@@ -57,12 +60,12 @@ def estimate_nodes_to_add(
     return nodes_to_add
 
 
-def turn_nodes_on(config: Config, diff_ms: int):
+def turn_nodes_on(config: Config):
     """Turn nodes on."""
-
+    
     # Sort clusters by score (highest first)
     sorted_clusters = sorted(
-        config.clusters,
+        clusters,
         key=lambda cluster: score_cluster(
             cluster.renewable_output_w,
             cluster.cluster_load_w,
@@ -75,36 +78,43 @@ def turn_nodes_on(config: Config, diff_ms: int):
         reverse=True,  # highest first
     )
 
-    required_nodes = estimate_nodes_to_add(17,)
+    avg_latency_per_node_ms = get_avg_latency_per_node_ms()
+    max_latency_ms = config.latency.max_ms
+    current_active_nodes = get_current_active_nodes(clusters)
+    current_rps = get_current_rps()
+    
+    nodes_to_add = estimate_nodes_to_add(avg_latency_per_node_ms,max_latency_ms, current_active_nodes, current_rps)
     for cluster in sorted_clusters:
-        #TODO 
-        pass
+        if nodes_to_add <= 0:
+            break
+        powered_off_nodes = 0
+        for worker_node in cluster.worker_nodes:
+            if worker_node.status == WorkerStatus.OFF:
+                powered_off_nodes += 1
+
+        amount = min(nodes_to_add, powered_off_nodes)
+        
+        url = f"http://{cluster.ip}:{cluster.port}/turn_on_nodes/"
+        response = requests.post(url, json={"number_of_nodes": amount}, timeout=10)
+        turned_on = response.json().get("turned_on", amount)
+        
+        nodes_to_add -= turned_on
+
 
 
 def turn_off_idle_nodes(idle_time_s: int):
     """Turn nodes off."""
     print(idle_time_s)
-    #TODO turn of alle nodes which has been idle in more than idle_time_s secunds. 
+    #TODO Turn of alle nodes which has been idle in more than idle_time_s secunds. 
+    #TODO Do it by send a request to each cluster to check for idle time. 
 
 
 async def power_scheduler_loop():
     """Check every x seconds whether more working nodes should be turn on or off."""
     config = config_store.get() 
-    max_latency = config.latency.max_ms
     timeout = config.power_scheduler.timeout_s
+    idle_time_for_turn_off_s = config.power_scheduler.idle_time_for_turn_off_s
     while config.power_scheduler.start:
         time.sleep(timeout)
-        worker_nodes_logs = get_worker_nodes_logs() #Should be found
-
-        latency_logs = None #Should be found
-        
-        avg_latency = get_avg_latency(timeout)
-        
-        # If no request send
-        if avg_latency <= 0:
-            continue
-        
-        # If latency is too big
-        elif avg_latency > max_latency:
-            diff = avg_latency - max_latency
-            turn_nodes_on(config, diff)
+        turn_nodes_on(config)
+        turn_off_idle_nodes(idle_time_for_turn_off_s)
