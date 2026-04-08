@@ -97,6 +97,7 @@ class StratoConfig(BaseModel):
 
 class EnergyConfig(BaseModel):
     """Energy consumption and scoring normalization constants."""
+
     # Power consumption per node (watts)
     node_power_off_w: float = 0
     node_power_idle_w: float = 5
@@ -109,8 +110,8 @@ class EnergyConfig(BaseModel):
     pv_capacity_w: float = 1500
 
     # Reference maximums for scoring normalization
-    carbon_ref_max: float = 800 # gCO2/kWh
-    cost_ref_max: float = 0.30 # EUR/kWh
+    carbon_ref_max: float = 800  # gCO2/kWh
+    cost_ref_max: float = 0.30  # EUR/kWh
 
 
 class Config(BaseModel):

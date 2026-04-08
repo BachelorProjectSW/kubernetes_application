@@ -31,7 +31,9 @@ def get_power_factor_by_time(start: datetime, end: datetime, country: str) -> li
     return results
 
 
-def get_power(start: datetime, end: datetime, country: str, pv_capacity_w: float) -> list[tuple[datetime, float]]:
+def get_power(
+    start: datetime, end: datetime, country: str, pv_capacity_w: float
+) -> list[tuple[datetime, float]]:
     """Return available solar power at specified microgrid between start and end (inclusive).
 
     Args:
