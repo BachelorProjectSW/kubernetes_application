@@ -51,7 +51,7 @@ class ConfigStore:
             if getattr(node.status, "conditions", None):
                 for condition in node.status.conditions:
                     if condition.type == "Ready":
-                        status = "on" if condition.status == "True" else "off"
+                        status = "idle" if condition.status == "True" else "off"
                         break
 
             worker_node = WorkerNode(
