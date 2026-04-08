@@ -1,5 +1,5 @@
 from ...models.basemodels import Config
-from datetime import datetime
+
 
 class ConfigStore:
     """Store for the current config."""

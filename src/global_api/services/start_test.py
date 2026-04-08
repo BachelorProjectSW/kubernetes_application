@@ -1,6 +1,5 @@
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
-from datetime import datetime
 import requests
 
 
@@ -8,7 +7,7 @@ def start_test(config: Config):
     """Start the test and send configs."""
     try:
         config_store.set(config)
-        #TODO set start_time_real = current time datetime.now().strf()
+        # TODO set start_time_real = current time datetime.now().strf()
         for cluster in config.clusters:
 
             cluster_information = ClusterInformation(
@@ -22,13 +21,12 @@ def start_test(config: Config):
 
             response = requests.post(url, json=cluster_information.model_dump())
             response.raise_for_status()
-        
-        #TODO setup powershcheduler (remeber to use basemodel PowerSchedulerConfig)
+
+        # TODO setup powershcheduler (remeber to use basemodel PowerSchedulerConfig)
         name = config.name
         return f"{name} test are running succesfully"
     except Exception as e:
         raise Exception(f"test failed: {e}")
-        
 
 
 def stop_test():

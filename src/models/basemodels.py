@@ -10,6 +10,7 @@ class StartConfig(BaseModel):
     start_time_simulated: str
     start_time_real: str | None = None
 
+
 class WeightsConfig(BaseModel):
     """Weights."""
 
@@ -43,7 +44,7 @@ class WorkloadConfig(BaseModel):
 class QuestionConfig(BaseModel):
     """Question class."""
 
-    question: str #TODO make it a list of question and add x new questions
+    question: str  # TODO make it a list of question and add x new questions
     max_output_tokens: int
     context_window: int
 
