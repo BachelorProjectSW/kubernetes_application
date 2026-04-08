@@ -32,5 +32,6 @@ def start_test(config: Config):
 def stop_test():
     """Stop the test."""
     # TODO code for shutdown on worker_nodes and return logs
+    # TODO shutdown power scheduler
     logs = "logs"
     return logs
