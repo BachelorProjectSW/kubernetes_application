@@ -26,7 +26,10 @@ def get_current_active_nodes(clusters: list[ClusterInformation]):
     active_nodes_counter = 0
     for cluster in clusters:
         for worker_node in cluster.worker_nodes:
-            if worker_node.status == 'working' or worker_node.status == 'idle'
+            status = worker_node.status
+            if status == 'working' or status == 'idle':
+                
+
     return active_nodes_counter
 
 
