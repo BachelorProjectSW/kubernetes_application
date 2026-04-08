@@ -20,8 +20,5 @@ class ConfigStore:
         """Return clusters."""
         return self.config.clusters
 
-    def set_current_time(self):
-        """Set current time."""
-        self.config.start.start_time_real = datetime.now().strftime()
 
 config_store = ConfigStore()

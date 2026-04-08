@@ -7,7 +7,11 @@ from ..util.all_configuration import config_store
 def handle_llm_request(question: QuestionConfig):
     """Send the question to the local cluster request scheduler llama-service."""
     config = config_store.get()
-    #TODO get "current times" cost and energy and update config.clusters information.
+    #TODO calculate the current simulated time (start_time_real - datetime.now() + start_time_simulated)
+    #TODO get "current simulated times^" cost and energy and update config.clusters information.
+
+    #TODO make a function to determine if the workernodes are active or idle in each cluster. 
+    #TODO ^active nodes and idle nodes for each cluster.
     cluster = choose_cluster(config.clusters, config.weights)
     ip = cluster.ip
     port = cluster.port

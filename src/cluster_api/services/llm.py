@@ -1,13 +1,14 @@
 import requests
 from ...models.basemodels import QuestionConfig, WorkerNode
 from ..util.cluster_config import config_store
+#TODO add logging. 
+#TODO change worker node status
 
 
 def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode:
     """Temp."""
     worker_node = worker_node_list[0]  # find a better solution
     return worker_node
-
 
 def handle_llm(question: QuestionConfig):
     """Send the request to the correct working node and log."""

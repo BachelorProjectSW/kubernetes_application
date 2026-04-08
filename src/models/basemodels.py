@@ -53,7 +53,7 @@ class WorkerNode(BaseModel):
 
     name: str
     ip: str
-    status: Literal["on", "off", "turning_on", "turning_off"]
+    status: Literal["off", "turning_on", "turning_off", "working", "idle"]
     gpio: int
 
 
