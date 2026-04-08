@@ -8,8 +8,8 @@ def start_test(config: Config):
     """Start the test and send configs."""
     try:
         config_store.set(config)
-        # config_store.start.start_time_real = datetime.now().strftime()
-        # print(config_store.start.start_time_real)
+        config_store.set_current_time()
+        print(config_store.start.start_time_real)
         #TODO get cost and energy from API and store it somewhere.
         for cluster in config.clusters:
 
