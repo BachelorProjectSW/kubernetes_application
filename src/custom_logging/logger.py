@@ -184,7 +184,10 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
         total_cost_eur += energy_kwh * r.blended_cost_eur_per_kwh
         renewable_fractions.append(r.renewable_fraction)
         latency_over_time.append({"timestamp": r.timestamp.isoformat(), "latency_ms": r.latency_ms})
-        cost_over_time.append({"timestamp": r.timestamp.isoformat(), "blended_cost_eur_per_kwh": r.blended_cost_eur_per_kwh})
+        cost_over_time.append({
+            "timestamp": r.timestamp.isoformat(),
+            "blended_cost_eur_per_kwh": r.blended_cost_eur_per_kwh,
+        })
 
     avg_renewable_pct = (
         round(sum(renewable_fractions) / len(renewable_fractions) * 100, 1)

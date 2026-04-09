@@ -23,7 +23,8 @@ def get_cluster_runtime_data(
         energy: Energy configuration constants.
 
     Returns:
-        ClusterRuntimeData with renewable_output_w, cluster_load_w, grid_carbon_intensity, grid_electricity_price.
+        ClusterRuntimeData with renewable_output_w, cluster_load_w, grid_carbon_intensity,
+        and grid_electricity_price.
 
     """
     simulated_time_end = simulated_time_start + timedelta(hours=1)
