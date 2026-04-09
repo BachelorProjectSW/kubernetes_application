@@ -4,6 +4,7 @@ import json
 import os
 import uuid
 from datetime import datetime, timezone
+from typing import TypeVar, Type
 
 from .models.log_models import RequestLog, PowerDecisionLog, NodeStatusLog
 from ..models.basemodels import ClusterConfig, WorkerNode
@@ -47,6 +48,19 @@ def init_csv():
                 writer = csv.DictWriter(f, fieldnames=fields)
                 writer.writeheader()
             log.info("csv.created", path=path)
+
+
+T = TypeVar("T")
+
+
+def get_logs(log_class: Type[T], path: str) -> list[T]:
+    """Return logs from a CSV file parsed into the given Pydantic model class."""
+    logs = []
+    with open(path, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            logs.append(log_class(**row))
+    return logs
 
 
 def reset_logs():
@@ -144,31 +158,18 @@ def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerN
 
 def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
     """Read the request CSV and compute summary metrics."""
-    rows = []
-    with open(csv_path, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            rows.append(row)
+    rows = get_logs(RequestLog, csv_path)
 
     if not rows:
         return {"error": "No requests in the CSV"}
 
     total = len(rows)
-
-    latencies = []
-    for r in rows:
-        if r.get("latency_ms"):
-            latencies.append(float(r["latency_ms"]))
-    avg_latency = sum(latencies) / len(latencies) if latencies else 0
+    avg_latency = sum(r.latency_ms for r in rows) / total
 
     # Cluster distribution
     cluster_counts: dict[str, int] = {}
     for r in rows:
-        cluster = r.get("cluster", "unknown")
-        if cluster in cluster_counts:
-            cluster_counts[cluster] = cluster_counts[cluster] + 1
-        else:
-            cluster_counts[cluster] = 1
+        cluster_counts[r.cluster] = cluster_counts.get(r.cluster, 0) + 1
 
     # Energy: energy_kwh per request = cluster_load_w / 1000 * latency_ms / 3_600_000
     total_gco2_g = 0.0
@@ -178,19 +179,12 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
     cost_over_time = []
 
     for r in rows:
-        latency_ms = float(r.get("latency_ms") or 0)
-        cluster_load_w = float(r.get("cluster_load_w") or 0)
-        carbon = float(r.get("blended_carbon_gco2_per_kwh") or 0)
-        cost = float(r.get("blended_cost_eur_per_kwh") or 0)
-        renewable_fraction = float(r.get("renewable_fraction") or 0)
-        timestamp = r.get("timestamp", "")
-
-        energy_kwh = (cluster_load_w / 1000) * (latency_ms / 3_600_000)
-        total_gco2_g += energy_kwh * carbon
-        total_cost_eur += energy_kwh * cost
-        renewable_fractions.append(renewable_fraction)
-        latency_over_time.append({"timestamp": timestamp, "latency_ms": latency_ms})
-        cost_over_time.append({"timestamp": timestamp, "blended_cost_eur_per_kwh": cost})
+        energy_kwh = (r.cluster_load_w / 1000) * (r.latency_ms / 3_600_000)
+        total_gco2_g += energy_kwh * r.blended_carbon_gco2_per_kwh
+        total_cost_eur += energy_kwh * r.blended_cost_eur_per_kwh
+        renewable_fractions.append(r.renewable_fraction)
+        latency_over_time.append({"timestamp": r.timestamp.isoformat(), "latency_ms": r.latency_ms})
+        cost_over_time.append({"timestamp": r.timestamp.isoformat(), "blended_cost_eur_per_kwh": r.blended_cost_eur_per_kwh})
 
     avg_renewable_pct = (
         round(sum(renewable_fractions) / len(renewable_fractions) * 100, 1)

@@ -1,20 +1,6 @@
-import csv
 from datetime import datetime, timezone
-from typing import TypeVar, Type
-from ..logger import REQUEST_CSV_PATH, NODE_STATUS_CSV_PATH
+from ..logger import REQUEST_CSV_PATH, NODE_STATUS_CSV_PATH, get_logs
 from ..models.log_models import RequestLog, NodeStatusLog
-
-T = TypeVar("T")
-
-
-def get_logs(log_class: Type[T], path: str) -> list[T]:
-    """Return logs from a CSV file parsed into the given Pydantic model class."""
-    logs = []
-    with open(path, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            logs.append(log_class(**row))
-    return logs
 
 
 def get_avg_latency(time_interval_s: int) -> float:
