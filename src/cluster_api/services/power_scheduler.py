@@ -46,7 +46,9 @@ def change_node_status(number_of_nodes: int, status: str):
 
     status: 'on' or 'off'.
     """
-    nodes = config_store.worker_nodes
+    cluster_config = config_store.get()
+    nodes = cluster_config.worker_nodes
+    node_changed = 0
     if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, nodes)
         for node in nodes_to_change:
