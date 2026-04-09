@@ -51,7 +51,7 @@ def handle_llm_request(question: QuestionConfig):
 
     worker_node = result.worker_node
     llm_content = result.llm_content
- 
+
     log_request(
         request_id=request_id,
         cluster=cluster,

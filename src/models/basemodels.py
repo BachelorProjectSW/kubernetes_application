@@ -139,5 +139,7 @@ class Config(BaseModel):
 
 
 class LLMResponse(BaseModel):
+    """LLM response."""
+
     llm_content: dict
     worker_node: dict
