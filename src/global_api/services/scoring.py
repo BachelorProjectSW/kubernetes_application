@@ -1,4 +1,4 @@
-from ...models.basemodels import ClusterConfig, EnergyConfig, WeightsConfig
+from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig, WeightsConfig
 import structlog
 
 
@@ -126,32 +126,32 @@ def score_cluster(
 
 def choose_cluster(
     clusters: list[ClusterConfig],
-    cluster_energy_data_data: list[dict[str, float]],
+    cluster_energy_data_list: list[ClusterRuntimeData],
     weights: WeightsConfig,
     energy: EnergyConfig,
-) -> tuple[ClusterConfig, dict[str, float]]:
+) -> tuple[ClusterConfig, ClusterRuntimeData]:
     """Choose the best cluster based on scoring.
 
     Args:
         clusters: List of static cluster configurations.
-        cluster_energy_data_data: Runtime values for each cluster, in the same order as clusters.
+        cluster_energy_data_list: Runtime values for each cluster, in the same order as clusters.
         weights: User-specified carbon and cost weights.
         energy: Energy configuration constants.
 
     Returns:
-        Tuple of (best ClusterConfig, its cluster_energy_data data).
+        Tuple of (best ClusterConfig, its ClusterRuntimeData).
 
     """
     best_cluster = None
     best_cluster_energy_data = None
     best_score = -1.0
 
-    for cluster, cluster_energy_data in zip(clusters, cluster_energy_data_data):
+    for cluster, cluster_energy_data in zip(clusters, cluster_energy_data_list):
         cluster_score = score_cluster(
-            cluster_energy_data["renewable_output_w"],
-            cluster_energy_data["cluster_load_w"],
-            cluster_energy_data["grid_carbon_intensity"],
-            cluster_energy_data["grid_electricity_price"],
+            cluster_energy_data.renewable_output_w,
+            cluster_energy_data.cluster_load_w,
+            cluster_energy_data.grid_carbon_intensity,
+            cluster_energy_data.grid_electricity_price,
             weights.gco2,
             weights.cost,
             energy,
@@ -161,8 +161,8 @@ def choose_cluster(
             "cluster.scored",
             cluster=cluster.name,
             score=cluster_score,
-            renewable_output_w=cluster_energy_data["renewable_output_w"],
-            grid_electricity_price=cluster_energy_data["grid_electricity_price"],
+            renewable_output_w=cluster_energy_data.renewable_output_w,
+            grid_electricity_price=cluster_energy_data.grid_electricity_price,
         )
 
         if cluster_score > best_score:

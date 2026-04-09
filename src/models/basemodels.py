@@ -69,6 +69,15 @@ class ClusterConfig(BaseModel):
     llama_service_port: str
 
 
+class ClusterRuntimeData(BaseModel):
+    """Runtime energy data for a cluster at a given point in time."""
+
+    renewable_output_w: float
+    cluster_load_w: float
+    grid_carbon_intensity: float
+    grid_electricity_price: float
+
+
 class ClusterInformation(BaseModel):
     """All information the clusters need."""
 

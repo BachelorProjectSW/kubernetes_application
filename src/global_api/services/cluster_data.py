@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import structlog
 
-from ...models.basemodels import ClusterConfig, EnergyConfig
+from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig
 from .pv_power import get_power
 from .price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 from .scoring import compute_cluster_load
@@ -14,7 +14,7 @@ def get_cluster_runtime_data(
     cluster: ClusterConfig,
     simulated_time_start: datetime,
     energy: EnergyConfig,
-) -> dict[str, float]:
+) -> ClusterRuntimeData:
     """Fetch all runtime values for a cluster at the given simulated time.
 
     Args:
@@ -23,7 +23,7 @@ def get_cluster_runtime_data(
         energy: Energy configuration constants.
 
     Returns:
-        Dict with keys: renewable_output_w, cluster_load_w, grid_carbon_intensity, grid_electricity_price.
+        ClusterRuntimeData with renewable_output_w, cluster_load_w, grid_carbon_intensity, grid_electricity_price.
 
     """
     simulated_time_end = simulated_time_start + timedelta(hours=1)
@@ -56,9 +56,9 @@ def get_cluster_runtime_data(
         grid_electricity_price=grid_electricity_price,
     )
 
-    return {
-        "renewable_output_w": renewable_output_w,
-        "cluster_load_w": cluster_load_w,
-        "grid_carbon_intensity": grid_carbon_intensity,
-        "grid_electricity_price": grid_electricity_price,
-    }
+    return ClusterRuntimeData(
+        renewable_output_w=renewable_output_w,
+        cluster_load_w=cluster_load_w,
+        grid_carbon_intensity=grid_carbon_intensity,
+        grid_electricity_price=grid_electricity_price,
+    )

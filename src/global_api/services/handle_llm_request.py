@@ -27,15 +27,18 @@ def handle_llm_request(question: QuestionConfig):
         config.clusters, all_cluster_energy_data, config.weights, config.energy
     )
 
-    renewable_output_w = cluster_energy_data["renewable_output_w"]
-    cluster_load_w = cluster_energy_data["cluster_load_w"]
-
-    renewable_fraction = compute_grid_fraction(renewable_output_w, cluster_load_w)
+    renewable_fraction = compute_grid_fraction(
+        cluster_energy_data.renewable_output_w, cluster_energy_data.cluster_load_w
+    )
     blended_carbon = compute_carbon_blend(
-        renewable_output_w, cluster_load_w, cluster_energy_data["grid_carbon_intensity"]
+        cluster_energy_data.renewable_output_w,
+        cluster_energy_data.cluster_load_w,
+        cluster_energy_data.grid_carbon_intensity,
     )
     blended_cost = compute_cost_blend(
-        renewable_output_w, cluster_load_w, cluster_energy_data["grid_electricity_price"]
+        cluster_energy_data.renewable_output_w,
+        cluster_energy_data.cluster_load_w,
+        cluster_energy_data.grid_electricity_price,
     )
 
     url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
@@ -51,7 +54,7 @@ def handle_llm_request(question: QuestionConfig):
         cluster=cluster,
         node=None,  # TODO: resolve WorkerNode from response once cluster_api returns node name
         latency_ms=latency_ms,
-        cluster_load_w=cluster_load_w,
+        cluster_load_w=cluster_energy_data.cluster_load_w,
         renewable_fraction=renewable_fraction,
         blended_carbon_gco2_per_kwh=blended_carbon,
         blended_cost_eur_per_kwh=blended_cost,

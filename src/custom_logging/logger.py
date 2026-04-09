@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 from .models.log_models import RequestLog, PowerDecisionLog, NodeStatusLog
 from ..models.basemodels import ClusterConfig, WorkerNode
+from ..models.enum import WorkerStatus
 
 structlog.configure(
     processors=[
@@ -122,8 +123,8 @@ def log_power_decision(
 def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerNode]):
     """Log a snapshot of all node statuses for a cluster."""
     timestamp = datetime.now(timezone.utc)
-    active_nodes = sum(1 for n in node_statuses if n.status == "working")
-    idle_nodes = sum(1 for n in node_statuses if n.status == "idle")
+    active_nodes = sum(1 for n in node_statuses if n.status == WorkerStatus.WORKING)
+    idle_nodes = sum(1 for n in node_statuses if n.status == WorkerStatus.IDLE)
 
     with open(NODE_STATUS_CSV_PATH, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=NODE_STATUS_CSV_FIELDS)
