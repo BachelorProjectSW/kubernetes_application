@@ -119,11 +119,12 @@ def turn_off_idle_nodes(idle_time_s: int):
 
 async def power_scheduler_loop():
     """Check every x seconds whether more working nodes should be turn on or off."""
+    log.info("Global Power Scheduler Running")
     config = config_store.get()
     timeout = config.power_scheduler.timeout_s
     idle_time_for_turn_off_s = config.power_scheduler.idle_time_for_turn_off_s
     while config.power_scheduler.start:
-        log.info("Global Power Scheduler Sunning")
+        log.info("Global Power Scheduler Running Again")
         time.sleep(timeout)
         all_clusters = config_store.get_cluster_information()
         turn_nodes_on(config, all_clusters)
