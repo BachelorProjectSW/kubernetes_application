@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from ..services.power_scheduler import change_node_status
+from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
 from ..services.llm import handle_llm
 from ...models.basemodels import ClusterInformation, QuestionConfig
 from ..util.cluster_config import config_store
@@ -22,6 +22,12 @@ def turn_on_node_endpoint(number_of_nodes: int):
 def turn_off_node_endpoint(number_of_nodes: int):
     """Return status of turned off nodes."""
     return change_node_status(number_of_nodes, "off")
+
+
+@router.post("/turn_off_idle_nodes/")
+def turn_off_idle_nodes_endpoint(idle_time: int):
+    """Return status of turned off nodes."""
+    return turn_off_idle_nodes(idle_time)
 
 
 @router.post("/set_config")
