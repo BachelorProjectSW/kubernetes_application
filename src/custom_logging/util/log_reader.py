@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime, timezone
 from ....custom_logging.logger import REQUEST_CSV_PATH, NODE_STATUS_CSV_PATH
+from ....custom_logging.models.log_models import RequestLog
 
 
 def get_avg_latency(time_interval_s: int) -> float:
@@ -41,3 +42,19 @@ def get_worker_nodes_logs() -> list[dict]:
             all_rows.append(row)
 
     return all_rows
+
+
+def get_request_logs() -> list[RequestLog]:
+    """Return all request log entries as a list of RequestLog objects.
+
+    Returns:
+        List of RequestLog objects parsed from the request logs CSV.
+
+    """
+    request_logs = []
+    with open(REQUEST_CSV_PATH, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            request_logs.append(RequestLog(**row))
+
+    return request_logs
