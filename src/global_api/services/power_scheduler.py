@@ -105,6 +105,14 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             if worker_node.status == WorkerStatus.OFF:
                 powered_off_nodes += 1
 
+        log.debug(
+            "cluster.capacity",
+            cluster_ip=cluster.cluster_config.ip,
+            cluster_port=cluster.cluster_config.port,
+            powered_off_nodes=powered_off_nodes,
+        )
+
+
         amount = min(nodes_to_add, powered_off_nodes)
         if amount <= 0:
             continue
