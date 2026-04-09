@@ -3,7 +3,7 @@ from enum import Enum
 
 class WorkerStatus(str, Enum):
     """Workernodes status.
-    
+
     Values:
         OFF: Node is powered off.
         TURNING_ON: Node is in the process of starting up.

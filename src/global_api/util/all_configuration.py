@@ -1,6 +1,7 @@
 from ...models.basemodels import Config, ClusterInformation
 import requests
 
+
 class ConfigStore:
     """Store for the current config."""
 
@@ -30,13 +31,17 @@ class ConfigStore:
             response = requests.get(url, timeout=20)
             response.raise_for_status()
 
-            data = response.json() 
+            data = response.json()
 
             cluster_info = ClusterInformation(**data)
 
             all_clusters.append(cluster_info)
 
         return all_clusters
+
+    def stop_power_scheduler(self):
+        """Stop power scheduler."""
+        self.config.power_scheduler.start = False
 
 
 config_store = ConfigStore()

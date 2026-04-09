@@ -1,6 +1,8 @@
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
 import requests
+from .power_scheduler import power_scheduler_loop
+import asyncio
 
 
 def start_test(config: Config):
@@ -22,7 +24,7 @@ def start_test(config: Config):
             response = requests.post(url, json=cluster_information.model_dump())
             response.raise_for_status()
 
-        # TODO setup powershcheduler (remeber to use basemodel PowerSchedulerConfig)
+        asyncio.create_task(power_scheduler_loop())
         name = config.name
         return f"{name} test are running succesfully"
     except Exception as e:
@@ -31,7 +33,7 @@ def start_test(config: Config):
 
 def stop_test():
     """Stop the test."""
+    config_store.stop_power_scheduler()
     # TODO code for shutdown on worker_nodes and return logs
-    # TODO shutdown power scheduler
     logs = "logs"
     return logs

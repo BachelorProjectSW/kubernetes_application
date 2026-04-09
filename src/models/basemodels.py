@@ -22,7 +22,7 @@ class WeightsConfig(BaseModel):
 class PowerSchedulerConfig(BaseModel):
     """Power Scheduler inputs."""
 
-    start: bool #Should it run or not
+    start: bool  # Should it run or not
     timeout_s: int
     idle_time_for_turn_off_s: int
 

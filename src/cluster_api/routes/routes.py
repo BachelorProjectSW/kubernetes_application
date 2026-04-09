@@ -37,6 +37,7 @@ def handle_llm_request_endpoint(question: QuestionConfig):
     """Handle llm request."""
     return handle_llm(question)
 
+
 @router.get("/get_cluster_information")
 def get_cluster_information_endpoint():
     """Return cluster information."""
