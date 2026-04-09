@@ -27,6 +27,7 @@ def get_test_config():
             cost=0.9
         ),
         power_scheduler=PowerSchedulerConfig(
+            start=True,
             timeout_s=5,
             idle_time_for_turn_off_s=10
         ),
