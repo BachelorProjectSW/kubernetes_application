@@ -193,7 +193,10 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
         latency_over_time.append({"timestamp": timestamp, "latency_ms": latency_ms})
         cost_over_time.append({"timestamp": timestamp, "blended_cost_eur_per_kwh": cost})
 
-    avg_renewable_pct = round(sum(renewable_fractions) / len(renewable_fractions) * 100, 1) if renewable_fractions else 0
+    avg_renewable_pct = (
+        round(sum(renewable_fractions) / len(renewable_fractions) * 100, 1)
+        if renewable_fractions else 0
+    )
 
     summary = {
         "summary_id": str(uuid.uuid4()),

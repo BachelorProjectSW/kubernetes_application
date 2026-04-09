@@ -10,8 +10,10 @@ def test_integration_scoring_chooses_correct_cluster():
     config = get_test_config()
 
     cluster_energy_data = [
-        {"renewable_output_w": 200, "cluster_load_w": 1000, "grid_carbon_intensity": 100, "grid_electricity_price": 0.12},
-        {"renewable_output_w": 400, "cluster_load_w": 1000, "grid_carbon_intensity": 300, "grid_electricity_price": 0.14},
+        {"renewable_output_w": 200, "cluster_load_w": 1000, "grid_carbon_intensity": 100,
+         "grid_electricity_price": 0.12},
+        {"renewable_output_w": 400, "cluster_load_w": 1000, "grid_carbon_intensity": 300,
+         "grid_electricity_price": 0.14},
     ]
 
     chosen_cluster, _ = choose_cluster(config.clusters, cluster_energy_data, config.weights, config.energy)

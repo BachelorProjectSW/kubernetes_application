@@ -161,7 +161,10 @@ def test_log_request_rounds_latency():
 def test_log_request_writes_energy_fields():
     """Test that log_request writes the new energy fields to the CSV."""
     init_csv()
-    make_log_request(cluster_load_w=800.0, renewable_fraction=0.5, blended_carbon_gco2_per_kwh=50.0, blended_cost_eur_per_kwh=0.02)
+    make_log_request(
+        cluster_load_w=800.0, renewable_fraction=0.5,
+        blended_carbon_gco2_per_kwh=50.0, blended_cost_eur_per_kwh=0.02
+    )
 
     with open(REQUEST_CSV_PATH, "r") as f:
         reader = csv.DictReader(f)

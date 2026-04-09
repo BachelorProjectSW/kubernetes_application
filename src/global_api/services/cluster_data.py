@@ -28,14 +28,20 @@ def get_cluster_runtime_data(
     """
     simulated_time_end = simulated_time_start + timedelta(hours=1)
 
-    pv = get_power(simulated_time_start, simulated_time_end, cluster.simulated_country_code, energy.pv_capacity_w)
+    pv = get_power(
+        simulated_time_start, simulated_time_end, cluster.simulated_country_code, energy.pv_capacity_w
+    )
     renewable_output_w = pv[0][1] if pv else 0.0
 
-    carbon_data = fetch_carbon_intensity(simulated_time_start, simulated_time_end, cluster.simulated_country_code)
+    carbon_data = fetch_carbon_intensity(
+        simulated_time_start, simulated_time_end, cluster.simulated_country_code
+    )
     grid_carbon_intensity = float(carbon_data[0][1]) if carbon_data else 0.0
 
-    price_data = fetch_price_data(simulated_time_start, simulated_time_end, cluster.simulated_country_code)
-    # fetch_price_data returns EUR/MWh, scoring expects EUR/kWh so we divide by 1000. If no price data is available, we assume 0 cost.
+    # fetch_price_data returns EUR/MWh; scoring expects EUR/kWh so we divide by 1000.
+    price_data = fetch_price_data(
+        simulated_time_start, simulated_time_end, cluster.simulated_country_code
+    )
     grid_electricity_price = (price_data[0][1] / 1000) if price_data else 0.0
 
     # TODO: replace with actual active/idle node counts once node tracking is implemented

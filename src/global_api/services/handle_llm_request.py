@@ -4,7 +4,7 @@ import requests
 from datetime import datetime, timezone
 
 from ...models.basemodels import QuestionConfig
-from .cluster_data import get_cluster_cluster_energy_data_data
+from .cluster_data import get_cluster_runtime_data
 from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import log_request
@@ -18,16 +18,25 @@ def handle_llm_request(question: QuestionConfig):
     # TODO: compute actual simulated time from (datetime.now() - start_time_real + start_time_simulated)
     simulated_time = datetime.now(timezone.utc)
 
-    cluster_energy_data_data = [
-        get_cluster_cluster_energy_data_data(cluster, simulated_time, config.energy)
+    all_cluster_energy_data = [
+        get_cluster_runtime_data(cluster, simulated_time, config.energy)
         for cluster in config.clusters
     ]
 
-    cluster, cluster_energy_data = choose_cluster(config.clusters, cluster_energy_data_data, config.weights, config.energy)
+    cluster, cluster_energy_data = choose_cluster(
+        config.clusters, all_cluster_energy_data, config.weights, config.energy
+    )
 
-    renewable_fraction = compute_grid_fraction(cluster_energy_data["renewable_output_w"], cluster_energy_data["cluster_load_w"])
-    blended_carbon = compute_carbon_blend(cluster_energy_data["renewable_output_w"], cluster_energy_data["cluster_load_w"], cluster_energy_data["grid_carbon_intensity"])
-    blended_cost = compute_cost_blend(cluster_energy_data["renewable_output_w"], cluster_energy_data["cluster_load_w"], cluster_energy_data["grid_electricity_price"])
+    renewable_output_w = cluster_energy_data["renewable_output_w"]
+    cluster_load_w = cluster_energy_data["cluster_load_w"]
+
+    renewable_fraction = compute_grid_fraction(renewable_output_w, cluster_load_w)
+    blended_carbon = compute_carbon_blend(
+        renewable_output_w, cluster_load_w, cluster_energy_data["grid_carbon_intensity"]
+    )
+    blended_cost = compute_cost_blend(
+        renewable_output_w, cluster_load_w, cluster_energy_data["grid_electricity_price"]
+    )
 
     url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
 
@@ -45,7 +54,7 @@ def handle_llm_request(question: QuestionConfig):
         cluster=cluster.name,
         node=node,
         latency_ms=latency_ms,
-        cluster_load_w=cluster_energy_data["cluster_load_w"],
+        cluster_load_w=cluster_load_w,
         renewable_fraction=renewable_fraction,
         blended_carbon_gco2_per_kwh=blended_carbon,
         blended_cost_eur_per_kwh=blended_cost,
