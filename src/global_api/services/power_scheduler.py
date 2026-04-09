@@ -1,4 +1,3 @@
-import time
 from ...models.basemodels import Config, ClusterInformation
 from ...models.enum import WorkerStatus
 from .scoring import score_cluster
@@ -6,6 +5,7 @@ from ..util.all_configuration import config_store
 import math
 import requests
 import structlog
+import asyncio
 
 
 log = structlog.get_logger()
@@ -127,7 +127,7 @@ async def power_scheduler_loop():
     idle_time_for_turn_off_s = config.power_scheduler.idle_time_for_turn_off_s
     while config.power_scheduler.start:
         log.info("Global Power Scheduler Running Again")
-        time.sleep(timeout)
+        await asyncio.sleep(timeout)
         all_clusters = config_store.get_cluster_information()
         turn_nodes_on(config, all_clusters)
         turn_off_idle_nodes(idle_time_for_turn_off_s)
