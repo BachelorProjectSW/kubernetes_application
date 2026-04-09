@@ -68,6 +68,11 @@ class ClusterConfig(BaseModel):
     gpio_list: list[int]
     simulated_country_code: str
     llama_service_port: str
+
+
+class ClusterRuntimeData(BaseModel):
+    """Runtime energy data for a cluster at a given point in time."""
+
     renewable_output_w: float
     cluster_load_w: float
     grid_carbon_intensity: float

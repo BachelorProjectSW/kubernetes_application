@@ -1,4 +1,4 @@
-from ...models.basemodels import ClusterConfig, EnergyConfig, WeightsConfig
+from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig, WeightsConfig
 import structlog
 
 
@@ -124,22 +124,34 @@ def score_cluster(
     return round((carbon_weight * blended_carbon_normalized) + (cost_weight * blended_cost_normalized), 4)
 
 
-def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig, energy: EnergyConfig):
+def choose_cluster(
+    clusters: list[ClusterConfig],
+    cluster_energy_data_list: list[ClusterRuntimeData],
+    weights: WeightsConfig,
+    energy: EnergyConfig,
+) -> tuple[ClusterConfig, ClusterRuntimeData]:
     """Choose the best cluster based on scoring.
 
+    Args:
+        clusters: List of static cluster configurations.
+        cluster_energy_data_list: Runtime values for each cluster, in the same order as clusters.
+        weights: User-specified carbon and cost weights.
+        energy: Energy configuration constants.
+
     Returns:
-        The cluster dict with the highest score.
+        Tuple of (best ClusterConfig, its ClusterRuntimeData).
 
     """
     best_cluster = None
+    best_cluster_energy_data = None
     best_score = -1.0
 
-    for cluster in clusters:
+    for cluster, cluster_energy_data in zip(clusters, cluster_energy_data_list):
         cluster_score = score_cluster(
-            cluster.renewable_output_w,
-            cluster.cluster_load_w,
-            cluster.grid_carbon_intensity,
-            cluster.grid_electricity_price,
+            cluster_energy_data.renewable_output_w,
+            cluster_energy_data.cluster_load_w,
+            cluster_energy_data.grid_carbon_intensity,
+            cluster_energy_data.grid_electricity_price,
             weights.gco2,
             weights.cost,
             energy,
@@ -149,13 +161,14 @@ def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig, energy
             "cluster.scored",
             cluster=cluster.name,
             score=cluster_score,
-            renewable_output_w=cluster.renewable_output_w,
-            grid_electricity_price=cluster.grid_electricity_price,
+            renewable_output_w=cluster_energy_data.renewable_output_w,
+            grid_electricity_price=cluster_energy_data.grid_electricity_price,
         )
 
         if cluster_score > best_score:
             best_score = cluster_score
             best_cluster = cluster
+            best_cluster_energy_data = cluster_energy_data
 
     log.info(
         "cluster.selected",
@@ -163,4 +176,4 @@ def choose_cluster(clusters: list[ClusterConfig], weights: WeightsConfig, energy
         score=best_score,
     )
 
-    return best_cluster
+    return best_cluster, best_cluster_energy_data
