@@ -1,4 +1,6 @@
-from gpiozero import LED as IO
+from gpiozero import LED as WORKER_NODE_POWER
+from gpiozero.pins.lgpio import LGPIOFactory
+
 import paramiko
 import structlog
 from ...models.basemodels import WorkerNode
@@ -7,13 +9,15 @@ from ...models.enum import WorkerStatus
 
 log = structlog.get_logger()
 
+FACTORY = LGPIOFactory()
 
 def turn_on_node(worker_node: WorkerNode):
     """Turn on the node via GPIO."""
     try:
         gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
-        IO(gpio).on()
+        worker_node_power = WORKER_NODE_POWER(21, pin_factory=FACTORY)
+        worker_node_power.on()
         log.debug("turning node on", node=worker_node.name)
         worker_node.status = WorkerStatus.IDLE
     except Exception as e:
@@ -23,6 +27,10 @@ def turn_on_node(worker_node: WorkerNode):
 def turn_off_node(worker_node: WorkerNode, username: str, password: str):
     """Turn off the node using SSH."""
     try:
+        gpio = worker_node.gpio
+        log.debug("gpio to turn off", gpio=gpio)
+        worker_node_power = WORKER_NODE_POWER(21, pin_factory=FACTORY)
+        worker_node_power.on()
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(hostname=worker_node.ip, username=username, password=password)

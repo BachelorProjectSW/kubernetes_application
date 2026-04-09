@@ -63,7 +63,7 @@ def get_test_config():
                 name="pt",
                 ip="127.0.0.1",
                 port="8050",
-                gpio_list=[21],
+                gpio_list=[20],
                 simulated_country_code="pt",
                 llama_service_port="8082",
                 renewable_output_w=400,
