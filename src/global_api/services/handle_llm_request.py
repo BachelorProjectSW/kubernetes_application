@@ -3,7 +3,7 @@ import uuid
 import requests
 from datetime import datetime, timezone
 
-from ...models.basemodels import QuestionConfig
+from ...models.basemodels import QuestionConfig, LLMResponse
 from .cluster_data import get_cluster_runtime_data
 from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
 from ..util.all_configuration import config_store
@@ -47,12 +47,15 @@ def handle_llm_request(question: QuestionConfig):
     response = requests.post(url, json=question.model_dump())
     latency_ms = (time.monotonic() - t_start) * 1000
 
-    result = response.json()
+    result = LLMResponse(**response.json())
 
+    worker_node = result.worker_node
+    llm_content = result.llm_content
+ 
     log_request(
         request_id=request_id,
         cluster=cluster,
-        node=None,  # TODO: resolve WorkerNode from response once cluster_api returns node name
+        node=worker_node,
         latency_ms=latency_ms,
         cluster_load_w=cluster_energy_data.cluster_load_w,
         renewable_fraction=renewable_fraction,
@@ -60,4 +63,4 @@ def handle_llm_request(question: QuestionConfig):
         blended_cost_eur_per_kwh=blended_cost,
     )
 
-    return result
+    return llm_content

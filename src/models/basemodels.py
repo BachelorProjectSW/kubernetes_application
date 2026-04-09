@@ -136,3 +136,8 @@ class Config(BaseModel):
     global_scheduler: GlobalSchedulerConfig
     strato: StratoConfig
     energy: EnergyConfig = EnergyConfig()
+
+
+class LLMResponse(BaseModel):
+    llm_content: dict
+    worker_node: dict
