@@ -5,6 +5,7 @@ from src.models.basemodels import EnergyConfig
 
 
 def dt(hour):
+    """Return a timezone-aware datetime on 2010-06-01 at the given hour."""
     return datetime(2010, 6, 1, hour, tzinfo=timezone.utc)
 
 

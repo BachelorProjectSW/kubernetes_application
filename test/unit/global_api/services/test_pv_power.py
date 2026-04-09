@@ -12,6 +12,7 @@ CSV_CONTENT = """time,PT
 
 
 def dt(hour):
+    """Return a timezone-aware datetime on 2010-06-01 at the given hour."""
     return datetime(2010, 6, 1, hour, tzinfo=timezone.utc)
 
 
