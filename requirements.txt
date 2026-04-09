@@ -10,4 +10,5 @@ aiohttp
 gpiozero
 paramiko
 python-dotenv
-gpiozero RPi.GPIO
+gpiozero 
+RPi.GPIO
