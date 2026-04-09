@@ -11,6 +11,10 @@ class RequestLog(BaseModel):
     cluster: str
     node: str
     latency_ms: float
+    cluster_load_w: float
+    renewable_fraction: float
+    blended_carbon_gco2_per_kwh: float
+    blended_cost_eur_per_kwh: float
 
 
 class PowerDecisionLog(BaseModel):
@@ -22,3 +26,14 @@ class PowerDecisionLog(BaseModel):
     node: str
     reason: str
     system_avg_latency_ms: float
+
+
+class NodeStatusLog(BaseModel):
+    """Status of a single node's status at a given timestamp."""
+
+    timestamp: datetime
+    cluster: str
+    node: str
+    status: str
+    active_nodes: int
+    idle_nodes: int

@@ -7,27 +7,47 @@ from src.custom_logging.logger import (
     reset_logs,
     log_request,
     log_power_decision,
+    log_node_status_snapshot,
     generate_summary,
     save_summary,
     REQUEST_CSV_PATH,
     POWER_CSV_PATH,
+    NODE_STATUS_CSV_PATH,
     REQUEST_CSV_FIELDS,
     POWER_CSV_FIELDS,
+    NODE_STATUS_CSV_FIELDS,
 )
 
 
 @pytest.fixture(autouse=True)
 def clean_logs():
     """Delete log files before and after every test."""
-    for path in [REQUEST_CSV_PATH, POWER_CSV_PATH]:
+    for path in [REQUEST_CSV_PATH, POWER_CSV_PATH, NODE_STATUS_CSV_PATH]:
         if os.path.exists(path):
             os.remove(path)
 
     yield
 
-    for path in [REQUEST_CSV_PATH, POWER_CSV_PATH]:
+    for path in [REQUEST_CSV_PATH, POWER_CSV_PATH, NODE_STATUS_CSV_PATH]:
         if os.path.exists(path):
             os.remove(path)
+
+
+def make_log_request(**overrides):
+    """Call log_request with default values, optionally overriding any field."""
+    defaults = dict(
+        request_id="req001",
+        strategy="test",
+        cluster="denmark",
+        node="nano1",
+        latency_ms=1000.0,
+        cluster_load_w=1000.0,
+        renewable_fraction=0.3,
+        blended_carbon_gco2_per_kwh=70.0,
+        blended_cost_eur_per_kwh=0.03,
+    )
+    defaults.update(overrides)
+    log_request(**defaults)
 
 
 # --- init_csv ---
@@ -57,17 +77,22 @@ def test_init_csv_creates_power_csv():
 
 
 @pytest.mark.integration
+def test_init_csv_creates_node_status_csv():
+    """Test that init_csv creates the node status CSV with correct headers."""
+    init_csv()
+    assert os.path.exists(NODE_STATUS_CSV_PATH)
+
+    with open(NODE_STATUS_CSV_PATH, "r") as f:
+        reader = csv.reader(f)
+        headers = next(reader)
+    assert headers == NODE_STATUS_CSV_FIELDS
+
+
+@pytest.mark.integration
 def test_init_csv_does_not_overwrite_existing_data():
     """Test that init_csv does not overwrite existing data."""
     init_csv()
-    log_request(
-        request_id="req001",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=1000.0,
-    )
-
+    make_log_request()
     init_csv()
 
     with open(REQUEST_CSV_PATH, "r") as f:
@@ -80,16 +105,9 @@ def test_init_csv_does_not_overwrite_existing_data():
 
 @pytest.mark.integration
 def test_reset_logs_clears_existing_data():
-    """Test that reset_logs clears existing data from both CSV files."""
+    """Test that reset_logs clears existing data from all CSV files."""
     init_csv()
-    log_request(
-        request_id="req001",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=1000.0,
-    )
-
+    make_log_request()
     reset_logs()
 
     with open(REQUEST_CSV_PATH, "r") as f:
@@ -100,24 +118,20 @@ def test_reset_logs_clears_existing_data():
 
 @pytest.mark.integration
 def test_reset_logs_csvs_exist_after():
-    """Test that CSV files still exist after reset_logs."""
+    """Test that all CSV files still exist after reset_logs."""
     reset_logs()
     assert os.path.exists(REQUEST_CSV_PATH)
     assert os.path.exists(POWER_CSV_PATH)
+    assert os.path.exists(NODE_STATUS_CSV_PATH)
 
 
 # --- log_request ---
+
 @pytest.mark.integration
 def test_log_request_writes_row():
     """Test that log_request writes a row to the request CSV."""
     init_csv()
-    log_request(
-        request_id="req001",
-        strategy="carbon_070_cost_030",
-        cluster="portugal",
-        node="nano4",
-        latency_ms=2340.5,
-    )
+    make_log_request(request_id="req001", cluster="portugal", node="nano4", strategy="carbon_070_cost_030")
 
     with open(REQUEST_CSV_PATH, "r") as f:
         reader = csv.DictReader(f)
@@ -134,13 +148,7 @@ def test_log_request_writes_row():
 def test_log_request_rounds_latency():
     """Test that log_request rounds latency to two decimal places."""
     init_csv()
-    log_request(
-        request_id="req001",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=2340.56789,
-    )
+    make_log_request(latency_ms=2340.56789)
 
     with open(REQUEST_CSV_PATH, "r") as f:
         reader = csv.DictReader(f)
@@ -150,17 +158,27 @@ def test_log_request_rounds_latency():
 
 
 @pytest.mark.integration
+def test_log_request_writes_energy_fields():
+    """Test that log_request writes the new energy fields to the CSV."""
+    init_csv()
+    make_log_request(cluster_load_w=800.0, renewable_fraction=0.5, blended_carbon_gco2_per_kwh=50.0, blended_cost_eur_per_kwh=0.02)
+
+    with open(REQUEST_CSV_PATH, "r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    assert rows[0]["cluster_load_w"] == "800.0"
+    assert rows[0]["renewable_fraction"] == "0.5"
+    assert rows[0]["blended_carbon_gco2_per_kwh"] == "50.0"
+    assert rows[0]["blended_cost_eur_per_kwh"] == "0.02"
+
+
+@pytest.mark.integration
 def test_log_request_multiple_rows_append():
     """Test that log_request appends multiple rows to the request CSV."""
     init_csv()
     for i in range(5):
-        log_request(
-            request_id=f"req{i}",
-            strategy="test",
-            cluster="denmark",
-            node="nano1",
-            latency_ms=1000.0 + i,
-        )
+        make_log_request(request_id=f"req{i}", latency_ms=1000.0 + i)
 
     with open(REQUEST_CSV_PATH, "r") as f:
         reader = csv.DictReader(f)
@@ -173,13 +191,7 @@ def test_log_request_multiple_rows_append():
 def test_log_request_has_timestamp():
     """Test that log_request includes a timestamp in ISO format."""
     init_csv()
-    log_request(
-        request_id="req001",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=1000.0,
-    )
+    make_log_request()
 
     with open(REQUEST_CSV_PATH, "r") as f:
         reader = csv.DictReader(f)
@@ -190,6 +202,7 @@ def test_log_request_has_timestamp():
 
 
 # --- log_power_decision ---
+
 @pytest.mark.integration
 def test_log_power_decision_writes_shutdown():
     """Test that log_power_decision writes a shutdown action to the power CSV."""
@@ -234,7 +247,45 @@ def test_log_power_decision_writes_startup():
     assert rows[0]["reason"] == "latency_high"
 
 
+# --- log_node_status_snapshot ---
+
+@pytest.mark.integration
+def test_log_node_status_snapshot_writes_one_row_per_node():
+    """Test that log_node_status_snapshot writes one row per node."""
+    init_csv()
+    log_node_status_snapshot("denmark", [
+        {"node": "worker-1", "status": "working"},
+        {"node": "worker-2", "status": "idle"},
+        {"node": "worker-3", "status": "off"},
+    ])
+
+    with open(NODE_STATUS_CSV_PATH, "r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    assert len(rows) == 3
+
+
+@pytest.mark.integration
+def test_log_node_status_snapshot_counts_active_and_idle():
+    """Test that log_node_status_snapshot correctly counts active and idle nodes."""
+    init_csv()
+    log_node_status_snapshot("denmark", [
+        {"node": "worker-1", "status": "working"},
+        {"node": "worker-2", "status": "idle"},
+        {"node": "worker-3", "status": "off"},
+    ])
+
+    with open(NODE_STATUS_CSV_PATH, "r") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    assert rows[0]["active_nodes"] == "1"
+    assert rows[0]["idle_nodes"] == "1"
+
+
 # --- generate_summary ---
+
 @pytest.mark.integration
 def test_generate_summary_returns_error_when_empty():
     """Test that generate_summary returns an error when the request CSV is empty."""
@@ -248,13 +299,7 @@ def test_generate_summary_correct_total():
     """Test that generate_summary computes the correct total number of requests."""
     init_csv()
     for i in range(3):
-        log_request(
-            request_id=f"req{i}",
-            strategy="test",
-            cluster="denmark",
-            node="nano1",
-            latency_ms=2000.0,
-        )
+        make_log_request(request_id=f"req{i}")
 
     summary = generate_summary()
     assert summary["total_requests"] == 3
@@ -264,20 +309,8 @@ def test_generate_summary_correct_total():
 def test_generate_summary_correct_avg_latency():
     """Test that generate_summary computes the correct average latency."""
     init_csv()
-    log_request(
-        request_id="req1",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=1000.0,
-    )
-    log_request(
-        request_id="req2",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=3000.0,
-    )
+    make_log_request(request_id="req1", latency_ms=1000.0)
+    make_log_request(request_id="req2", latency_ms=3000.0)
 
     summary = generate_summary()
     assert summary["avg_latency_ms"] == 2000.0
@@ -287,27 +320,9 @@ def test_generate_summary_correct_avg_latency():
 def test_generate_summary_correct_cluster_distribution():
     """Test that generate_summary computes the correct cluster distribution."""
     init_csv()
-    log_request(
-        request_id="req1",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=1000.0,
-    )
-    log_request(
-        request_id="req2",
-        strategy="test",
-        cluster="portugal",
-        node="nano4",
-        latency_ms=2000.0,
-    )
-    log_request(
-        request_id="req3",
-        strategy="test",
-        cluster="portugal",
-        node="nano5",
-        latency_ms=2500.0,
-    )
+    make_log_request(request_id="req1", cluster="denmark")
+    make_log_request(request_id="req2", cluster="portugal")
+    make_log_request(request_id="req3", cluster="portugal")
 
     summary = generate_summary()
     assert summary["cluster_distribution"]["denmark"] == 1
@@ -318,30 +333,39 @@ def test_generate_summary_correct_cluster_distribution():
 def test_generate_summary_reads_strategy_name():
     """Test that generate_summary reads the strategy name from the request CSV."""
     init_csv()
-    log_request(
-        request_id="req1",
-        strategy="carbon_100_cost_000",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=1000.0,
-    )
+    make_log_request(strategy="carbon_100_cost_000")
 
     summary = generate_summary()
     assert summary["strategy"] == "carbon_100_cost_000"
 
 
+@pytest.mark.integration
+def test_generate_summary_includes_energy_fields():
+    """Test that generate_summary includes gco2, cost, and renewable fields."""
+    init_csv()
+    make_log_request(
+        cluster_load_w=1000.0,
+        renewable_fraction=0.5,
+        blended_carbon_gco2_per_kwh=100.0,
+        blended_cost_eur_per_kwh=0.04,
+        latency_ms=3600000.0,  # 1 hour in ms → 1 kWh at 1000W
+    )
+
+    summary = generate_summary()
+    assert summary["total_gco2_g"] > 0
+    assert summary["total_cost_eur"] > 0
+    assert summary["avg_renewable_pct"] == 50.0
+    assert len(summary["latency_over_time"]) == 1
+    assert len(summary["cost_over_time"]) == 1
+
+
 # --- save_summary ---
+
 @pytest.mark.integration
 def test_save_summary_creates_json():
     """Test that save_summary creates a JSON file with the summary data."""
     init_csv()
-    log_request(
-        request_id="req1",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
-        latency_ms=1000.0,
-    )
+    make_log_request()
 
     summary = generate_summary()
     output_path = "logs/test_summary.json"

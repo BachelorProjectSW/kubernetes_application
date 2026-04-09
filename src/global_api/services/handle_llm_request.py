@@ -1,23 +1,54 @@
+import time
+import uuid
 import requests
+from datetime import datetime, timezone
+
 from ...models.basemodels import QuestionConfig
-from .scoring import choose_cluster
+from .cluster_data import get_cluster_cluster_energy_data_data
+from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
 from ..util.all_configuration import config_store
+from ...custom_logging.logger import log_request
 
 
 def handle_llm_request(question: QuestionConfig):
     """Send the question to the local cluster request scheduler llama-service."""
-    # TODO start logging timer.
+    request_id = str(uuid.uuid4())
     config = config_store.get()
-    # TODO calculate the current simulated time (start_time_real - datetime.now() + start_time_simulated)
-    # TODO get "current simulated times^" cost and energy and update config.clusters information.
 
-    # TODO make a function to determine if the workernodes are active or idle in each cluster.
-    # TODO ^active nodes and idle nodes for each cluster.
-    cluster = choose_cluster(config.clusters, config.weights, config.energy)
-    ip = cluster.ip
-    port = cluster.port
-    url = f"http://{ip}:{port}/handle_llm_request"
+    # TODO: compute actual simulated time from (datetime.now() - start_time_real + start_time_simulated)
+    simulated_time = datetime.now(timezone.utc)
+
+    cluster_energy_data_data = [
+        get_cluster_cluster_energy_data_data(cluster, simulated_time, config.energy)
+        for cluster in config.clusters
+    ]
+
+    cluster, cluster_energy_data = choose_cluster(config.clusters, cluster_energy_data_data, config.weights, config.energy)
+
+    renewable_fraction = compute_grid_fraction(cluster_energy_data["renewable_output_w"], cluster_energy_data["cluster_load_w"])
+    blended_carbon = compute_carbon_blend(cluster_energy_data["renewable_output_w"], cluster_energy_data["cluster_load_w"], cluster_energy_data["grid_carbon_intensity"])
+    blended_cost = compute_cost_blend(cluster_energy_data["renewable_output_w"], cluster_energy_data["cluster_load_w"], cluster_energy_data["grid_electricity_price"])
+
+    url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
+
+    t_start = time.monotonic()
     response = requests.post(url, json=question.model_dump())
+    latency_ms = (time.monotonic() - t_start) * 1000
 
-    # TODO log calculate time from begin to finish (our definition of latency)
-    return response.json()
+    result = response.json()
+    # TODO: extract node name from response once cluster_api returns it
+    node = result.get("node", "unknown") if isinstance(result, dict) else "unknown"
+
+    log_request(
+        request_id=request_id,
+        strategy=config.name,
+        cluster=cluster.name,
+        node=node,
+        latency_ms=latency_ms,
+        cluster_load_w=cluster_energy_data["cluster_load_w"],
+        renewable_fraction=renewable_fraction,
+        blended_carbon_gco2_per_kwh=blended_carbon,
+        blended_cost_eur_per_kwh=blended_cost,
+    )
+
+    return result
