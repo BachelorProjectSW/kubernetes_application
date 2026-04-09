@@ -45,7 +45,7 @@ def get_current_rps():
     """Analyse logs."""
     # TODO analyse logs
     import random
-    return random.uniform(1,20)
+    return random.uniform(0,2)
 
 
 def estimate_nodes_to_add(
