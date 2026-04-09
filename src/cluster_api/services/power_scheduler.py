@@ -27,9 +27,9 @@ def turn_on_node(worker_node: WorkerNode):
         lgpio.gpio_claim_output(h, gpio)
         lgpio.gpio_write(h, gpio, 1)  # turn LED on
         log.debug("turning node on", node=worker_node.name)
-        worker_node.status = WorkerStatus.IDLE #Should be turning on
+        worker_node.status = WorkerStatus.IDLE  # Should be turning on
     except Exception as e:
-        worker_node.status = WorkerStatus.IDLE #DEBUG!!!
+        worker_node.status = WorkerStatus.IDLE  # DEBUG!!!
         log.debug(f"failed to turn on node: {e}")
 
 
