@@ -1,6 +1,5 @@
 from gpiozero import LED as WORKER_NODE_POWER
 from gpiozero.pins.lgpio import LGPIOFactory
-
 import paramiko
 import structlog
 from ...models.basemodels import WorkerNode
@@ -16,7 +15,7 @@ def turn_on_node(worker_node: WorkerNode):
     try:
         gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
-        worker_node_power = WORKER_NODE_POWER(21, pin_factory=FACTORY)
+        worker_node_power = WORKER_NODE_POWER(gpio, pin_factory=FACTORY)
         worker_node_power.on()
         log.debug("turning node on", node=worker_node.name)
         worker_node.status = WorkerStatus.IDLE
@@ -29,7 +28,7 @@ def turn_off_node(worker_node: WorkerNode, username: str, password: str):
     try:
         gpio = worker_node.gpio
         log.debug("gpio to turn off", gpio=gpio)
-        worker_node_power = WORKER_NODE_POWER(21, pin_factory=FACTORY)
+        worker_node_power = WORKER_NODE_POWER(gpio, pin_factory=FACTORY)
         worker_node_power.on()
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())

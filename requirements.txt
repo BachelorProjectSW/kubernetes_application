@@ -10,3 +10,4 @@ aiohttp
 gpiozero
 paramiko
 python-dotenv
+lgpio
