@@ -30,7 +30,13 @@ def run_cmd(cmd):
         cmd = shlex.join(cmd)
 
     print(f"Running: {cmd}")
-    subprocess.run(cmd, shell=True)
+    result = subprocess.run(
+        cmd,
+        shell=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
 
 
 def run_cmd_bg(cmd):

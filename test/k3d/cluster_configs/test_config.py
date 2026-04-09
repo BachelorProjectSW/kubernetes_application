@@ -49,13 +49,14 @@ def get_test_config():
                 name="dk",
                 ip="127.0.0.1",
                 port="8040",
-                gpio_list=[21],
+                gpio_list=[21, 22],
                 simulated_country_code="dk-dk1",
                 llama_service_port="8083",
                 renewable_output_w=200,
                 cluster_load_w=1000,
                 grid_carbon_intensity=100,
-                grid_electricity_price=0.12
+                grid_electricity_price=0.12,
+                k3d=True
 
             ),
             ClusterConfig(
@@ -68,7 +69,8 @@ def get_test_config():
                 renewable_output_w=400,
                 cluster_load_w=1000,
                 grid_carbon_intensity=300,
-                grid_electricity_price=0.14
+                grid_electricity_price=0.14,
+                k3d=True
             ),
         ],
         global_scheduler=GlobalSchedulerConfig(

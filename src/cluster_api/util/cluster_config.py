@@ -59,12 +59,14 @@ class ConfigStore:
                 ip=ip,
                 status=status,
                 gpio=0,  # will later be assigned
-                llama_nodeport=0   # Will be assigned later, based on k3d or k3s
             )
             self.config.worker_nodes.append(worker_node)
 
         self.assign_gpios()
-        self.populate_service_ports()
+        if self.config.cluster_config.k3d:
+            self.assign_forwarded_ports()
+        else:
+            self.populate_service_ports()
         self.populate_worker_capacities()
         return self.config.worker_nodes
 
@@ -90,8 +92,27 @@ class ConfigStore:
             self.build_worker_nodes()
         return [node.model_dump() for node in self.config.worker_nodes]
 
+    def assign_forwarded_ports(self):
+        """Assign forwarded ports to workers in k3d mode."""
+        if self.config is None:
+            raise Exception("Config is not set yet")
+
+        base_port = int(self.config.cluster_config.llama_service_port)
+
+        workers = sorted(self.config.worker_nodes, key=lambda worker: worker.name)  # Sort by name
+
+        for index, worker in enumerate(workers):
+            worker.forwarded_port = base_port + index
+            log.debug(
+                "cluster.worker_forwarded_port_assigned",
+                worker_name=worker.name,
+                worker_ip=worker.ip,
+                forwarded_port=worker.forwarded_port,
+            )
+
     def populate_service_ports(self):
         """Fetch NodePort from llama-service and save it in cluster config."""
+        # Can be looked up in the .yaml file, but this is automized
         if self.config is None:
             raise Exception("Config is not set yet")
 
@@ -100,30 +121,30 @@ class ConfigStore:
             name="llama-service",
             namespace="default",
         )
+        ports = service.spec.ports
+        if not ports:
+            raise ValueError("llama-service has no ports")
+        port = ports[0]
+        if port.node_port is None:
+            raise ValueError("llama-service has no nodePort")
 
-        for port in service.spec.ports:
-            if port.port == 8080:
-                if port.node_port is None:
-                    raise ValueError("llama-service has no nodePort")
-
-                self.config.cluster_config.llama_nodeport = port.node_port
-                log.debug(
-                    "service.nodeport_discovered",
-                    service_name="llama-service",
-                    service_port=port.port,
-                    node_port=port.node_port,
-                )
-                return
-
-        raise ValueError("Could not find service port 8080 on llama-service")
+        self.config.cluster_config.llama_nodeport = port.node_port
+        log.debug(
+            "service.nodeport_discovered",
+            service_name="llama-service",
+            service_port=port.port,
+            node_port=port.node_port,
+        )
+        return
 
     def populate_worker_capacities(self):
         """Fetch max_slots from each worker's llama server."""
+        # Max slot = level of concurrency
+
         if self.config is None:
             raise Exception("Config is not set yet")
 
         if not self.config.worker_nodes:
-            self.build_worker_nodes()
             return
 
         for worker in self.config.worker_nodes:
@@ -133,8 +154,8 @@ class ConfigStore:
                 continue
 
             try:
-                if self.config.cluster_config.use_port_forward:
-                    url = f"http://localhost:{self.config.cluster_config.llama_service_port}/props"
+                if self.config.cluster_config.k3d:
+                    url = f"http://localhost:{worker.forwarded_port}/props"
                 else:
                     url = f"http://{worker.ip}:{self.config.cluster_config.llama_nodeport}/props"
 
@@ -145,7 +166,7 @@ class ConfigStore:
                     url=url,
                 )
 
-                response = requests.get(url, timeout=10)
+                response = requests.get(url, timeout=60)
                 response.raise_for_status()
 
                 props = response.json()
