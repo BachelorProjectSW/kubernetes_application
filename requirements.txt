@@ -7,7 +7,6 @@ requests
 structlog
 pydantic
 aiohttp
-gpiozero
 paramiko
 python-dotenv
 lgpio
