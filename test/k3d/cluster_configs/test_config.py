@@ -18,7 +18,7 @@ def get_test_config():
         id="123",
         name="demo test",
         start=StartConfig(
-            duration_time_s=30,
+            duration_time_s=60,
             start_time_simulated="01/10/2021",
             start_time_real=None
         ),
