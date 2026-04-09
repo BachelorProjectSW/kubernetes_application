@@ -45,14 +45,11 @@ def handle_llm_request(question: QuestionConfig):
     latency_ms = (time.monotonic() - t_start) * 1000
 
     result = response.json()
-    # TODO: extract node name from response once cluster_api returns it
-    node = result.get("node", "unknown") if isinstance(result, dict) else "unknown"
 
     log_request(
         request_id=request_id,
-        strategy=config.name,
-        cluster=cluster.name,
-        node=node,
+        cluster=cluster,
+        node=None,  # TODO: resolve WorkerNode from response once cluster_api returns node name
         latency_ms=latency_ms,
         cluster_load_w=cluster_load_w,
         renewable_fraction=renewable_fraction,

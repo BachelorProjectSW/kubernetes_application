@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timezone
 
 from .models.log_models import RequestLog, PowerDecisionLog, NodeStatusLog
+from ..models.basemodels import ClusterConfig, WorkerNode
 
 structlog.configure(
     processors=[
@@ -58,9 +59,8 @@ def reset_logs():
 
 def log_request(
     request_id: str,
-    strategy: str,
-    cluster: str,
-    node: str,
+    cluster: ClusterConfig,
+    node: WorkerNode | None,
     latency_ms: float,
     cluster_load_w: float,
     renewable_fraction: float,
@@ -71,9 +71,8 @@ def log_request(
     entry = RequestLog(
         request_id=request_id,
         timestamp=datetime.now(timezone.utc),
-        strategy=strategy,
-        cluster=cluster,
-        node=node,
+        cluster=cluster.name,
+        node=node.name if node else "unknown",
         latency_ms=round(latency_ms, 2),
         cluster_load_w=round(cluster_load_w, 2),
         renewable_fraction=round(renewable_fraction, 4),
@@ -92,8 +91,8 @@ def log_request(
 
 def log_power_decision(
     action: str,
-    cluster: str,
-    node: str,
+    cluster: ClusterConfig,
+    node: WorkerNode,
     reason: str,
     system_avg_latency_ms: float,
 ):
@@ -105,8 +104,8 @@ def log_power_decision(
     entry = PowerDecisionLog(
         timestamp=datetime.now(timezone.utc),
         action=action,
-        cluster=cluster,
-        node=node,
+        cluster=cluster.name,
+        node=node.name,
         reason=reason,
         system_avg_latency_ms=round(system_avg_latency_ms, 2)
     )
@@ -120,26 +119,26 @@ def log_power_decision(
     log.info(f"power.{action}", **row)
 
 
-def log_node_status_snapshot(cluster: str, node_statuses: list[dict]):
+def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerNode]):
     """Log a snapshot of all node statuses for a cluster."""
     timestamp = datetime.now(timezone.utc)
-    active_nodes = sum(1 for n in node_statuses if n["status"] in ("working",))
-    idle_nodes = sum(1 for n in node_statuses if n["status"] == "idle")
+    active_nodes = sum(1 for n in node_statuses if n.status == "working")
+    idle_nodes = sum(1 for n in node_statuses if n.status == "idle")
 
     with open(NODE_STATUS_CSV_PATH, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=NODE_STATUS_CSV_FIELDS)
         for node in node_statuses:
             entry = NodeStatusLog(
                 timestamp=timestamp,
-                cluster=cluster,
-                node=node["node"],
-                status=node["status"],
+                cluster=cluster.name,
+                node=node.name,
+                status=node.status,
                 active_nodes=active_nodes,
                 idle_nodes=idle_nodes,
             )
             writer.writerow(entry.model_dump(mode="json"))
 
-    log.info("node_status.snapshot", cluster=cluster, active=active_nodes, idle=idle_nodes)
+    log.info("node_status.snapshot", cluster=cluster.name, active=active_nodes, idle=idle_nodes)
 
 
 def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
@@ -154,7 +153,6 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
         return {"error": "No requests in the CSV"}
 
     total = len(rows)
-    strategy = rows[0].get("strategy", "unknown")
 
     latencies = []
     for r in rows:
@@ -200,7 +198,6 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
 
     summary = {
         "summary_id": str(uuid.uuid4()),
-        "strategy": strategy,
         "total_requests": total,
         "avg_latency_ms": round(avg_latency, 1),
         "latency_over_time": latency_over_time,

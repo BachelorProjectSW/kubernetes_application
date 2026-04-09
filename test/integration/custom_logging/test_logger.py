@@ -19,6 +19,24 @@ from src.custom_logging.logger import (
     POWER_CSV_FIELDS,
     NODE_STATUS_CSV_FIELDS,
 )
+from src.models.basemodels import ClusterConfig, WorkerNode
+
+
+def _make_cluster(name: str = "denmark") -> ClusterConfig:
+    """Return a minimal ClusterConfig for testing."""
+    return ClusterConfig(
+        name=name,
+        ip="127.0.0.1",
+        port="8080",
+        gpio_list=[],
+        simulated_country_code="DK",
+        llama_service_port="11434",
+    )
+
+
+def _make_node(name: str = "nano1") -> WorkerNode:
+    """Return a minimal WorkerNode for testing."""
+    return WorkerNode(name=name, ip="127.0.0.1", status="working", gpio=1)
 
 
 @pytest.fixture(autouse=True)
@@ -37,11 +55,12 @@ def clean_logs():
 
 def make_log_request(**overrides):
     """Call log_request with default values, optionally overriding any field."""
+    cluster_name = overrides.pop("cluster", "denmark")
+    node_name = overrides.pop("node", "nano1")
     defaults = dict(
         request_id="req001",
-        strategy="test",
-        cluster="denmark",
-        node="nano1",
+        cluster=_make_cluster(cluster_name),
+        node=_make_node(node_name),
         latency_ms=1000.0,
         cluster_load_w=1000.0,
         renewable_fraction=0.3,
@@ -133,7 +152,7 @@ def test_reset_logs_csvs_exist_after():
 def test_log_request_writes_row():
     """Test that log_request writes a row to the request CSV."""
     init_csv()
-    make_log_request(request_id="req001", cluster="portugal", node="nano4", strategy="carbon_070_cost_030")
+    make_log_request(request_id="req001", cluster="portugal", node="nano4")
 
     with open(REQUEST_CSV_PATH, "r") as f:
         reader = csv.DictReader(f)
@@ -143,7 +162,6 @@ def test_log_request_writes_row():
     assert rows[0]["request_id"] == "req001"
     assert rows[0]["cluster"] == "portugal"
     assert rows[0]["node"] == "nano4"
-    assert rows[0]["strategy"] == "carbon_070_cost_030"
 
 
 @pytest.mark.integration
@@ -214,8 +232,8 @@ def test_log_power_decision_writes_shutdown():
     init_csv()
     log_power_decision(
         action="shutdown",
-        cluster="denmark",
-        node="nano2",
+        cluster=_make_cluster("denmark"),
+        node=_make_node("nano2"),
         reason="idle_poor_energy",
         system_avg_latency_ms=2100.0,
     )
@@ -237,8 +255,8 @@ def test_log_power_decision_writes_startup():
     init_csv()
     log_power_decision(
         action="startup",
-        cluster="portugal",
-        node="nano5",
+        cluster=_make_cluster("portugal"),
+        node=_make_node("nano5"),
         reason="latency_high",
         system_avg_latency_ms=5800.0,
     )
@@ -258,10 +276,10 @@ def test_log_power_decision_writes_startup():
 def test_log_node_status_snapshot_writes_one_row_per_node():
     """Test that log_node_status_snapshot writes one row per node."""
     init_csv()
-    log_node_status_snapshot("denmark", [
-        {"node": "worker-1", "status": "working"},
-        {"node": "worker-2", "status": "idle"},
-        {"node": "worker-3", "status": "off"},
+    log_node_status_snapshot(_make_cluster("denmark"), [
+        WorkerNode(name="worker-1", ip="127.0.0.1", status="working", gpio=1),
+        WorkerNode(name="worker-2", ip="127.0.0.1", status="idle", gpio=2),
+        WorkerNode(name="worker-3", ip="127.0.0.1", status="off", gpio=3),
     ])
 
     with open(NODE_STATUS_CSV_PATH, "r") as f:
@@ -275,10 +293,10 @@ def test_log_node_status_snapshot_writes_one_row_per_node():
 def test_log_node_status_snapshot_counts_active_and_idle():
     """Test that log_node_status_snapshot correctly counts active and idle nodes."""
     init_csv()
-    log_node_status_snapshot("denmark", [
-        {"node": "worker-1", "status": "working"},
-        {"node": "worker-2", "status": "idle"},
-        {"node": "worker-3", "status": "off"},
+    log_node_status_snapshot(_make_cluster("denmark"), [
+        WorkerNode(name="worker-1", ip="127.0.0.1", status="working", gpio=1),
+        WorkerNode(name="worker-2", ip="127.0.0.1", status="idle", gpio=2),
+        WorkerNode(name="worker-3", ip="127.0.0.1", status="off", gpio=3),
     ])
 
     with open(NODE_STATUS_CSV_PATH, "r") as f:
@@ -335,16 +353,6 @@ def test_generate_summary_correct_cluster_distribution():
 
 
 @pytest.mark.integration
-def test_generate_summary_reads_strategy_name():
-    """Test that generate_summary reads the strategy name from the request CSV."""
-    init_csv()
-    make_log_request(strategy="carbon_100_cost_000")
-
-    summary = generate_summary()
-    assert summary["strategy"] == "carbon_100_cost_000"
-
-
-@pytest.mark.integration
 def test_generate_summary_includes_energy_fields():
     """Test that generate_summary includes gco2, cost, and renewable fields."""
     init_csv()
@@ -381,7 +389,6 @@ def test_save_summary_creates_json():
     with open(output_path, "r") as f:
         loaded = json.load(f)
 
-    assert loaded["strategy"] == "test"
     assert loaded["total_requests"] == 1
 
     os.remove(output_path)
@@ -419,7 +426,6 @@ def test_get_request_logs_fields_match_logged_values():
     init_csv()
     make_log_request(
         request_id="req001",
-        strategy="carbon_test",
         cluster="portugal",
         node="nano4",
         latency_ms=1234.5,
@@ -433,7 +439,6 @@ def test_get_request_logs_fields_match_logged_values():
     entry = result[0]
 
     assert entry.request_id == "req001"
-    assert entry.strategy == "carbon_test"
     assert entry.cluster == "portugal"
     assert entry.node == "nano4"
     assert entry.latency_ms == 1234.5

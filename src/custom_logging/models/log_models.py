@@ -7,7 +7,6 @@ class RequestLog(BaseModel):
 
     request_id: str
     timestamp: datetime
-    strategy: str
     cluster: str
     node: str
     latency_ms: float
