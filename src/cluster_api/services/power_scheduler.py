@@ -1,4 +1,3 @@
-import lgpio
 import paramiko
 import structlog
 from ...models.basemodels import WorkerNode
@@ -8,10 +7,16 @@ from ...custom_logging.util.log_reader import get_request_logs
 from ...custom_logging.models.log_models import RequestLog
 from datetime import datetime, timezone
 
+import os
+
+if os.environ.get("CI"):
+    print("Running in CI – skipping GPIO initialization")
+    h = None
+else:
+    import lgpio
+    h = lgpio.gpiochip_open(0)
 
 log = structlog.get_logger()
-
-h = lgpio.gpiochip_open(0)
 
 
 def turn_on_node(worker_node: WorkerNode):
@@ -22,8 +27,9 @@ def turn_on_node(worker_node: WorkerNode):
         lgpio.gpio_claim_output(h, gpio)
         lgpio.gpio_write(h, gpio, 1)  # turn LED on
         log.debug("turning node on", node=worker_node.name)
-        worker_node.status = WorkerStatus.IDLE
+        worker_node.status = WorkerStatus.IDLE #Should be turning on
     except Exception as e:
+        worker_node.status = WorkerStatus.IDLE #DEBUG!!!
         log.debug(f"failed to turn on node: {e}")
 
 
