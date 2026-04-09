@@ -1,5 +1,5 @@
-from ...models.basemodels import Config
-
+from ...models.basemodels import Config, ClusterInformation
+import requests
 
 class ConfigStore:
     """Store for the current config."""
@@ -19,6 +19,24 @@ class ConfigStore:
     def get_clusters(self):
         """Return clusters."""
         return self.config.clusters
+
+    def get_cluster_information(self):
+        """Return all cluster informations."""
+        all_clusters = []
+
+        for cluster_cfg in self.config.clusters:
+            url = f"http://{cluster_cfg.ip}:{cluster_cfg.port}/get_cluster_information"
+
+            response = requests.get(url, timeout=20)
+            response.raise_for_status()
+
+            data = response.json() 
+
+            cluster_info = ClusterInformation(**data)
+
+            all_clusters.append(cluster_info)
+
+        return all_clusters
 
 
 config_store = ConfigStore()

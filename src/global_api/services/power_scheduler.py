@@ -5,6 +5,8 @@ from scoring import score_cluster
 from ..util.all_configuration import config_store
 import math
 import requests
+import structlog
+log = structlog.get_logger()
 
 #TODO this should be in util and return worker nodes logs for each cluster.
 def get_worker_nodes_logs():
@@ -60,9 +62,8 @@ def estimate_nodes_to_add(
     return nodes_to_add
 
 
-def turn_nodes_on(config: Config):
+def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     """Turn nodes on."""
-    
     # Sort clusters by score (highest first)
     sorted_clusters = sorted(
         clusters,
@@ -115,6 +116,8 @@ async def power_scheduler_loop():
     timeout = config.power_scheduler.timeout_s
     idle_time_for_turn_off_s = config.power_scheduler.idle_time_for_turn_off_s
     while config.power_scheduler.start:
+        log.info("Global Power Scheduler Sunning")
         time.sleep(timeout)
-        turn_nodes_on(config)
+        all_clusters = config_store.get_cluster_information()
+        turn_nodes_on(config, all_clusters)
         turn_off_idle_nodes(idle_time_for_turn_off_s)
