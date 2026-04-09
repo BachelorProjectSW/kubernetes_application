@@ -1,7 +1,20 @@
 import csv
 from datetime import datetime, timezone
+from typing import TypeVar, Type
 from ..logger import REQUEST_CSV_PATH, NODE_STATUS_CSV_PATH
-from ..models.log_models import RequestLog
+from ..models.log_models import RequestLog, NodeStatusLog
+
+T = TypeVar("T")
+
+
+def get_logs(log_class: Type[T], path: str) -> list[T]:
+    """Return logs from a CSV file parsed into the given Pydantic model class."""
+    logs = []
+    with open(path, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            logs.append(log_class(**row))
+    return logs
 
 
 def get_avg_latency(time_interval_s: int) -> float:
@@ -28,33 +41,11 @@ def get_avg_latency(time_interval_s: int) -> float:
     return round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
 
-def get_worker_nodes_logs() -> list[dict]:
-    """Return all status snapshot rows for every node across all clusters.
-
-    Returns:
-        List of node status dicts (timestamp, cluster, node, status, active_nodes, idle_nodes).
-
-    """
-    all_rows = []
-    with open(NODE_STATUS_CSV_PATH, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            all_rows.append(row)
-
-    return all_rows
-
-
 def get_request_logs() -> list[RequestLog]:
-    """Return all request log entries as a list of RequestLog objects.
+    """Return all request log entries as RequestLog objects."""
+    return get_logs(RequestLog, REQUEST_CSV_PATH)
 
-    Returns:
-        List of RequestLog objects parsed from the request logs CSV.
 
-    """
-    request_logs = []
-    with open(REQUEST_CSV_PATH, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            request_logs.append(RequestLog(**row))
-
-    return request_logs
+def get_worker_nodes_logs() -> list[NodeStatusLog]:
+    """Return all node status snapshot entries as NodeStatusLog objects."""
+    return get_logs(NodeStatusLog, NODE_STATUS_CSV_PATH)
