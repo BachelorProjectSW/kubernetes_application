@@ -1,7 +1,7 @@
 import csv
 from datetime import datetime, timezone
-from ....custom_logging.logger import REQUEST_CSV_PATH, NODE_STATUS_CSV_PATH
-from ....custom_logging.models.log_models import RequestLog
+from ..logger import REQUEST_CSV_PATH, NODE_STATUS_CSV_PATH
+from ..models.log_models import RequestLog
 
 
 def get_avg_latency(time_interval_s: int) -> float:

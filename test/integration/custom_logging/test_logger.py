@@ -2,6 +2,8 @@ import csv
 import json
 import os
 import pytest
+from src.custom_logging.models.log_models import RequestLog
+from src.custom_logging.util.log_reader import get_request_logs
 from src.custom_logging.logger import (
     init_csv,
     reset_logs,
@@ -383,3 +385,69 @@ def test_save_summary_creates_json():
     assert loaded["total_requests"] == 1
 
     os.remove(output_path)
+
+
+# --- get_request_logs ---
+
+@pytest.mark.integration
+def test_get_request_logs_returns_request_log_objects():
+    """Test that get_request_logs returns a list of RequestLog objects."""
+    init_csv()
+    make_log_request(request_id="req001")
+
+    result = get_request_logs()
+
+    assert len(result) == 1
+    assert isinstance(result[0], RequestLog)
+
+
+@pytest.mark.integration
+def test_get_request_logs_returns_all_rows():
+    """Test that get_request_logs returns one entry per logged request."""
+    init_csv()
+    for i in range(3):
+        make_log_request(request_id=f"req{i}")
+
+    result = get_request_logs()
+
+    assert len(result) == 3
+
+
+@pytest.mark.integration
+def test_get_request_logs_fields_match_logged_values():
+    """Test that the returned RequestLog fields match what was logged."""
+    init_csv()
+    make_log_request(
+        request_id="req001",
+        strategy="carbon_test",
+        cluster="portugal",
+        node="nano4",
+        latency_ms=1234.5,
+        cluster_load_w=800.0,
+        renewable_fraction=0.4,
+        blended_carbon_gco2_per_kwh=60.0,
+        blended_cost_eur_per_kwh=0.025,
+    )
+
+    result = get_request_logs()
+    entry = result[0]
+
+    assert entry.request_id == "req001"
+    assert entry.strategy == "carbon_test"
+    assert entry.cluster == "portugal"
+    assert entry.node == "nano4"
+    assert entry.latency_ms == 1234.5
+    assert entry.cluster_load_w == 800.0
+    assert entry.renewable_fraction == 0.4
+    assert entry.blended_carbon_gco2_per_kwh == 60.0
+    assert entry.blended_cost_eur_per_kwh == 0.025
+
+
+@pytest.mark.integration
+def test_get_request_logs_returns_empty_list_when_no_requests():
+    """Test that get_request_logs returns an empty list when no requests have been logged."""
+    init_csv()
+
+    result = get_request_logs()
+
+    assert result == []
