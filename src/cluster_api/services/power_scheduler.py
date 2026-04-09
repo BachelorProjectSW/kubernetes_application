@@ -14,8 +14,8 @@ def turn_on_node(worker_node: WorkerNode):
     try:
         gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
-        lgpio.gpio_claim_output(h, 21)
-        lgpio.gpio_write(h, 21, 1)  # turn LED on
+        lgpio.gpio_claim_output(h, gpio)
+        lgpio.gpio_write(h, gpio, 1)  # turn LED on
         log.debug("turning node on", node=worker_node.name)
         worker_node.status = WorkerStatus.IDLE
     except Exception as e:
@@ -27,8 +27,8 @@ def turn_off_node(worker_node: WorkerNode, username: str, password: str):
     try:
         gpio = worker_node.gpio
         log.debug("gpio to turn off", gpio=gpio)
-        lgpio.gpio_claim_output(h, 21)
-        lgpio.gpio_write(h, 21, 0)  # turn LED on
+        lgpio.gpio_claim_output(h, gpio)
+        lgpio.gpio_write(h, gpio, 0)  # turn LED on
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(hostname=worker_node.ip, username=username, password=password)
