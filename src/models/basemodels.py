@@ -55,6 +55,8 @@ class WorkerNode(BaseModel):
     name: str
     ip: str
     status: Literal["off", "turning_on", "turning_off", "working", "idle"]
+    slots_in_use: int = 0
+    max_slots: int = 0
     gpio: int
 
 
@@ -71,6 +73,8 @@ class ClusterConfig(BaseModel):
     cluster_load_w: float
     grid_carbon_intensity: float
     grid_electricity_price: float
+    use_port_forward: bool = False
+    llama_nodeport: int
 
 
 class ClusterInformation(BaseModel):

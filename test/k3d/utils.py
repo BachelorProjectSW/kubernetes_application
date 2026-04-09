@@ -1,6 +1,6 @@
 import shlex
 import subprocess
-from .cluster_configs.test_config import get_test_config
+from test.k3d.cluster_configs.test_config import get_test_config
 
 
 def get_config():

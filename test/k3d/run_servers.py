@@ -31,20 +31,6 @@ def run_cluster_server(cluster_name, port):
     uvicorn.run("src.cluster_api.app:app", host="0.0.0.0", port=port)
 
 
-def run_port_forward(cluster_name, local_port, service_port):
-    """Start kubectl port-forward for the llama-service."""
-    service_name = "llama-service"
-    kubeconfig = SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"
-    cmd = [
-        "kubectl",
-        "--kubeconfig", str(kubeconfig),
-        "port-forward",
-        f"services/{service_name}",
-        f"{local_port}:{service_port}"
-    ]
-    run_cmd_bg(cmd)
-
-
 def start_all_servers():
     """Start strato, global scheduler, all cluster control planes, and port-forward the llama-services."""
     configs = get_test_config()

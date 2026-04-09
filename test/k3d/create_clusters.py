@@ -1,4 +1,4 @@
-from .utils import get_cluster_names, run_cmd
+from test.k3d.utils import get_cluster_names, run_cmd
 
 
 def create_clusters():
