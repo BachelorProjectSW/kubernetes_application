@@ -1,7 +1,7 @@
 import time
 from ...models.basemodels import Config, ClusterInformation
 from ...models.enum import WorkerStatus
-from scoring import score_cluster
+from .scoring import score_cluster
 from ..util.all_configuration import config_store
 import math
 import requests
