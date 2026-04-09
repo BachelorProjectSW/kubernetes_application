@@ -84,6 +84,9 @@ class ClusterConfig(BaseModel):
     port: str
     gpio_list: list[int]
     simulated_country_code: str
+    k3d: bool = False
+    llama_service_port: int
+    llama_nodeport: int = 30080
 
 
 class ClusterRuntimeData(BaseModel):
@@ -93,9 +96,6 @@ class ClusterRuntimeData(BaseModel):
     cluster_load_w: float
     grid_carbon_intensity: float
     grid_electricity_price: float
-    k3d: bool = False
-    llama_service_port: int
-    llama_nodeport: int = 30080
 
 
 class ClusterInformation(BaseModel):
