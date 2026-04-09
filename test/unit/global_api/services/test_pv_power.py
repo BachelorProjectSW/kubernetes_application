@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch, mock_open
 from src.global_api.services.pv_power import get_power_factor_by_time
 
@@ -11,15 +11,20 @@ CSV_CONTENT = """time,PT
 """
 
 
+def dt(hour):
+    """Return a timezone-aware datetime on 2010-06-01 at the given hour."""
+    return datetime(2010, 6, 1, hour, tzinfo=timezone.utc)
+
+
 @pytest.mark.unit
 def test_get_power_returns_only_rows_within_range():
     """Only rows within start and end (inclusive) are returned."""
     with patch("pathlib.Path.open", mock_open(read_data=CSV_CONTENT)):
-        result = get_power_factor_by_time(datetime(2010, 6, 1, 11), datetime(2010, 6, 1, 12), "PT")
+        result = get_power_factor_by_time(dt(11), dt(12), "PT")
 
     assert result == [
-        (datetime(2010, 6, 1, 11), 0.7994),
-        (datetime(2010, 6, 1, 12), 0.8415),
+        (dt(11), 0.7994),
+        (dt(12), 0.8415),
     ]
 
 
@@ -27,7 +32,7 @@ def test_get_power_returns_only_rows_within_range():
 def test_get_power_returns_empty_list_if_no_rows_within_range():
     """An empty list is returned if no rows are within start and end."""
     with patch("pathlib.Path.open", mock_open(read_data=CSV_CONTENT)):
-        result = get_power_factor_by_time(datetime(2010, 6, 1, 14), datetime(2010, 6, 1, 15), "PT")
+        result = get_power_factor_by_time(dt(14), dt(15), "PT")
 
     assert result == []
 
@@ -37,8 +42,8 @@ def test_get_power_calculates_available_power():
     """Available power is capacity factor multiplied by max PV capacity."""
     with patch("pathlib.Path.open", mock_open(read_data=CSV_CONTENT)):
         from src.global_api.services.pv_power import get_power
-        result = get_power(datetime(2010, 6, 1, 11), datetime(2010, 6, 1, 12), "PT", pv_capacity_w=1500)
+        result = get_power(dt(11), dt(12), "PT", pv_capacity_w=1500)
 
     assert len(result) == 2
-    assert result[0] == (datetime(2010, 6, 1, 11), 1500 * 0.7994)
-    assert result[1] == (datetime(2010, 6, 1, 12), 1500 * 0.8415)
+    assert result[0] == (dt(11), 1500 * 0.7994)
+    assert result[1] == (dt(12), 1500 * 0.8415)
