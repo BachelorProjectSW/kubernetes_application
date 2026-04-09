@@ -6,6 +6,8 @@ from ..util.all_configuration import config_store
 import math
 import requests
 import structlog
+
+
 log = structlog.get_logger()
 
 
