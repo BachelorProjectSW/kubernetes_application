@@ -1,12 +1,12 @@
 from unittest.mock import patch
 from src.global_api.services.scoring import (
     compute_carbon_blend,
-    compute_cluster_load,
     compute_cost_blend,
     compute_grid_fraction,
     normalize_value,
     score_cluster,
 )
+from src.global_api.services.scoring import compute_cluster_load
 from src.models.basemodels import EnergyConfig
 import pytest
 
