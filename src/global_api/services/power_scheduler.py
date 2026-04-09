@@ -74,10 +74,10 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     sorted_clusters = sorted(
         clusters,
         key=lambda cluster: score_cluster(
-            cluster.renewable_output_w,
-            cluster.cluster_load_w,
-            cluster.grid_carbon_intensity,
-            cluster.grid_electricity_price,
+            cluster.cluster_config.renewable_output_w,
+            cluster.cluster_config.cluster_load_w,
+            cluster.cluster_config.grid_carbon_intensity,
+            cluster.cluster_config.grid_electricity_price,
             config.weights.gco2,
             config.weights.cost,
             config.energy,
@@ -105,9 +105,11 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
                 powered_off_nodes += 1
 
         amount = min(nodes_to_add, powered_off_nodes)
+        if amount <= 0:
+            continue
 
-        url = f"http://{cluster.ip}:{cluster.port}/turn_on_nodes/"
-        response = requests.post(url, json={"number_of_nodes": amount}, timeout=10)
+        url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_on_nodes/"
+        response = requests.post(url, params={"number_of_nodes": amount}, timeout=10)
         turned_on = response.json().get("turned_on", amount)
         nodes_to_add -= turned_on
 
