@@ -30,13 +30,10 @@ def get_avg_latency(time_interval_s: int) -> float:
     now = datetime.now(timezone.utc)
     latencies = []
 
-    with open(REQUEST_CSV_PATH, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            ts = datetime.fromisoformat(row["timestamp"])
-            age_s = (now - ts).total_seconds()
-            if age_s <= time_interval_s:
-                latencies.append(float(row["latency_ms"]))
+    for request_log in get_logs(RequestLog, REQUEST_CSV_PATH):
+        age_s = (now - request_log.timestamp).total_seconds()
+        if age_s <= time_interval_s:
+            latencies.append(request_log.latency_ms)
 
     return round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 

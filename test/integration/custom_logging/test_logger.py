@@ -2,8 +2,9 @@ import csv
 import json
 import os
 import pytest
+from datetime import datetime, timedelta, timezone
 from src.custom_logging.models.log_models import RequestLog
-from src.custom_logging.util.log_reader import get_request_logs
+from src.custom_logging.util.log_reader import get_request_logs, get_avg_latency
 from src.custom_logging.logger import (
     init_csv,
     reset_logs,
@@ -456,3 +457,69 @@ def test_get_request_logs_returns_empty_list_when_no_requests():
     result = get_request_logs()
 
     assert result == []
+
+
+# --- get_avg_latency ---
+
+def _write_old_request(latency_ms: float, age_s: int):
+    """Write a request row with a timestamp age_s seconds in the past."""
+    timestamp = datetime.now(timezone.utc) - timedelta(seconds=age_s)
+    row = {
+        "request_id": "old-req",
+        "timestamp": timestamp.isoformat(),
+        "cluster": "denmark",
+        "node": "nano1",
+        "latency_ms": latency_ms,
+        "cluster_load_w": 1000.0,
+        "renewable_fraction": 0.3,
+        "blended_carbon_gco2_per_kwh": 70.0,
+        "blended_cost_eur_per_kwh": 0.03,
+    }
+    with open(REQUEST_CSV_PATH, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=REQUEST_CSV_FIELDS)
+        writer.writerow(row)
+
+
+@pytest.mark.integration
+def test_get_avg_latency_returns_zero_when_no_requests():
+    """Test that get_avg_latency returns 0.0 when no requests have been logged."""
+    init_csv()
+
+    result = get_avg_latency(60)
+
+    assert result == 0.0
+
+
+@pytest.mark.integration
+def test_get_avg_latency_includes_recent_requests():
+    """Test that get_avg_latency includes requests within the time window."""
+    init_csv()
+    make_log_request(latency_ms=1000.0)
+    make_log_request(latency_ms=3000.0)
+
+    result = get_avg_latency(60)
+
+    assert result == 2000.0
+
+
+@pytest.mark.integration
+def test_get_avg_latency_excludes_old_requests():
+    """Test that get_avg_latency excludes requests outside the time window."""
+    init_csv()
+    _write_old_request(latency_ms=9000.0, age_s=120)
+    make_log_request(latency_ms=1000.0)
+
+    result = get_avg_latency(60)
+
+    assert result == 1000.0
+
+
+@pytest.mark.integration
+def test_get_avg_latency_returns_zero_when_all_requests_are_old():
+    """Test that get_avg_latency returns 0.0 when all requests are outside the time window."""
+    init_csv()
+    _write_old_request(latency_ms=9000.0, age_s=120)
+
+    result = get_avg_latency(60)
+
+    assert result == 0.0

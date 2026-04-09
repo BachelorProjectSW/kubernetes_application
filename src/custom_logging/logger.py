@@ -60,7 +60,7 @@ def reset_logs():
 def log_request(
     request_id: str,
     cluster: ClusterConfig,
-    node: WorkerNode | None,
+    node: WorkerNode,
     latency_ms: float,
     cluster_load_w: float,
     renewable_fraction: float,
@@ -72,7 +72,7 @@ def log_request(
         request_id=request_id,
         timestamp=datetime.now(timezone.utc),
         cluster=cluster.name,
-        node=node.name if node else "unknown",
+        node=node.name,
         latency_ms=round(latency_ms, 2),
         cluster_load_w=round(cluster_load_w, 2),
         renewable_fraction=round(renewable_fraction, 4),
