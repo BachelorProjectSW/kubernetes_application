@@ -27,8 +27,8 @@ def get_test_config():
             cost=0.9
         ),
         power_scheduler=PowerSchedulerConfig(
-            timeout_s=30,
-            idle_time_for_turn_off_s=120
+            timeout_s=5,
+            idle_time_for_turn_off_s=10
         ),
         latency=LatencyConfig(
             max_ms=12000
