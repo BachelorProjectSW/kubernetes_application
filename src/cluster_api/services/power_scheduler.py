@@ -11,7 +11,6 @@ log = structlog.get_logger()
 def turn_on_node(worker_node: WorkerNode):
     """Turn on the node via GPIO."""
     try:
-        worker_node.status = WorkerStatus.IDLE #DEBUG!!!
         gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
         IO(gpio).on()
