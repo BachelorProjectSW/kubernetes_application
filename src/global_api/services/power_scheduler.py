@@ -44,7 +44,7 @@ def get_current_active_nodes(clusters: list[ClusterInformation]):
 def get_current_rps():
     """Analyse logs."""
     # TODO analyse logs
-    return 1
+    return 20
 
 
 def estimate_nodes_to_add(
