@@ -2,7 +2,7 @@ import math
 import requests
 import structlog
 import asyncio
-from ...models.basemodels import Config, ClusterInformation
+from ...models.basemodels import Config, ClusterInformation, ClusterRuntimeData
 from ...models.enum import WorkerStatus
 from .scoring import score_cluster
 from ..util.all_configuration import config_store
@@ -75,7 +75,11 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     simulated_time = datetime.now(timezone.utc)
     scored_clusters = []
     for cluster in clusters:
-        runtime_data = get_cluster_runtime_data(cluster.cluster_config, simulated_time, config.energy)
+        runtime_data: ClusterRuntimeData = get_cluster_runtime_data(
+            cluster.cluster_config,
+            simulated_time,
+            config.energy
+        )
         cluster_score = score_cluster(
             runtime_data.renewable_output_w,
             runtime_data.cluster_load_w,
