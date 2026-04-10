@@ -9,6 +9,7 @@ class RequestLog(BaseModel):
     timestamp: datetime
     cluster: str
     node: str
+    success: bool 
     latency_ms: float
     cluster_load_w: float
     renewable_fraction: float

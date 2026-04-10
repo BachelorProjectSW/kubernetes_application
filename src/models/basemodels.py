@@ -162,7 +162,7 @@ class LLMResponse(BaseModel):
     """LLM response."""
 
     llm_content: dict
-    worker_node: dict
+    worker_node: WorkerNode
     inflight_requests_at_selection: int
     active_requests_at_selection: int
     queued_requests_at_selection: int
