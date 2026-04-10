@@ -1,7 +1,7 @@
 import { useState } from "react";
 import earlierExpIds from './staticData';
 
-function Ids({inputs,setInputs,handleChange}) {
+function Ids({ inputs, setInputs, handleChange }) {
 
     const [isExisting, setIsExisting] = useState(false);
     const toggleMode = () => setIsExisting(!isExisting);
@@ -17,8 +17,8 @@ function Ids({inputs,setInputs,handleChange}) {
                 ...prev,
                 expID: historicalData.id,
                 name: historicalData.name,
-                duration: historicalData.duration,
-                sequence: historicalData.sequence
+                startDate: historicalData.startDate,
+                duration: historicalData.duration
             }));
         }
     };
@@ -28,9 +28,9 @@ function Ids({inputs,setInputs,handleChange}) {
         <>
             < label > ExpId:</label >
             <button type="button"
-                    onClick={toggleMode} 
-                    style={{ marginLeft: "10px", fontSize: "0.8em" }}
-                    >
+                onClick={toggleMode}
+                style={{ marginLeft: "10px", fontSize: "0.8em" }}
+            >
                 {isExisting ? "Switch to New ID" : "Select Existing ID"}
             </button>
 

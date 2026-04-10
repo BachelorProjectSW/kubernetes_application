@@ -4,23 +4,21 @@
 // tjekke at configurationer er det samme for det sammen experiement id (gør i backend)
 // refactor = del det op i flere filer. 
 // lav endpoint i backend. hvor navn er save-config 
-
 import { useState } from 'react';
 import Ids from './experimentID';
-import { handleSubmit } from './submitData';
+import Start from './startTime';
 
 function allConfigs(handleSubmit) {
     const [inputs, setInputs] = useState({});
 
     const handleChange = (e) => {
-        const {name, value} = e.target;
-        
+        const { name, value } = e.target;
+
         setInputs(values => ({ ...values, [name]: value }));
     };
 
-
     return (
-        <form onSubmit= {(e) => handleSubmit(e,inputs)}>
+        <form onSubmit={(e) => handleSubmit(e, inputs)}>
             <div style={{ marginBottom: "20px" }}>
                 <Ids
                     inputs={inputs}
@@ -28,9 +26,10 @@ function allConfigs(handleSubmit) {
                     handleChange={handleChange}
                 />
             </div>
+            <br/>
 
-            <label> Name: 
-                <input 
+            <label> Name:
+                <input
                     type="text"
                     name="name"
                     value={inputs.name || ""}
@@ -38,15 +37,12 @@ function allConfigs(handleSubmit) {
                 />
             </label>
             <br/>
-
-            <label> Duration:
-                <input
-                    type="time"
-                    name="duration"
-                    value={inputs.duration || ""}
-                    onChange={handleChange}
+            <div>
+                <Start
+                    inputs={inputs}
+                    handleChange={handleChange}
                 />
-            </label>
+            </div>
 
             <br />
 
