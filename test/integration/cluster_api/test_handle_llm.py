@@ -26,9 +26,9 @@ def test_handle_llm_request_dk_one_worker():
     assert response.status_code == 200
 
     data = response.json()
-    assert "worker_name" in data
-    assert "response" in data
-    assert data["worker_name"] in {
+    assert "worker_node" in data
+    assert "llm_content" in data
+    assert data["worker_node"]["name"] in {
         "k3d-devcluster-dk-agent-0",
     }
 
@@ -49,7 +49,7 @@ def test_handle_llm_request_dk_uses_both_workers_when_requests_overlap():
             timeout=120,
         )
         assert response.status_code == 200
-        return response.json()["worker_name"]
+        return response.json()["worker_node"]["name"]
 
     with ThreadPoolExecutor(max_workers=2) as executor:  # 2 requests can be send in parallel
         # Sends 2 requests and stores the response in list features
@@ -87,7 +87,7 @@ def test_handle_llm_request_dk_enters_queueing_when_requests_exceed_total_slots(
         futures = [executor.submit(send_request) for _ in range(10)]
         results = [future.result() for future in futures]
 
-    worker_names = [result["worker_name"] for result in results]
+    worker_names = [result["worker_node"]["name"] for result in results]
 
     # Both workers are used
     assert "k3d-devcluster-dk-agent-0" in worker_names
@@ -100,7 +100,7 @@ def test_handle_llm_request_dk_enters_queueing_when_requests_exceed_total_slots(
 
     for worker_name in workers:
         assert any(
-            result["worker_name"] == worker_name
+            result["worker_node"]["name"] == worker_name
             and result["queued_requests_at_selection"] > 0
             for result in results
         )
