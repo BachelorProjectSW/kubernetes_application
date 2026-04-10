@@ -8,7 +8,7 @@ from .scoring import score_cluster
 from ..util.all_configuration import config_store
 from ...custom_logging.util.log_reader import get_avg_latency, get_request_logs
 from datetime import datetime, timezone
-
+from .cluster_data import get_cluster_runtime_data
 
 log = structlog.get_logger()
 
@@ -70,24 +70,33 @@ def estimate_nodes_to_add(
 def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     """Turn nodes on."""
     # Sort clusters by score (highest first)
-    sorted_clusters = sorted(
-        clusters,
-        key=lambda cluster: score_cluster(
-            cluster.cluster_config.renewable_output_w,
-            cluster.cluster_config.cluster_load_w,
-            cluster.cluster_config.grid_carbon_intensity,
-            cluster.cluster_config.grid_electricity_price,
+
+    # TODO: compute actual simulated time from (datetime.now() - start_time_real + start_time_simulated)
+    simulated_time = datetime.now(timezone.utc)
+
+    scored_clusters = []
+    for cluster in clusters:
+        runtime_data = get_cluster_runtime_data(cluster, simulated_time, config.energy)
+        cluster_score = score_cluster(
+            runtime_data.renewable_output_w,
+            runtime_data.cluster_load_w,
+            runtime_data.grid_carbon_intensity,
+            runtime_data.grid_electricity_price,
             config.weights.gco2,
             config.weights.cost,
             config.energy,
-        ),
-        reverse=True,  # highest first
-    )
+        )
+        scored_clusters.append((cluster_score, cluster))
+
+    sorted_clusters = [
+        cluster
+        for _, cluster in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
+    ]
 
     avg_latency_ms = get_avg_latency(config.power_scheduler.timeout_s)
     max_latency_ms = config.latency.max_ms
     current_active_nodes = get_current_active_nodes(clusters)
-    current_rps = get_current_rps()
+    current_rps = get_current_rps(config.power_scheduler.timeout_s)
 
     nodes_to_add = estimate_nodes_to_add(
         avg_latency_ms,
