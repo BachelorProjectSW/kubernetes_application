@@ -1,0 +1,14 @@
+#Display all nodes
+kubectl get nodes
+
+#Display all pods
+kubectl get pods
+
+#Display all pods with working node names
+kubectl get pods -o wide
+
+#Display all services
+kubectl get services
+
+#Delete node:
+kubectl delete node {NODE_NAME}
