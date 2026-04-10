@@ -56,7 +56,25 @@ class WorkerNode(BaseModel):
     name: str
     ip: str
     status: WorkerStatus
+    inflight_requests: int = 0
+    max_slots: int = 0
     gpio: int
+    forwarded_port: int | None = None
+
+    @property
+    def active_requests(self) -> int:
+        """Number of requests actively occupying slots."""
+        return min(self.inflight_requests, self.max_slots)
+
+    @property
+    def queued_requests(self) -> int:
+        """Number of requests beyond slot capacity."""
+        return max(0, self.inflight_requests - self.max_slots)
+
+    @property
+    def free_slots(self) -> int:
+        """Number of currently free slots."""
+        return max(0, self.max_slots - self.active_requests)
 
 
 class ClusterConfig(BaseModel):
@@ -67,7 +85,9 @@ class ClusterConfig(BaseModel):
     port: str
     gpio_list: list[int]
     simulated_country_code: str
-    llama_service_port: str
+    k3d: bool = False
+    llama_service_port: int
+    llama_nodeport: int = 30080
 
 
 class ClusterRuntimeData(BaseModel):
