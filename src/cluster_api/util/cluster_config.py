@@ -1,6 +1,7 @@
 import structlog
 from ...models.basemodels import ClusterInformation, WorkerNode
 from .client_setup import get_api_client
+import requests
 
 log = structlog.get_logger()
 
@@ -53,16 +54,20 @@ class ConfigStore:
                     if condition.type == "Ready":
                         status = "idle" if condition.status == "True" else "off"
                         break
-
             worker_node = WorkerNode(
                 name=name,
                 ip=ip,
                 status=status,
-                gpio=0  # will later be assigned
+                gpio=0,  # will later be assigned
             )
             self.config.worker_nodes.append(worker_node)
 
         self.assign_gpios()
+        if self.config.cluster_config.k3d:
+            self.assign_forwarded_ports()
+        else:
+            self.populate_service_ports()
+        self.populate_worker_capacities()
         return self.config.worker_nodes
 
     def assign_gpios(self):
@@ -86,6 +91,105 @@ class ConfigStore:
         if self.config.worker_nodes is None:
             self.build_worker_nodes()
         return [node.model_dump() for node in self.config.worker_nodes]
+
+    def assign_forwarded_ports(self):
+        """Assign forwarded ports to workers in k3d mode."""
+        if self.config is None:
+            raise Exception("Config is not set yet")
+
+        base_port = int(self.config.cluster_config.llama_service_port)
+
+        workers = sorted(self.config.worker_nodes, key=lambda worker: worker.name)  # Sort by name
+
+        for index, worker in enumerate(workers):
+            worker.forwarded_port = base_port + index
+            log.debug(
+                "cluster.worker_forwarded_port_assigned",
+                worker_name=worker.name,
+                worker_ip=worker.ip,
+                forwarded_port=worker.forwarded_port,
+            )
+
+    def populate_service_ports(self):
+        """Fetch NodePort from llama-service and save it in cluster config."""
+        # Can be looked up in the .yaml file, but this is automized
+        if self.config is None:
+            raise Exception("Config is not set yet")
+
+        api_client = get_api_client()
+        service = api_client.read_namespaced_service(
+            name="llama-service",
+            namespace="default",
+        )
+        ports = service.spec.ports
+        if not ports:
+            raise ValueError("llama-service has no ports")
+        port = ports[0]
+        if port.node_port is None:
+            raise ValueError("llama-service has no nodePort")
+
+        self.config.cluster_config.llama_nodeport = port.node_port
+        log.debug(
+            "service.nodeport_discovered",
+            service_name="llama-service",
+            service_port=port.port,
+            node_port=port.node_port,
+        )
+        return
+
+    def populate_worker_capacities(self):
+        """Fetch max_slots from each worker's llama server."""
+        # Max slot = level of concurrency
+
+        if self.config is None:
+            raise Exception("Config is not set yet")
+
+        if not self.config.worker_nodes:
+            return
+
+        for worker in self.config.worker_nodes:
+            if not worker.ip:
+                worker.max_slots = 0
+                worker.status = "off"
+                continue
+
+            try:
+                if self.config.cluster_config.k3d:
+                    url = f"http://localhost:{worker.forwarded_port}/props"
+                else:
+                    url = f"http://{worker.ip}:{self.config.cluster_config.llama_nodeport}/props"
+
+                log.debug(
+                    "cluster.worker_props_request",
+                    worker_name=worker.name,
+                    worker_ip=worker.ip,
+                    url=url,
+                )
+
+                response = requests.get(url, timeout=60)
+                response.raise_for_status()
+
+                props = response.json()
+
+                log.debug(
+                    "cluster.worker_props_response",
+                    worker_name=worker.name,
+                    worker_ip=worker.ip,
+                    props=props,
+                )
+
+                worker.max_slots = props.get("total_slots", 0)
+                worker.status = "idle" if worker.max_slots > 0 else "off"
+
+            except Exception as e:
+                log.debug(
+                    "cluster.worker_populate_capacity_failed",
+                    worker_name=worker.name,
+                    worker_ip=worker.ip,
+                    error=str(e),
+                )
+                worker.max_slots = 0
+                worker.status = "off"
 
 
 config_store = ConfigStore()
