@@ -145,12 +145,12 @@ def handle_llm(question: QuestionConfig):
         result = response.json()
 
         return LLMResponse(
-            result,
-            worker_node,
-            inflight_at_selection,
-            active_at_selection,
-            queued_at_selection,
-            max_slots_at_selection,
+            llm_content=result,
+            worker_node=worker_node,
+            inflight_requests_at_selection=inflight_at_selection,
+            active_requests_at_selection=active_at_selection,
+            queued_requests_at_selection=queued_at_selection,
+            max_slots=max_slots_at_selection,
         )
 
     except Exception as e:
