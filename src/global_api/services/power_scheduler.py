@@ -73,10 +73,9 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
 
     # TODO: compute actual simulated time from (datetime.now() - start_time_real + start_time_simulated)
     simulated_time = datetime.now(timezone.utc)
-
     scored_clusters = []
     for cluster in clusters:
-        runtime_data = get_cluster_runtime_data(cluster, simulated_time, config.energy)
+        runtime_data = get_cluster_runtime_data(cluster.cluster_config, simulated_time, config.energy)
         cluster_score = score_cluster(
             runtime_data.renewable_output_w,
             runtime_data.cluster_load_w,
