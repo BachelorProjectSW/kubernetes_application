@@ -62,6 +62,7 @@ def make_log_request(**overrides):
         request_id="req001",
         cluster=_make_cluster(cluster_name),
         node=_make_node(node_name),
+        success=True,
         latency_ms=1000.0,
         cluster_load_w=1000.0,
         renewable_fraction=0.3,
