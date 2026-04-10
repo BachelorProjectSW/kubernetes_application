@@ -2,8 +2,7 @@ import time
 import requests
 import structlog
 
-from models.enum import WorkerStatus
-
+from src.models.enum import WorkerStatus
 from ...models.basemodels import QuestionConfig, WorkerNode
 from ..util.cluster_config import config_store
 from threading import Lock
