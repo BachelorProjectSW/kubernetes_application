@@ -2,6 +2,8 @@ import time
 import requests
 import structlog
 
+from models.enum import WorkerStatus
+
 from ...models.basemodels import QuestionConfig, WorkerNode
 from ..util.cluster_config import config_store
 from threading import Lock
@@ -44,7 +46,10 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
         if worker.inflight_requests == 0
     ]
     if idle_workers:
-        return sorted(idle_workers, key=lambda worker: worker.name)[0]
+        # Choose the first worker by name.
+        # Keeping the selection stable helps leave other workers idle so
+        # the power scheduler can do its job.
+        return sorted(idle_workers, key=lambda worker: worker.name)[0] 
 
     # 2. Otherwise prefer workers with the most free slots
     best_free_slots = max(worker.free_slots for worker in eligible_workers)
@@ -67,7 +72,7 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
 
 def sync_worker_status(worker: WorkerNode) -> None:
     """Sync the status of the worker."""
-    worker.status = "idle" if worker.inflight_requests == 0 else "working"
+    worker.status = WorkerStatus.IDLE if worker.inflight_requests == 0 else WorkerStatus.WORKING
 
 
 def handle_llm(question: QuestionConfig):
