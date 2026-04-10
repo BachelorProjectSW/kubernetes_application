@@ -139,7 +139,7 @@ def turn_off_idle_nodes(config: Config):
     """Turn nodes off."""
     for cluster in config.clusters:
         try:
-            url = f"http://{cluster.ip}:{cluster:port}/turn_off_idle_nodes/"
+            url = f"http://{cluster.ip}:{cluster.port}/turn_off_idle_nodes/"
             idle_time = config.power_scheduler.idle_time_for_turn_off_s
             response = requests.post(url, params={"idle_time": idle_time}, timeout=20)
             response.raise_for_status()

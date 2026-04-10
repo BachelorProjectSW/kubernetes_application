@@ -3,6 +3,7 @@ import csv
 import json
 import os
 import uuid
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import TypeVar, Type
 
@@ -25,18 +26,20 @@ structlog.configure(
 log = structlog.get_logger()
 
 REQUEST_CSV_FIELDS = list(RequestLog.model_fields.keys())
-REQUEST_CSV_PATH = "logs/requests.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LOGS_DIR = PROJECT_ROOT / "logs"
+REQUEST_CSV_PATH = str(LOGS_DIR / "requests.csv")
 
 POWER_CSV_FIELDS = list(PowerDecisionLog.model_fields.keys())
-POWER_CSV_PATH = "logs/power_decisions.csv"
+POWER_CSV_PATH = str(LOGS_DIR / "power_decisions.csv")
 
 NODE_STATUS_CSV_FIELDS = list(NodeStatusLog.model_fields.keys())
-NODE_STATUS_CSV_PATH = "logs/node_status.csv"
+NODE_STATUS_CSV_PATH = str(LOGS_DIR / "node_status.csv")
 
 
 def init_csv():
     """Create all CSV files with headers if they don't exist."""
-    os.makedirs("logs", exist_ok=True)
+    os.makedirs(LOGS_DIR, exist_ok=True)
 
     for path, fields in [
         (REQUEST_CSV_PATH, REQUEST_CSV_FIELDS),
@@ -56,6 +59,10 @@ T = TypeVar("T")
 def get_logs(log_class: Type[T], path: str) -> list[T]:
     """Return logs from a CSV file parsed into the given Pydantic model class."""
     logs = []
+    if not os.path.exists(path):
+        log.warning("csv.missing", path=path)
+        return logs
+
     with open(path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
