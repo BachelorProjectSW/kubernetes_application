@@ -56,6 +56,16 @@ def init_csv():
 T = TypeVar("T")
 
 
+def _append_csv_row(path: str, fields: list[str], row: dict):
+    """Append one row and ensure header exists when file is new/empty."""
+    with open(path, "a+", newline="") as f:
+        f.seek(0, os.SEEK_END)
+        writer = csv.DictWriter(f, fieldnames=fields)
+        if f.tell() == 0:
+            writer.writeheader()
+        writer.writerow(row)
+
+
 def get_logs(log_class: Type[T], path: str) -> list[T]:
     """Return logs from a CSV file parsed into the given Pydantic model class."""
     logs = []
@@ -108,9 +118,7 @@ def log_request(
 
     row = entry.model_dump(mode="json")
 
-    with open(REQUEST_CSV_PATH, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=REQUEST_CSV_FIELDS)
-        writer.writerow(row)
+    _append_csv_row(REQUEST_CSV_PATH, REQUEST_CSV_FIELDS, row)
 
     log.info("request.logged", **row)
 
@@ -138,9 +146,7 @@ def log_power_decision(
 
     row = entry.model_dump(mode="json")
 
-    with open(POWER_CSV_PATH, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=POWER_CSV_FIELDS)
-        writer.writerow(row)
+    _append_csv_row(POWER_CSV_PATH, POWER_CSV_FIELDS, row)
 
     log.info(f"power.{action}", **row)
 
@@ -151,18 +157,16 @@ def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerN
     active_nodes = sum(1 for n in node_statuses if n.status == WorkerStatus.WORKING)
     idle_nodes = sum(1 for n in node_statuses if n.status == WorkerStatus.IDLE)
 
-    with open(NODE_STATUS_CSV_PATH, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=NODE_STATUS_CSV_FIELDS)
-        for node in node_statuses:
-            entry = NodeStatusLog(
-                timestamp=timestamp,
-                cluster=cluster.name,
-                node=node.name,
-                status=node.status,
-                active_nodes=active_nodes,
-                idle_nodes=idle_nodes,
-            )
-            writer.writerow(entry.model_dump(mode="json"))
+    for node in node_statuses:
+        entry = NodeStatusLog(
+            timestamp=timestamp,
+            cluster=cluster.name,
+            node=node.name,
+            status=node.status,
+            active_nodes=active_nodes,
+            idle_nodes=idle_nodes,
+        )
+        _append_csv_row(NODE_STATUS_CSV_PATH, NODE_STATUS_CSV_FIELDS, entry.model_dump(mode="json"))
 
     log.info("node_status.snapshot", cluster=cluster.name, active=active_nodes, idle=idle_nodes)
 
