@@ -81,6 +81,7 @@ def log_request(
     renewable_fraction: float,
     blended_carbon_gco2_per_kwh: float,
     blended_cost_eur_per_kwh: float,
+    success: bool,
 ):
     """Log a completed request to the CSV and console."""
     entry = RequestLog(
@@ -88,6 +89,7 @@ def log_request(
         timestamp=datetime.now(timezone.utc),
         cluster=cluster.name,
         node=node.name,
+        success=success,
         latency_ms=round(latency_ms, 2),
         cluster_load_w=round(cluster_load_w, 2),
         renewable_fraction=round(renewable_fraction, 4),

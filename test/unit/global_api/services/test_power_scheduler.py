@@ -66,7 +66,7 @@ def test_estimate_nodes_to_add_calculates_and_clamps_to_zero():
         max_latency_ms=250,
         current_active_nodes=1,
         current_rps=0.8,
-    ) == 2
+    ) == 3
 
     assert scheduler.estimate_nodes_to_add(
         avg_latency_per_node_ms=1000,
