@@ -33,7 +33,7 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
 
     eligible_workers = [
         worker for worker in worker_node_list
-        if worker.status in {"idle", "working"}
+        if worker.status in {WorkerStatus.IDLE, WorkerStatus.WORKING}
     ]
 
     if not eligible_workers:
