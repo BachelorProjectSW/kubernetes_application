@@ -11,10 +11,12 @@ from src.models.enum import WorkerStatus
 
 
 def _make_node(name: str, status: WorkerStatus, gpio: int = 1) -> WorkerNode:
+    """Generate a worker node."""
     return WorkerNode(name=name, ip="127.0.0.1", status=status, gpio=gpio)
 
 
 def _make_cluster_info(name: str, worker_nodes: list[WorkerNode]) -> ClusterInformation:
+    """Generate a cluster into."""
     return ClusterInformation(
         cluster_config=ClusterConfig(
             name=name,
@@ -34,6 +36,7 @@ def _make_cluster_info(name: str, worker_nodes: list[WorkerNode]) -> ClusterInfo
 
 
 def test_get_current_active_nodes_counts_working_and_idle_nodes():
+    """Test get current active nodes inclusive idle nodes."""
     clusters = [
         _make_cluster_info(
             "dk",
@@ -57,6 +60,7 @@ def test_get_current_active_nodes_counts_working_and_idle_nodes():
 
 @pytest.mark.unit
 def test_estimate_nodes_to_add_calculates_and_clamps_to_zero():
+    """Test estimate nodes needed."""
     assert scheduler.estimate_nodes_to_add(
         avg_latency_per_node_ms=1000,
         max_latency_ms=250,
