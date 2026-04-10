@@ -145,14 +145,13 @@ def handle_llm(question: QuestionConfig):
         result = response.json()
 
         return LLMResponse(
-            result, 
-            worker_node, 
+            result,
+            worker_node,
             inflight_at_selection,
             active_at_selection,
             queued_at_selection,
             max_slots_at_selection,
         )
-
 
     except Exception as e:
         duration_ms = int((time.monotonic() - start_time) * 1000)
