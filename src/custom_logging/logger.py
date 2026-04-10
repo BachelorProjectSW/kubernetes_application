@@ -59,6 +59,8 @@ def get_logs(log_class: Type[T], path: str) -> list[T]:
     with open(path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            if log_class is RequestLog and ("success" not in row or row["success"] == ""):
+                row["success"] = "true"
             logs.append(log_class(**row))
     return logs
 
@@ -81,7 +83,7 @@ def log_request(
     renewable_fraction: float,
     blended_carbon_gco2_per_kwh: float,
     blended_cost_eur_per_kwh: float,
-    success: bool,
+    success: bool = True,
 ):
     """Log a completed request to the CSV and console."""
     entry = RequestLog(

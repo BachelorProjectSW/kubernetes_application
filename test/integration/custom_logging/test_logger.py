@@ -470,6 +470,7 @@ def _write_old_request(latency_ms: float, age_s: int):
         "timestamp": timestamp.isoformat(),
         "cluster": "denmark",
         "node": "nano1",
+        "success": True,
         "latency_ms": latency_ms,
         "cluster_load_w": 1000.0,
         "renewable_fraction": 0.3,
