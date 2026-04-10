@@ -49,7 +49,7 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
         # Choose the first worker by name.
         # Keeping the selection stable helps leave other workers idle so
         # the power scheduler can do its job.
-        return sorted(idle_workers, key=lambda worker: worker.name)[0] 
+        return sorted(idle_workers, key=lambda worker: worker.name)[0]
 
     # 2. Otherwise prefer workers with the most free slots
     best_free_slots = max(worker.free_slots for worker in eligible_workers)
