@@ -73,34 +73,42 @@ def turn_off_node(worker_node: WorkerNode):
         log.debug("power.error", error=e)
         return False
 
-def check_if_node_is_up(worker_node: WorkerNode) -> bool:
-    """Return True when the Kubernetes node for `worker_node` is Ready."""
+def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: str = "default") -> bool:
+    """Return True when a llama pod on this node is Running and Ready."""
     try:
-        api_client = get_api_client()
-        nodes = api_client.list_node().items
+        pods = api_client.list_namespaced_pod(
+            namespace=namespace,
+            field_selector=f"spec.nodeName={worker_node.name}",
+            label_selector="app=llama-server",
+        ).items
 
-        for node in nodes:
-            if node.metadata.name != worker_node.name:
+        for pod in pods:
+            if getattr(pod.status, "phase", None) != "Running":
                 continue
 
-            conditions = getattr(node.status, "conditions", None) or []
-            for condition in conditions:
-                if condition.type == "Ready" and condition.status == "True":
-                    return True
+            conditions = getattr(pod.status, "conditions", None) or []
+            pod_ready = any(c.type == "Ready" and c.status == "True" for c in conditions)
 
-            return False
+            container_statuses = getattr(pod.status, "container_statuses", None) or []
+            containers_ready = bool(container_statuses) and all(cs.ready for cs in container_statuses)
+
+            if pod_ready and containers_ready:
+                return True
+
+        return False
 
     except Exception as e:
-        log.debug("power.node_readiness_check_failed", node=worker_node.name, error=str(e))
+        log.debug("power.pod_readiness_check_failed", node=worker_node.name, error=str(e))
         return False
 
 
 def wait_for_nodes_to_be_ready(worker_nodes: list[WorkerNode], timeout_s: int = 300, poll_interval_s: int = 2) -> bool:
-    """Wait until all selected nodes report Ready in Kubernetes."""
+    """Wait until each selected node has a Running+Ready llama pod."""
     deadline = time.time() + timeout_s
+    api_client = get_api_client()
 
     while time.time() < deadline:
-        ready_nodes = [node for node in worker_nodes if check_if_node_is_up(node)]
+        ready_nodes = [node for node in worker_nodes if check_if_llama_pod_is_ready(node, api_client)]
 
         for node in ready_nodes:
             node.status = WorkerStatus.IDLE
@@ -209,4 +217,4 @@ def turn_off_idle_nodes(idle_time: int):
             continue
         last_request = get_idle_time(request_logs, node.name, cluster_name)
         if last_request > idle_time:
-            turn_off_node(node, node.name, node.name)
+            turn_off_node(node)
