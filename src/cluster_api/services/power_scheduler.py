@@ -6,26 +6,28 @@ from ...models.enum import WorkerStatus
 from ...custom_logging.util.log_reader import get_request_logs
 from ...custom_logging.models.log_models import RequestLog
 from datetime import datetime, timezone
-
-import os
-
-if os.environ.get("CI"):
-    print("Running in CI – skipping GPIO initialization")
-    h = None
-else:
-    import lgpio
-    h = lgpio.gpiochip_open(0)
+import subprocess
+import time
 
 log = structlog.get_logger()
-
+def run_cmd(cmd):
+    """Run bash command."""
+    result = subprocess.run(
+        cmd,
+        shell=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
 
 def turn_on_node(worker_node: WorkerNode):
     """Turn on the node via GPIO."""
     try:
         gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
-        lgpio.gpio_claim_output(h, gpio)
-        lgpio.gpio_write(h, gpio, 1)  # turn LED on
+        run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
+        time.sleep(1)
+        run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
         log.debug("turning node on", node=worker_node.name)
         worker_node.status = WorkerStatus.IDLE  # Should be turning on
     except Exception as e:
@@ -34,29 +36,39 @@ def turn_on_node(worker_node: WorkerNode):
 
 
 def turn_off_node(worker_node: WorkerNode, username: str, password: str):
-    """Turn off the node using SSH."""
     try:
-        gpio = worker_node.gpio
-        log.debug("gpio to turn off", gpio=gpio)
-        lgpio.gpio_claim_output(h, gpio)
-        lgpio.gpio_write(h, gpio, 0)  # turn LED on
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(hostname=worker_node.ip, username=username, password=password)
 
-        stdin, stdout, stderr = client.exec_command("sudo shutdown now")
+        client.connect(
+            hostname=worker_node.ip,
+            username=username,
+            password=password
+        )
+
+        # IMPORTANT: -S makes sudo read password from stdin
+        command = "sudo -S shutdown now"
+
+        stdin, stdout, stderr = client.exec_command(command)
+
+        # send password to sudo
         stdin.write(password + "\n")
         stdin.flush()
 
-        log.debug(stdout.read().decode())
-        log.debug(stderr.read().decode())
+        # read output (important to avoid hanging buffers)
+        out = stdout.read().decode()
+        err = stderr.read().decode()
+
+        print("STDOUT:", out)
+        print("STDERR:", err)
 
         client.close()
-        log.debug("turning node off", node=worker_node.name)
+
         worker_node.status = WorkerStatus.OFF
+
     except Exception as e:
-        worker_node.status = WorkerStatus.OFF  # DEBUG!!!
-        log.debug(f"failed to shutdown node: {e}")
+        print("Error in turn_off_node:", e)
+        worker_node.status = WorkerStatus.OFF
 
 
 def change_node_status(number_of_nodes: int, status: str):

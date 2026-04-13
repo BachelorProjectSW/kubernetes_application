@@ -9,4 +9,3 @@ pydantic
 aiohttp
 paramiko
 python-dotenv
-lgpio
