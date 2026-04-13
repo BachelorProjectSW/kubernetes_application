@@ -1,7 +1,9 @@
 import paramiko
 import structlog
+from concurrent.futures import ThreadPoolExecutor
 from ...models.basemodels import WorkerNode
 from ..util.cluster_config import config_store
+from ..util.client_setup import get_api_client
 from ...models.enum import WorkerStatus
 from ...custom_logging.util.log_reader import get_request_logs
 from ...custom_logging.models.log_models import RequestLog
@@ -26,49 +28,89 @@ def turn_on_node(worker_node: WorkerNode):
         gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
         run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
-        time.sleep(1)
+        time.sleep(0.5)
         run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
         log.debug("turning node on", node=worker_node.name)
-        worker_node.status = WorkerStatus.IDLE  # Should be turning on
+        worker_node.status = WorkerStatus.TURNING_ON  
+        return True
     except Exception as e:
-        worker_node.status = WorkerStatus.IDLE  # DEBUG!!!
         log.debug(f"failed to turn on node: {e}")
+        return False
 
 
-def turn_off_node(worker_node: WorkerNode, username: str, password: str):
+def turn_off_node(worker_node: WorkerNode):
     try:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         client.connect(
             hostname=worker_node.ip,
-            username=username,
-            password=password
+            username=worker_node.name,
+            password=worker_node.name
         )
 
-        # IMPORTANT: -S makes sudo read password from stdin
+        # -S makes sudo read password from stdin
         command = "sudo -S shutdown now"
 
         stdin, stdout, stderr = client.exec_command(command)
 
         # send password to sudo
-        stdin.write(password + "\n")
+        stdin.write(worker_node.name + "\n")
         stdin.flush()
 
-        # read output (important to avoid hanging buffers)
+        # read output
         out = stdout.read().decode()
         err = stderr.read().decode()
 
-        print("STDOUT:", out)
-        print("STDERR:", err)
+        log.debug("power.turn.off", STDOUT=out)
+        log.debug("power.turn.off", STDERR=err)
 
         client.close()
 
         worker_node.status = WorkerStatus.OFF
+        return True
+    except Exception as e:
+        log.debug("power.error", error=e)
+        return False
+
+def check_if_node_is_up(worker_node: WorkerNode) -> bool:
+    """Return True when the Kubernetes node for `worker_node` is Ready."""
+    try:
+        api_client = get_api_client()
+        nodes = api_client.list_node().items
+
+        for node in nodes:
+            if node.metadata.name != worker_node.name:
+                continue
+
+            conditions = getattr(node.status, "conditions", None) or []
+            for condition in conditions:
+                if condition.type == "Ready" and condition.status == "True":
+                    return True
+
+            return False
 
     except Exception as e:
-        print("Error in turn_off_node:", e)
-        worker_node.status = WorkerStatus.OFF
+        log.debug("power.node_readiness_check_failed", node=worker_node.name, error=str(e))
+        return False
+
+
+def wait_for_nodes_to_be_ready(worker_nodes: list[WorkerNode], timeout_s: int = 300, poll_interval_s: int = 2) -> bool:
+    """Wait until all selected nodes report Ready in Kubernetes."""
+    deadline = time.time() + timeout_s
+
+    while time.time() < deadline:
+        ready_nodes = [node for node in worker_nodes if check_if_node_is_up(node)]
+
+        for node in ready_nodes:
+            node.status = WorkerStatus.IDLE
+
+        if len(ready_nodes) == len(worker_nodes):
+            return True
+
+        time.sleep(poll_interval_s)
+
+    return False
 
 
 def change_node_status(number_of_nodes: int, status: str):
@@ -80,12 +122,19 @@ def change_node_status(number_of_nodes: int, status: str):
     nodes = cluster_config.worker_nodes
     if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, nodes)
-        for node in nodes_to_change:
-            turn_on_node(node)
+        with ThreadPoolExecutor(max_workers=max(1, len(nodes_to_change))) as executor:
+            futures = [executor.submit(turn_on_node, node) for node in nodes_to_change]
+            for future in futures:
+                future.result()
+
+        all_ready = wait_for_nodes_to_be_ready(nodes_to_change)
+        if not all_ready:
+            log.warning("power.nodes_not_ready_before_timeout", nodes=[node.name for node in nodes_to_change])
+
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, nodes)
         for node in nodes_to_change:
-            turn_off_node(node, username=node.name, password=node.name)
+            turn_off_node(node)
     else:
         raise ValueError("status must be 'on' or 'off'")
 
