@@ -11,9 +11,7 @@ It also shows how to create a Tailscale auth secret in Kubernetes and how to app
 - SSH access to each node
 - A Tailscale account if you want to use the Tailscale secret
 
-## 1. Install the control plane node
-
-### Step 1: Enable cgroups
+## Step 1: Enable cgroups
 
 ```bash
 sudo nano /boot/firmware/cmdline.txt
@@ -25,7 +23,7 @@ Append the following to the first line (at the end):
 cgroup_memory=1 cgroup_enable=memory```
 ```
 
-### Step 2: Reboot
+## Step 2: Reboot
 
 Run the following command:
 

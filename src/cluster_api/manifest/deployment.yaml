@@ -32,7 +32,7 @@ spec:
           imagePullPolicy: IfNotPresent
 
         - name: tailscale
-          image: tailscale/tailscale:latest
+          image: tailscale/tailscale:v1.94.2
           imagePullPolicy: Always
 
           env:
