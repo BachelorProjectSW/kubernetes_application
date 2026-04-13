@@ -102,7 +102,7 @@ def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: 
         return False
 
 
-def wait_for_nodes_to_be_ready(worker_nodes: list[WorkerNode], timeout_s: int = 300, poll_interval_s: int = 2) -> bool:
+def wait_for_nodes_to_be_ready(worker_nodes: list[WorkerNode], timeout_s: int = 120, poll_interval_s: int = 2) -> bool:
     """Wait until each selected node has a Running+Ready llama pod."""
     deadline = time.time() + timeout_s
     api_client = get_api_client()
