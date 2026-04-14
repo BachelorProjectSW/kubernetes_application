@@ -22,6 +22,7 @@ class WeightsConfig(BaseModel):
 class PowerSchedulerConfig(BaseModel):
     """Power Scheduler inputs."""
 
+    start: bool  # Should it run or not
     timeout_s: int
     idle_time_for_turn_off_s: int
 
@@ -155,3 +156,14 @@ class Config(BaseModel):
     global_scheduler: GlobalSchedulerConfig
     strato: StratoConfig
     energy: EnergyConfig = EnergyConfig()
+
+
+class LLMResponse(BaseModel):
+    """LLM response."""
+
+    llm_content: dict
+    worker_node: WorkerNode
+    inflight_requests_at_selection: int
+    active_requests_at_selection: int
+    queued_requests_at_selection: int
+    max_slots: int

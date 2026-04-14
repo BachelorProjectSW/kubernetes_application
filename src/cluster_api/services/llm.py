@@ -3,7 +3,7 @@ import requests
 import structlog
 
 from src.models.enum import WorkerStatus
-from ...models.basemodels import QuestionConfig, WorkerNode
+from ...models.basemodels import QuestionConfig, WorkerNode, LLMResponse
 from ..util.cluster_config import config_store
 from threading import Lock
 
@@ -144,17 +144,14 @@ def handle_llm(question: QuestionConfig):
         )
         result = response.json()
 
-        if config.cluster_config.k3d:
-            return {
-                "worker_name": worker_node.name,
-                "worker_ip": worker_node.ip,
-                "inflight_requests_at_selection": inflight_at_selection,
-                "active_requests_at_selection": active_at_selection,
-                "queued_requests_at_selection": queued_at_selection,
-                "max_slots": max_slots_at_selection,
-                "response": result,
-            }
-        return result
+        return LLMResponse(
+            llm_content=result,
+            worker_node=worker_node,
+            inflight_requests_at_selection=inflight_at_selection,
+            active_requests_at_selection=active_at_selection,
+            queued_requests_at_selection=queued_at_selection,
+            max_slots=max_slots_at_selection,
+        )
 
     except Exception as e:
         duration_ms = int((time.monotonic() - start_time) * 1000)

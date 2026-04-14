@@ -27,14 +27,15 @@ def get_test_config():
             cost=0.9
         ),
         power_scheduler=PowerSchedulerConfig(
-            timeout_s=30,
-            idle_time_for_turn_off_s=120
+            start=True,
+            timeout_s=5,
+            idle_time_for_turn_off_s=1
         ),
         latency=LatencyConfig(
             max_ms=12000
         ),
         workload=WorkloadConfig(
-            request_per_minute=4,
+            request_per_minute=10,
             pattern="steady",
             seed=10,
             peakiness=0
@@ -63,7 +64,7 @@ def get_test_config():
                 name="pt",
                 ip="127.0.0.1",
                 port="8050",
-                gpio_list=[21],
+                gpio_list=[16],
                 simulated_country_code="pt",
                 llama_service_port="8082",
                 renewable_output_w=400,

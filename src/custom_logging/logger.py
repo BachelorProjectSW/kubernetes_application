@@ -3,6 +3,7 @@ import csv
 import json
 import os
 import uuid
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import TypeVar, Type
 
@@ -25,18 +26,20 @@ structlog.configure(
 log = structlog.get_logger()
 
 REQUEST_CSV_FIELDS = list(RequestLog.model_fields.keys())
-REQUEST_CSV_PATH = "logs/requests.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LOGS_DIR = PROJECT_ROOT / "logs"
+REQUEST_CSV_PATH = str(LOGS_DIR / "requests.csv")
 
 POWER_CSV_FIELDS = list(PowerDecisionLog.model_fields.keys())
-POWER_CSV_PATH = "logs/power_decisions.csv"
+POWER_CSV_PATH = str(LOGS_DIR / "power_decisions.csv")
 
 NODE_STATUS_CSV_FIELDS = list(NodeStatusLog.model_fields.keys())
-NODE_STATUS_CSV_PATH = "logs/node_status.csv"
+NODE_STATUS_CSV_PATH = str(LOGS_DIR / "node_status.csv")
 
 
 def init_csv():
     """Create all CSV files with headers if they don't exist."""
-    os.makedirs("logs", exist_ok=True)
+    os.makedirs(LOGS_DIR, exist_ok=True)
 
     for path, fields in [
         (REQUEST_CSV_PATH, REQUEST_CSV_FIELDS),
@@ -53,12 +56,28 @@ def init_csv():
 T = TypeVar("T")
 
 
+def _append_csv_row(path: str, fields: list[str], row: dict):
+    """Append one row and ensure header exists when file is new/empty."""
+    with open(path, "a+", newline="") as f:
+        f.seek(0, os.SEEK_END)
+        writer = csv.DictWriter(f, fieldnames=fields)
+        if f.tell() == 0:
+            writer.writeheader()
+        writer.writerow(row)
+
+
 def get_logs(log_class: Type[T], path: str) -> list[T]:
     """Return logs from a CSV file parsed into the given Pydantic model class."""
     logs = []
+    if not os.path.exists(path):
+        log.warning("csv.missing", path=path)
+        return logs
+
     with open(path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            if log_class is RequestLog and ("success" not in row or row["success"] == ""):
+                row["success"] = "true"
             logs.append(log_class(**row))
     return logs
 
@@ -81,6 +100,7 @@ def log_request(
     renewable_fraction: float,
     blended_carbon_gco2_per_kwh: float,
     blended_cost_eur_per_kwh: float,
+    success: bool = True,
 ):
     """Log a completed request to the CSV and console."""
     entry = RequestLog(
@@ -88,6 +108,7 @@ def log_request(
         timestamp=datetime.now(timezone.utc),
         cluster=cluster.name,
         node=node.name,
+        success=success,
         latency_ms=round(latency_ms, 2),
         cluster_load_w=round(cluster_load_w, 2),
         renewable_fraction=round(renewable_fraction, 4),
@@ -97,9 +118,7 @@ def log_request(
 
     row = entry.model_dump(mode="json")
 
-    with open(REQUEST_CSV_PATH, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=REQUEST_CSV_FIELDS)
-        writer.writerow(row)
+    _append_csv_row(REQUEST_CSV_PATH, REQUEST_CSV_FIELDS, row)
 
     log.info("request.logged", **row)
 
@@ -127,9 +146,7 @@ def log_power_decision(
 
     row = entry.model_dump(mode="json")
 
-    with open(POWER_CSV_PATH, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=POWER_CSV_FIELDS)
-        writer.writerow(row)
+    _append_csv_row(POWER_CSV_PATH, POWER_CSV_FIELDS, row)
 
     log.info(f"power.{action}", **row)
 
@@ -140,18 +157,16 @@ def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerN
     active_nodes = sum(1 for n in node_statuses if n.status == WorkerStatus.WORKING)
     idle_nodes = sum(1 for n in node_statuses if n.status == WorkerStatus.IDLE)
 
-    with open(NODE_STATUS_CSV_PATH, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=NODE_STATUS_CSV_FIELDS)
-        for node in node_statuses:
-            entry = NodeStatusLog(
-                timestamp=timestamp,
-                cluster=cluster.name,
-                node=node.name,
-                status=node.status,
-                active_nodes=active_nodes,
-                idle_nodes=idle_nodes,
-            )
-            writer.writerow(entry.model_dump(mode="json"))
+    for node in node_statuses:
+        entry = NodeStatusLog(
+            timestamp=timestamp,
+            cluster=cluster.name,
+            node=node.name,
+            status=node.status,
+            active_nodes=active_nodes,
+            idle_nodes=idle_nodes,
+        )
+        _append_csv_row(NODE_STATUS_CSV_PATH, NODE_STATUS_CSV_FIELDS, entry.model_dump(mode="json"))
 
     log.info("node_status.snapshot", cluster=cluster.name, active=active_nodes, idle=idle_nodes)
 
