@@ -99,6 +99,7 @@ def score_cluster(
     cluster_load_w: float,
     grid_carbon_intensity: float,
     grid_electricity_price: float,
+    aau_base_load_w: float,
     carbon_weight: float,
     cost_weight: float,
     energy: EnergyConfig,
@@ -110,6 +111,7 @@ def score_cluster(
         cluster_load_w: Current cluster power consumption in watts.
         grid_carbon_intensity: Carbon intensity (gCO2/kWh) of the grid.
         grid_electricity_price: Current grid electricity price (EUR/kWh).
+        aau_base_load_w: Base load in watts.
         carbon_weight: weight specified by the user on carbon.
         cost_weight: weight specified by the user on cost.
         energy: Energy configuration constants.

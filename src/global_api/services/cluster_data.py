@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import structlog
 
 from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig
+from .dk_energy import get_dk_hourly
 from .pv_power import get_power
 from .price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 from .scoring import compute_cluster_load
