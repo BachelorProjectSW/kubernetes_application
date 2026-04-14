@@ -66,7 +66,7 @@ class ConfigStore:
         if self.config.cluster_config.k3d:
             self.assign_forwarded_ports()
         else:
-            self.populate_service_ports()
+            self.populate_host_port()
         self.populate_worker_capacities()
         return self.config.worker_nodes
 
@@ -110,33 +110,51 @@ class ConfigStore:
                 forwarded_port=worker.forwarded_port,
             )
 
-    def populate_service_ports(self):
-        """Fetch NodePort from llama-service and save it in cluster config."""
-        # Can be looked up in the .yaml file, but this is automized
+   def populate_host_port(self):
+        """Fetch llama hostPort from DaemonSets and save it in cluster config."""
         if self.config is None:
             raise Exception("Config is not set yet")
 
         api_client = get_api_client()
-        service = api_client.read_namespaced_service(
-            name="llama-service",
-            namespace="default",
-        )
-        ports = service.spec.ports
-        if not ports:
-            raise ValueError("llama-service has no ports")
-        port = ports[0]
-        if port.node_port is None:
-            raise ValueError("llama-service has no nodePort")
+        daemonset_names = ["llama-server-arm64", "llama-server-amd64"]
+        found_ports = set()
 
-        self.config.cluster_config.llama_nodeport = port.node_port
+        for ds_name in daemonset_names:
+            try:
+                ds = api_client.read_namespaced_daemon_set(
+                    name=ds_name,
+                    namespace="default",
+                )
+
+                containers = ds.spec.template.spec.containers or []
+                for container in containers:
+                    if container.name != "llama":
+                        continue
+
+                    for port in container.ports or []:
+                        if port.host_port is not None:
+                            found_ports.add(port.host_port)
+
+            except Exception as e:
+                log.debug(
+                    "cluster.hostport_discovery_daemonset_skipped",
+                    daemonset=ds_name,
+                    error=str(e),
+                )
+                continue
+
+        if not found_ports:
+            raise ValueError("No llama hostPort found in any DaemonSet")
+
+        if len(found_ports) > 1:
+            raise ValueError(f"Inconsistent llama hostPorts found: {sorted(found_ports)}")
+
+        self.config.cluster_config.llama_hostport = found_ports.pop()
+
         log.debug(
-            "service.nodeport_discovered",
-            service_name="llama-service",
-            service_port=port.port,
-            node_port=port.node_port,
+            "cluster.hostport_discovered",
+            llama_hostport=self.config.cluster_config.llama_hostport,
         )
-        return
-
     def populate_worker_capacities(self):
         """Fetch max_slots from each worker's llama server."""
         # Max slot = level of concurrency
@@ -157,7 +175,7 @@ class ConfigStore:
                 if self.config.cluster_config.k3d:
                     url = f"http://localhost:{worker.forwarded_port}/props"
                 else:
-                    url = f"http://{worker.ip}:{self.config.cluster_config.llama_nodeport}/props"
+                    url = f"http://{worker.ip}:{self.config.cluster_config.llama_hostport}/props"
 
                 log.debug(
                     "cluster.worker_props_request",
