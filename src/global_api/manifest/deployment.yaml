@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: global-api
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: global-api
+
+  template:
+    metadata:
+      labels:
+        app: global-api
+
+    spec:
+      serviceAccountName: global-api-sa
+
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+      containers:
+        - name: global-api
+          image: ghcr.io/bachelorprojectsw/global-api:test1
+          imagePullPolicy: IfNotPresent
+
+        - name: tailscale
+          image: tailscale/tailscale:v1.94.2
+          imagePullPolicy: Always
+
+          env:
+          #Auth key to join the tailnet
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale-auth
+                  key: TS_AUTHKEY
+
+          #Serve config
+            - name: TS_SERVE_CONFIG
+              value: /config/serve.json
+    
+            - name: TS_HOSTNAME
+              value: global-api
+
+          #Where the storage is at in the container
+          volumeMounts:
+            - name: tailscale-config
+              mountPath: /config
+
+    #What storage/config sources the pod have available
+      volumes:
+        - name: tailscale-config
+          configMap:
+            name: global-api-tailscale-config

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-api-tailscale-config
+
+data:
+  #HTTPS, tailscale forwards trafic from the tailscale-url to our localhost at port 8040, 
+  #TS_CERT_DOMAIN = DNS = Tailscale fills it themselves
+  serve.json: |
+    {
+      "TCP": {
+        "443": {
+          "HTTPS": true
+        }
+      },
+      "Web": {
+        "${TS_CERT_DOMAIN}:443": {
+          "Handlers": {
+            "/": {
+              "Proxy": "http://127.0.0.1:8020"
+            }
+          }
+        }
+      }
+    }
