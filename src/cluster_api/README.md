@@ -1,12 +1,14 @@
 # K3s Cluster Setup
 
 This guide explains how to set up a small K3s cluster on Raspberry Pi with:
+
 - 1 control plane node
 - 1 or more worker nodes
 
 It also shows how to create a Tailscale auth secret in Kubernetes and how to apply the manifests from the `manifest/` folder.
 
 ## Prerequisites
+
 - Raspberry Pi devices with a supported Linux distribution
 - SSH access to each node
 - A Tailscale account if you want to use the Tailscale secret
@@ -38,16 +40,19 @@ Run:
 ```bash
 curl -sfL https://get.k3s.io | sh -
 ```
+
 Get the join token, to add worker nodes:
 
 ```bash
 sudo cat /var/lib/rancher/k3s/server/agent-token
 ```
+
 Save it somewhere, as it is to be used in a later step.
 
 Get the ip address:
+
 ```bash
-ip a
+hostname -I
 ```
 
 Save this aswell.
@@ -63,6 +68,12 @@ sudo kubectl get nodes
 Run this command, replacing the placeholders, with the saved values:
 
 ```bash
+sudo apt install curl
+```
+
+Run this command, replacing the placeholders, with the saved values:
+
+```bash
 curl -sfL https://get.k3s.io | \
   K3S_URL=https://{IP_FROM_MASTER_NODE}:6443 \
   K3S_TOKEN={TOKEN_FROM_STEP_3} \
@@ -72,10 +83,13 @@ curl -sfL https://get.k3s.io | \
 ## Step 5: Verify the cluster
 
 On the control plane node, check that all nodes joined successfully:
+
 ```bash
 sudo kubectl get nodes -o wide
 ```
+
 The following should be shown:
+
 - The control plane node
 - All worker nodes
 
@@ -87,6 +101,7 @@ On the control plane node, create a Kubernetes secret for the Tailscale auth key
 kubectl create secret generic tailscale-auth \
   --from-literal=TS_AUTHKEY=KEY_FROM_TAILSCALE
 ```
+
 ### To create the Tailscale key
 
 1. Sign in to the Tailscale admin console.
@@ -137,11 +152,13 @@ Then open:
 ```bash
 https://localhost:8080
 ```
+
 To get the initial admin password:
 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
 ```
+
 The username is:
 
 ```bash
@@ -155,6 +172,7 @@ admin
 ```bash
 kubectl get nodes
 ```
+
 ### Node management
 
 Delete a node:
@@ -182,4 +200,3 @@ kubectl get pods -o wide
 ```bash
 kubectl get services
 ```
-
