@@ -20,40 +20,6 @@ def _ms_to_iso(ms: int) -> str:
     return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def get_dk_latest() -> dict:
-    """Return the most recent energy reading from the AAU microgrid.
-
-    Returns:
-        Dict with:
-            - timestamp: Human-readable UTC string (str).
-            - consumption_w: Microgrid local power consumption in watts (float).
-            - generation_w: Microgrid renewable power generation in watts (float).
-
-    """
-    try:
-        response = requests.get(
-            f"{ORIN_BASE_URL}/energy/latest",
-            timeout=10,
-        )
-        response.raise_for_status()
-    except requests.HTTPError as e:
-        log.error("dk_energy.api_error", status=e.response.status_code)
-        raise
-    except Exception:
-        log.error("dk_energy.connection_error", url=ORIN_BASE_URL)
-        raise
-
-    data = response.json()
-    data["timestamp"] = _ms_to_iso(data["timestamp_ms"])
-    del data["timestamp_ms"]
-    log.info(
-        "dk_energy.latest",
-        consumption_w=data["consumption_w"],
-        generation_w=data["generation_w"],
-    )
-    return data
-
-
 def get_dk_hourly(start: datetime, end: datetime) -> list[dict]:
     """Return hourly averaged energy readings from the AAU microgrid.
 
