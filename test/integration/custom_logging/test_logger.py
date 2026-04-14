@@ -233,11 +233,19 @@ def test_log_power_decision_writes_shutdown():
     """Test that log_power_decision writes a shutdown action to the power CSV."""
     init_csv()
     log_power_decision(
-        action="shutdown",
-        cluster=_make_cluster("denmark"),
-        node=_make_node("nano2"),
-        reason="idle_poor_energy",
+        action="turn_on_nodes",
+        cluster="denmark",
+        requested_nodes=2,
+        changed_nodes=1,
+        nodes=["nano2"],
+        reason="scale_up_by_latency_rps",
+        success=True,
+        status_code=200,
         system_avg_latency_ms=2100.0,
+        max_latency_ms=5000.0,
+        current_rps=0.5,
+        current_active_nodes=3,
+        estimated_nodes_to_add=2,
     )
 
     with open(POWER_CSV_PATH, "r") as f:
@@ -245,10 +253,12 @@ def test_log_power_decision_writes_shutdown():
         rows = list(reader)
 
     assert len(rows) == 1
-    assert rows[0]["action"] == "shutdown"
+    assert rows[0]["action"] == "turn_on_nodes"
     assert rows[0]["cluster"] == "denmark"
-    assert rows[0]["node"] == "nano2"
-    assert rows[0]["reason"] == "idle_poor_energy"
+    assert rows[0]["requested_nodes"] == "2"
+    assert rows[0]["changed_nodes"] == "1"
+    assert rows[0]["nodes"] == "nano2"
+    assert rows[0]["reason"] == "scale_up_by_latency_rps"
 
 
 @pytest.mark.integration
@@ -256,11 +266,17 @@ def test_log_power_decision_writes_startup():
     """Test that log_power_decision writes a startup action to the power CSV."""
     init_csv()
     log_power_decision(
-        action="startup",
-        cluster=_make_cluster("portugal"),
-        node=_make_node("nano5"),
-        reason="latency_high",
+        action="turn_off_idle_nodes",
+        cluster="portugal",
+        requested_nodes=1,
+        changed_nodes=1,
+        nodes=["nano5"],
+        reason="idle_timeout",
+        success=False,
+        status_code=502,
         system_avg_latency_ms=5800.0,
+        idle_time_threshold_s=300,
+        error="connection failed",
     )
 
     with open(POWER_CSV_PATH, "r") as f:
@@ -268,8 +284,10 @@ def test_log_power_decision_writes_startup():
         rows = list(reader)
 
     assert len(rows) == 1
-    assert rows[0]["action"] == "startup"
-    assert rows[0]["reason"] == "latency_high"
+    assert rows[0]["action"] == "turn_off_idle_nodes"
+    assert rows[0]["reason"] == "idle_timeout"
+    assert rows[0]["success"] == "False"
+    assert rows[0]["error"] == "connection failed"
 
 
 # --- log_node_status_snapshot ---

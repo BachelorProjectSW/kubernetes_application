@@ -94,7 +94,7 @@ def reset_logs():
 def log_request(
     request_id: str,
     cluster: ClusterConfig,
-    node: WorkerNode,
+    node: WorkerNode | None,
     latency_ms: float,
     cluster_load_w: float,
     renewable_fraction: float,
@@ -107,7 +107,7 @@ def log_request(
         request_id=request_id,
         timestamp=datetime.now(timezone.utc),
         cluster=cluster.name,
-        node=node.name,
+        node=node.name if node else "unknown",
         success=success,
         latency_ms=round(latency_ms, 2),
         cluster_load_w=round(cluster_load_w, 2),
@@ -125,23 +125,40 @@ def log_request(
 
 def log_power_decision(
     action: str,
-    cluster: ClusterConfig,
-    node: WorkerNode,
+    cluster: str,
+    requested_nodes: int,
+    changed_nodes: int,
+    nodes: list[str],
     reason: str,
-    system_avg_latency_ms: float,
+    success: bool,
+    status_code: int | None = None,
+    system_avg_latency_ms: float | None = None,
+    max_latency_ms: float | None = None,
+    current_rps: float | None = None,
+    current_active_nodes: int | None = None,
+    estimated_nodes_to_add: int | None = None,
+    idle_time_threshold_s: int | None = None,
+    error: str | None = None,
 ):
-    """Log a power scheduler decision to the CSV and console.
-
-    TODO: Add active_nodes_before/after, energy forecast data
-    when the power scheduler is implemented.
-    """
+    """Log a power scheduler decision to the CSV and console."""
     entry = PowerDecisionLog(
         timestamp=datetime.now(timezone.utc),
         action=action,
-        cluster=cluster.name,
-        node=node.name,
+        cluster=cluster,
+        requested_nodes=requested_nodes,
+        changed_nodes=changed_nodes,
+        nodes=",".join(nodes),
         reason=reason,
+        success=success,
+        status_code=status_code,
         system_avg_latency_ms=round(system_avg_latency_ms, 2)
+        if system_avg_latency_ms is not None else None,
+        max_latency_ms=round(max_latency_ms, 2) if max_latency_ms is not None else None,
+        current_rps=round(current_rps, 4) if current_rps is not None else None,
+        current_active_nodes=current_active_nodes,
+        estimated_nodes_to_add=estimated_nodes_to_add,
+        idle_time_threshold_s=idle_time_threshold_s,
+        error=error,
     )
 
     row = entry.model_dump(mode="json")

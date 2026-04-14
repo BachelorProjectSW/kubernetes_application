@@ -18,14 +18,24 @@ class RequestLog(BaseModel):
 
 
 class PowerDecisionLog(BaseModel):
-    """Model for a single power decision log entry."""
+    """Model for a single global power scheduler decision."""
 
     timestamp: datetime
     action: str
     cluster: str
-    node: str
+    requested_nodes: int
+    changed_nodes: int
+    nodes: str
     reason: str
-    system_avg_latency_ms: float
+    success: bool
+    status_code: int | None = None
+    system_avg_latency_ms: float | None = None
+    max_latency_ms: float | None = None
+    current_rps: float | None = None
+    current_active_nodes: int | None = None
+    estimated_nodes_to_add: int | None = None
+    idle_time_threshold_s: int | None = None
+    error: str | None = None
 
 
 class NodeStatusLog(BaseModel):

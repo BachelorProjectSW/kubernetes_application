@@ -45,15 +45,16 @@ def handle_llm_request(question: QuestionConfig):
     url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
 
     t_start = time.monotonic()
-    response = requests.post(url, json=question.model_dump())
-    latency_ms = (time.monotonic() - t_start) * 1000
-    data = response.json()
-
-    if not isinstance(data, dict):
+    try:
+        response = requests.post(url, json=question.model_dump(), timeout=30)
+        latency_ms = (time.monotonic() - t_start) * 1000
+        data = response.json()
+    except requests.RequestException as exc:
+        latency_ms = (time.monotonic() - t_start) * 1000
         log_request(
             request_id=request_id,
             cluster=cluster,
-            node={},
+            node=None,
             success=False,
             latency_ms=latency_ms,
             cluster_load_w=cluster_energy_data.cluster_load_w,
@@ -61,7 +62,35 @@ def handle_llm_request(question: QuestionConfig):
             blended_carbon_gco2_per_kwh=blended_carbon,
             blended_cost_eur_per_kwh=blended_cost,
         )
-        return HTTPException(status_code=500, detail=str(data))
+        raise HTTPException(status_code=502, detail=f"cluster_api request failed: {exc}") from exc
+    except ValueError as exc:
+        latency_ms = (time.monotonic() - t_start) * 1000
+        log_request(
+            request_id=request_id,
+            cluster=cluster,
+            node=None,
+            success=False,
+            latency_ms=latency_ms,
+            cluster_load_w=cluster_energy_data.cluster_load_w,
+            renewable_fraction=renewable_fraction,
+            blended_carbon_gco2_per_kwh=blended_carbon,
+            blended_cost_eur_per_kwh=blended_cost,
+        )
+        raise HTTPException(status_code=502, detail=f"cluster_api returned invalid JSON: {exc}") from exc
+
+    if not isinstance(data, dict):
+        log_request(
+            request_id=request_id,
+            cluster=cluster,
+            node=None,
+            success=False,
+            latency_ms=latency_ms,
+            cluster_load_w=cluster_energy_data.cluster_load_w,
+            renewable_fraction=renewable_fraction,
+            blended_carbon_gco2_per_kwh=blended_carbon,
+            blended_cost_eur_per_kwh=blended_cost,
+        )
+        raise HTTPException(status_code=500, detail=str(data))
 
     result = LLMResponse(
         llm_content=data["llm_content"],

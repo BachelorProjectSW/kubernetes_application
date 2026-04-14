@@ -155,12 +155,19 @@ def change_node_status(number_of_nodes: int, status: str):
     else:
         raise ValueError("status must be 'on' or 'off'")
 
-    return {
+    result = {
         "requested": number_of_nodes,
         "status": status,
         "node_changed": len(nodes_to_change),
         "nodes": [node.name for node in nodes_to_change],
     }
+
+    if status == "on":
+        result["turned_on"] = len(nodes_to_change)
+    if status == "off":
+        result["turned_off"] = len(nodes_to_change)
+
+    return result
 
 
 def select_nodes_to_turn_on(number_of_nodes: int, worker_nodes: list[WorkerNode]) -> list[WorkerNode]:
@@ -221,9 +228,17 @@ def turn_off_idle_nodes(idle_time: int):
     request_logs = get_request_logs()
     nodes = config.worker_nodes
 
+    turned_off_nodes = []
     for node in nodes:
         if node.status != WorkerStatus.IDLE:
             continue
         last_request = get_idle_time(request_logs, node.name, cluster_name)
         if last_request > idle_time:
-            turn_off_node(node)
+            if turn_off_node(node):
+                turned_off_nodes.append(node.name)
+
+    return {
+        "idle_time": idle_time,
+        "turned_off": len(turned_off_nodes),
+        "nodes": turned_off_nodes,
+    }

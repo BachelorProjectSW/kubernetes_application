@@ -7,6 +7,7 @@ from ...models.enum import WorkerStatus
 from .scoring import score_cluster
 from ..util.all_configuration import config_store
 from ...custom_logging.util.log_reader import get_avg_latency, get_request_logs
+from ...custom_logging.logger import log_power_decision
 from datetime import datetime, timezone
 from .cluster_data import get_cluster_runtime_data
 
@@ -129,21 +130,96 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         try:
             url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_on_nodes/"
             response = requests.post(url, params={"number_of_nodes": amount}, timeout=10)
-            turned_on = response.json().get("turned_on", amount)
+            response.raise_for_status()
+            payload = response.json() if response.content else {}
+            if not isinstance(payload, dict):
+                payload = {}
+            turned_on = int(payload.get("turned_on", payload.get("node_changed", amount)))
+            changed_nodes = payload.get("nodes", [])
+            if not isinstance(changed_nodes, list):
+                changed_nodes = []
+
+            log_power_decision(
+                action="turn_on_nodes",
+                cluster=cluster.cluster_config.name,
+                requested_nodes=amount,
+                changed_nodes=turned_on,
+                nodes=changed_nodes,
+                reason="scale_up_by_latency_rps",
+                success=True,
+                status_code=response.status_code,
+                system_avg_latency_ms=avg_latency_ms,
+                max_latency_ms=max_latency_ms,
+                current_rps=current_rps,
+                current_active_nodes=current_active_nodes,
+                estimated_nodes_to_add=nodes_to_add,
+            )
+
             nodes_to_add -= turned_on
         except Exception as e:
+            log_power_decision(
+                action="turn_on_nodes",
+                cluster=cluster.cluster_config.name,
+                requested_nodes=amount,
+                changed_nodes=0,
+                nodes=[],
+                reason="scale_up_by_latency_rps",
+                success=False,
+                status_code=None,
+                system_avg_latency_ms=avg_latency_ms,
+                max_latency_ms=max_latency_ms,
+                current_rps=current_rps,
+                current_active_nodes=current_active_nodes,
+                estimated_nodes_to_add=nodes_to_add,
+                error=str(e),
+            )
             log.error("Power.On", error=e)
 
 
 def turn_off_idle_nodes(config: Config):
     """Turn nodes off."""
+    avg_latency_ms = get_avg_latency(config.power_scheduler.timeout_s)
     for cluster in config.clusters:
         try:
             url = f"http://{cluster.ip}:{cluster.port}/turn_off_idle_nodes/"
             idle_time = config.power_scheduler.idle_time_for_turn_off_s
             response = requests.post(url, params={"idle_time": idle_time}, timeout=20)
             response.raise_for_status()
+            payload = response.json() if response.content else {}
+            if not isinstance(payload, dict):
+                payload = {}
+
+            turned_off = int(payload.get("turned_off", payload.get("node_changed", 0)))
+            changed_nodes = payload.get("nodes", [])
+            if not isinstance(changed_nodes, list):
+                changed_nodes = []
+
+            log_power_decision(
+                action="turn_off_idle_nodes",
+                cluster=cluster.name,
+                requested_nodes=turned_off,
+                changed_nodes=turned_off,
+                nodes=changed_nodes,
+                reason="idle_timeout",
+                success=True,
+                status_code=response.status_code,
+                system_avg_latency_ms=avg_latency_ms,
+                idle_time_threshold_s=idle_time,
+            )
         except Exception as e:
+            log_power_decision(
+                action="turn_off_idle_nodes",
+                cluster=cluster.name,
+                requested_nodes=0,
+                changed_nodes=0,
+                nodes=[],
+                reason="idle_timeout",
+                success=False,
+                status_code=None,
+                system_avg_latency_ms=avg_latency_ms,
+                idle_time_threshold_s=config.power_scheduler.idle_time_for_turn_off_s,
+                error=str(e),
+            )
             log.error("Power.Off", error=e)
 
 
