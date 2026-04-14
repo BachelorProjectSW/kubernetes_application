@@ -99,6 +99,7 @@ def score_cluster(
     cluster_load_w: float,
     grid_carbon_intensity: float,
     grid_electricity_price: float,
+    aau_base_load_w: float,
     carbon_weight: float,
     cost_weight: float,
     latency_weight: float,
