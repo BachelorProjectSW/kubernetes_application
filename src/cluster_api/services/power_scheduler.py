@@ -12,6 +12,8 @@ import subprocess
 import time
 
 log = structlog.get_logger()
+
+
 def run_cmd(cmd):
     """Run bash command."""
     result = subprocess.run(
@@ -22,6 +24,7 @@ def run_cmd(cmd):
     )
     return result.stdout
 
+
 def turn_on_node(worker_node: WorkerNode):
     """Turn on the node via GPIO."""
     try:
@@ -31,7 +34,7 @@ def turn_on_node(worker_node: WorkerNode):
         time.sleep(0.5)
         run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
         log.debug("turning node on", node=worker_node.name)
-        worker_node.status = WorkerStatus.TURNING_ON  
+        worker_node.status = WorkerStatus.TURNING_ON
         return True
     except Exception as e:
         log.debug(f"failed to turn on node: {e}")
@@ -39,6 +42,7 @@ def turn_on_node(worker_node: WorkerNode):
 
 
 def turn_off_node(worker_node: WorkerNode):
+    """Turn of node with SSH."""
     try:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -73,6 +77,7 @@ def turn_off_node(worker_node: WorkerNode):
         log.debug("power.error", error=e)
         return False
 
+
 def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: str = "default") -> bool:
     """Return True when a llama pod on this node is Running and Ready."""
     try:
@@ -102,7 +107,11 @@ def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: 
         return False
 
 
-def wait_for_nodes_to_be_ready(worker_nodes: list[WorkerNode], timeout_s: int = 120, poll_interval_s: int = 2) -> bool:
+def wait_for_nodes_to_be_ready(
+        worker_nodes: list[WorkerNode],
+        timeout_s: int = 120,
+        poll_interval_s: int = 2
+        ) -> bool:
     """Wait until each selected node has a Running+Ready llama pod."""
     deadline = time.time() + timeout_s
     api_client = get_api_client()
