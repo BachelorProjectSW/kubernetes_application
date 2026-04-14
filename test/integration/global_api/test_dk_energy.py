@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timezone
-from global_api.services.dk_energy import get_dk_range
+from src.global_api.services.dk_energy import get_dk_range
 
 
 @pytest.mark.integration
