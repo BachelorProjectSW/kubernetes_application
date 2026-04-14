@@ -120,8 +120,18 @@ def score_cluster(
         Score between 1.0 and 0.0. Higher is best.
 
     """
-    blended_carbon = compute_carbon_blend(renewable_output_w, cluster_load_w, aau_base_load_w, grid_carbon_intensity)
-    blended_cost = compute_cost_blend(renewable_output_w, cluster_load_w, aau_base_load_w, grid_electricity_price)
+    blended_carbon = compute_carbon_blend(
+        renewable_output_w,
+        cluster_load_w,
+        aau_base_load_w,
+        grid_carbon_intensity,
+    )
+    blended_cost = compute_cost_blend(
+        renewable_output_w,
+        cluster_load_w,
+        aau_base_load_w,
+        grid_electricity_price,
+    )
 
     blended_carbon_normalized = normalize_value(blended_carbon, energy.carbon_ref_max)
     blended_cost_normalized = normalize_value(blended_cost, energy.cost_ref_max)
