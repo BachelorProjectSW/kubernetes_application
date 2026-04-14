@@ -22,9 +22,9 @@ def test_compute_cluster_load_succeeds():
 @pytest.mark.unit
 def test_compute_grid_fraction_succeeds():
     """Test that compute grid fraction works."""
-    grid_fraction = compute_grid_fraction(200, 1000)
+    grid_fraction = compute_grid_fraction(200, 1000, 500)
 
-    assert grid_fraction == 0.8
+    assert grid_fraction == pytest.approx(0.8667, rel=1e-3)
 
 
 @pytest.mark.unit
@@ -33,8 +33,9 @@ def test_compute_carbon_blend_succeeds():
     with patch("src.global_api.services.scoring.compute_grid_fraction") as mock_grid_fraction:
         mock_grid_fraction.return_value = 0.8
 
-        result = compute_carbon_blend(200, 1000, 400)
+        result = compute_carbon_blend(200, 1000, 500, 400)
         assert result == 320
+        mock_grid_fraction.assert_called_once_with(200, 1000, 500)
 
 
 @pytest.mark.unit
@@ -43,8 +44,9 @@ def test_compute_cost_blend_succeeds():
     with patch("src.global_api.services.scoring.compute_grid_fraction") as mock_grid_fraction:
         mock_grid_fraction.return_value = 0.8
 
-        result = compute_cost_blend(200, 1000, 0.2)
+        result = compute_cost_blend(200, 1000, 500, 0.2)
         assert result == 0.16
+        mock_grid_fraction.assert_called_once_with(200, 1000, 500)
 
 
 @pytest.mark.unit
@@ -71,11 +73,12 @@ def test_score_cluster():
             cluster_load_w=1000,
             grid_carbon_intensity=300,
             grid_electricity_price=0.2,
+            aau_base_load_w=250,
             carbon_weight=0.7,
             cost_weight=0.3,
             energy=EnergyConfig(),
         )
 
         assert result == 0.46
-        mock_carbon.assert_called_once_with(500, 1000, 300)
-        mock_cost.assert_called_once_with(500, 1000, 0.2)
+        mock_carbon.assert_called_once_with(500, 1000, 250, 300)
+        mock_cost.assert_called_once_with(500, 1000, 250, 0.2)

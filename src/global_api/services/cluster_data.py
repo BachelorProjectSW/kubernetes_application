@@ -48,6 +48,9 @@ def get_cluster_runtime_data(
     # TODO: replace with actual active/idle node counts once node tracking is implemented
     cluster_load_w = compute_cluster_load(0, 0, energy)
 
+    aau_base_load_data = get_dk_hourly(simulated_time_start, simulated_time_end)
+    aau_base_load_w = aau_base_load_data[0]["consumption_w"]
+
     log.debug(
         "cluster.runtime_data_fetched",
         cluster=cluster.name,
@@ -62,4 +65,5 @@ def get_cluster_runtime_data(
         cluster_load_w=cluster_load_w,
         grid_carbon_intensity=grid_carbon_intensity,
         grid_electricity_price=grid_electricity_price,
+        aau_base_load_w=aau_base_load_w,
     )
