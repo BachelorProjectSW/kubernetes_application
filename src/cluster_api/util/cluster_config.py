@@ -110,7 +110,7 @@ class ConfigStore:
                 forwarded_port=worker.forwarded_port,
             )
 
-   def populate_host_port(self):
+    def populate_host_port(self):
         """Fetch llama hostPort from DaemonSets and save it in cluster config."""
         if self.config is None:
             raise Exception("Config is not set yet")
