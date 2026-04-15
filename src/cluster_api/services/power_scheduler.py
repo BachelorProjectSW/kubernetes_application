@@ -34,7 +34,6 @@ def turn_on_node(worker_node: WorkerNode):
         run_cmd(f"sudo gpioset -z -c gpiochip0 {gpio}=1") #LOCAL PORTS FROM MY RPI
         time.sleep(0.5)
         # run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
-        run_cmd(f"sudo gpioset -z -c gpiochip0 {gpio}=0") #LOCAL PORTS FROM MY RPI
         log.debug("turning node on", node=worker_node.name)
         worker_node.status = WorkerStatus.TURNING_ON
         return True
@@ -106,6 +105,7 @@ def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: 
 
     except Exception as e:
         log.debug("power.pod_readiness_check_failed", node=worker_node.name, error=str(e))
+        run_cmd(f"sudo gpioset -z -c gpiochip0 {worker_node.gpio}=0") #DEBUG!!!
         return False
 
 
