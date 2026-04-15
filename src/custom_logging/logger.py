@@ -10,11 +10,37 @@ from typing import TypeVar, Type
 from .models.log_models import RequestLog, PowerDecisionLog, NodeStatusLog
 from ..models.basemodels import ClusterConfig, WorkerNode
 from ..models.enum import WorkerStatus
+from ..db.postgres import save_model_log, save_terminal_debug
+
+
+def _current_config_id() -> str | None:
+    try:
+        from ..global_api.util.all_configuration import config_store
+
+        cfg = config_store.get()
+        return cfg.id if cfg else None
+    except Exception:
+        return None
+
+
+def _persist_debug_processor(_, __, event_dict):
+    """Persist structlog debug events as raw terminal text in DB."""
+    try:
+        level = event_dict.get("level")
+        if level == "debug":
+            message = str(event_dict.get("event", ""))
+            config_id = _current_config_id()
+            save_terminal_debug(config_id, message, dict(event_dict))
+    except Exception:
+        # Keep logging non-blocking even if DB is unavailable.
+        pass
+    return event_dict
 
 structlog.configure(
     processors=[
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
+        _persist_debug_processor,
         structlog.dev.ConsoleRenderer(),
     ],
     wrapper_class=structlog.make_filtering_bound_logger(0),
@@ -119,6 +145,7 @@ def log_request(
     row = entry.model_dump(mode="json")
 
     _append_csv_row(REQUEST_CSV_PATH, REQUEST_CSV_FIELDS, row)
+    save_model_log(_current_config_id(), entry)
 
     log.info("request.logged", **row)
 
@@ -147,6 +174,7 @@ def log_power_decision(
     row = entry.model_dump(mode="json")
 
     _append_csv_row(POWER_CSV_PATH, POWER_CSV_FIELDS, row)
+    save_model_log(_current_config_id(), entry)
 
     log.info(f"power.{action}", **row)
 
@@ -167,6 +195,7 @@ def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerN
             idle_nodes=idle_nodes,
         )
         _append_csv_row(NODE_STATUS_CSV_PATH, NODE_STATUS_CSV_FIELDS, entry.model_dump(mode="json"))
+        save_model_log(_current_config_id(), entry)
 
     log.info("node_status.snapshot", cluster=cluster.name, active=active_nodes, idle=idle_nodes)
 
