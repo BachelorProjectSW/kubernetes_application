@@ -6,7 +6,7 @@ from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig
 from .pv_power import get_power
 from .price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 from .scoring import compute_cluster_load
-from ...custom_logging.util.log_reader import get_ewma_latency_for_cluster
+from ...custom_logging.util.log_reader import get_avg_latency_for_cluster
 
 log = structlog.get_logger()
 
@@ -23,8 +23,8 @@ def get_cluster_runtime_data(
         cluster: Static cluster configuration.
         simulated_time_start: Start time for the simulation window.
         energy: Energy configuration constants.
-        latency_window_s: How far back to look when computing the EWMA latency
-                          estimate for this cluster (seconds). Defaults to 60.
+        latency_window_s: How far back to look when computing the average latency
+                          for this cluster (seconds). Defaults to 60.
 
     Returns:
         ClusterRuntimeData with renewable_output_w, cluster_load_w,
@@ -52,7 +52,7 @@ def get_cluster_runtime_data(
     # TODO: replace with actual active/idle node counts once node tracking is implemented
     cluster_load_w = compute_cluster_load(0, 0, energy)
 
-    avg_latency_ms = get_ewma_latency_for_cluster(cluster.name, latency_window_s)
+    avg_latency_ms = get_avg_latency_for_cluster(cluster.name, latency_window_s)
 
     log.debug(
         "cluster.runtime_data_fetched",

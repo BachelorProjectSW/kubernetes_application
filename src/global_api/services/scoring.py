@@ -120,7 +120,7 @@ def score_cluster(
         carbon_weight: Weight specified by the user on carbon.
         cost_weight: Weight specified by the user on cost.
         latency_weight: Weight specified by the user on latency.
-        estimated_latency_ms: EWMA-smoothed recent latency for this cluster (ms).
+        estimated_latency_ms: Average observed latency for this cluster over the recent window (ms).
         max_latency_ms: User-specified maximum acceptable latency (ms); used as
                         the normalization reference — analogous to carbon_ref_max.
         energy: Energy configuration constants.
