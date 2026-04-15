@@ -12,8 +12,9 @@ permissions:
   packages: write #Allow pushing container images to GHCR
 
 concurrency:
-  group: build-and-deploy-main
-  cancel-in-progress: true
+  group: deploy-main
+  cancel-in-progress: false
+  
 jobs:
   build_and_push:
     if: ${{ github.actor != 'cluster-api-deploy-bot[bot]' }}
@@ -38,6 +39,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
 
       #QEMU lets us emulate another CPU architecture so we can build an image for it
       - name: Set up QEMU
@@ -72,6 +74,9 @@ jobs:
         run: |
           git config user.name "cluster-api-deploy-bot[bot]"
           git config user.email "cluster-api-deploy-bot[bot]@users.noreply.github.com"
+
           git add src/cluster_api/manifest/deployment.yaml
           git commit -m "Deploy cluster-api ${GITHUB_SHA}" || exit 0
-          git push
+
+          git pull --rebase origin main
+          git push origin HEAD:main
