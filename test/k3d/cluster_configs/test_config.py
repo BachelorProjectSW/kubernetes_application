@@ -15,8 +15,8 @@ from src.models.basemodels import (
 def get_test_config():
     """Start test test."""
     test_config = Config(
-        id="123",
-        name="demo test",
+        id="db_test_v2",
+        name="db test",
         start=StartConfig(
             duration_time_s=30,
             start_time_simulated="01/10/2021",
