@@ -41,6 +41,7 @@ def _persist_debug_processor(_, __, event_dict):
         pass
     return event_dict
 
+
 structlog.configure(
     processors=[
         structlog.processors.add_log_level,
