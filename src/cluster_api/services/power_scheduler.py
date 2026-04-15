@@ -82,6 +82,7 @@ def turn_off_node(worker_node: WorkerNode):
 def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: str = "default") -> bool:
     """Return True when a llama pod on this node is Running and Ready."""
     try:
+        run_cmd(f"sudo gpioset -z -c gpiochip0 {worker_node.gpio}=0") #DEBUG!!!
         pods = api_client.list_namespaced_pod(
             namespace=namespace,
             field_selector=f"spec.nodeName={worker_node.name}",
@@ -105,7 +106,6 @@ def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: 
 
     except Exception as e:
         log.debug("power.pod_readiness_check_failed", node=worker_node.name, error=str(e))
-        run_cmd(f"sudo gpioset -z -c gpiochip0 {worker_node.gpio}=0") #DEBUG!!!
         return False
 
 
