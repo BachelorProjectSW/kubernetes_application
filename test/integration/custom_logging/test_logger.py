@@ -14,6 +14,7 @@ from src.db.postgres import init_database, _engine, AppLogRecord
 from sqlmodel import Session, delete
 from src.models.enum import WorkerStatus
 
+
 def _make_cluster(name: str = "denmark") -> ClusterConfig:
     """Return a minimal ClusterConfig for testing."""
     return ClusterConfig(
@@ -70,7 +71,6 @@ def make_log_request(**overrides):
     log_request(**defaults)
 
 
-
 @pytest.mark.integration
 def test_database_does_not_lose_data_during_test():
     """Test that data persists during a single test."""
@@ -79,7 +79,6 @@ def test_database_does_not_lose_data_during_test():
 
     result = get_request_logs()
     assert len(result) == 2
-
 
 
 # --- log_request ---
