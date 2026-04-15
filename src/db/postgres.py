@@ -2,14 +2,22 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column, Text, create_engine, text
 from sqlalchemy.engine import URL, make_url
-from sqlmodel import Field, SQLModel, Session
+from sqlmodel import Field, SQLModel, Session, select
 
+from ..custom_logging.models.log_models import (
+	NodeStatusLog,
+	PowerDecisionLog,
+	RequestLog,
+	TerminalDebugLog,
+)
 from ..models.basemodels import Config
+
+TModel = TypeVar("TModel", bound=BaseModel)
 
 
 def _database_url() -> str:
@@ -125,4 +133,71 @@ def save_terminal_debug(config_id: str | None, message: str, payload: dict[str, 
 	with Session(_engine()) as session:
 		session.add(row)
 		session.commit()
+
+
+def save_payload_log(config_id: str | None, log_type: str, payload: dict[str, Any]) -> None:
+	"""Persist an arbitrary structured payload log linked to config_id."""
+	row = AppLogRecord(
+		config_id=config_id,
+		log_type=log_type,
+		payload_json=payload,
+		terminal_debug=None,
+	)
+	with Session(_engine()) as session:
+		session.add(row)
+		session.commit()
+
+
+def read_model_logs(log_model_class: type[TModel], config_id: str | None = None) -> list[TModel]:
+	"""Read model logs from DB and parse as Pydantic objects."""
+	query = select(AppLogRecord).where(AppLogRecord.log_type == log_model_class.__name__)
+	if config_id is not None:
+		query = query.where(AppLogRecord.config_id == config_id)
+	query = query.order_by(AppLogRecord.created_at)
+
+	with Session(_engine()) as session:
+		rows = session.exec(query).all()
+
+	logs: list[TModel] = []
+	for row in rows:
+		if row.payload_json is None:
+			continue
+		logs.append(log_model_class(**row.payload_json))
+	return logs
+
+
+def read_terminal_debug_logs(config_id: str | None = None) -> list[dict[str, Any]]:
+	"""Read terminal debug log rows from DB as typed models."""
+	query = select(AppLogRecord).where(AppLogRecord.log_type == "terminal_debug")
+	if config_id is not None:
+		query = query.where(AppLogRecord.config_id == config_id)
+	query = query.order_by(AppLogRecord.created_at)
+
+	with Session(_engine()) as session:
+		rows = session.exec(query).all()
+
+	return [
+		TerminalDebugLog(
+			config_id=row.config_id,
+			message=row.terminal_debug or "",
+			payload=row.payload_json,
+			created_at=row.created_at,
+		)
+		for row in rows
+	]
+
+
+def read_all_request_logs(config_id: str | None = None) -> list[RequestLog]:
+	"""Read request logs for a config as RequestLog models."""
+	return read_model_logs(RequestLog, config_id)
+
+
+def read_all_power_decision_logs(config_id: str | None = None) -> list[PowerDecisionLog]:
+	"""Read power decision logs for a config as PowerDecisionLog models."""
+	return read_model_logs(PowerDecisionLog, config_id)
+
+
+def read_all_node_status_logs(config_id: str | None = None) -> list[NodeStatusLog]:
+	"""Read node status logs for a config as NodeStatusLog models."""
+	return read_model_logs(NodeStatusLog, config_id)
 

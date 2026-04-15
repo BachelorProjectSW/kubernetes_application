@@ -37,3 +37,12 @@ class NodeStatusLog(BaseModel):
     status: str
     active_nodes: int
     idle_nodes: int
+
+
+class TerminalDebugLog(BaseModel):
+    """Model for terminal debug entries stored in the database."""
+
+    config_id: str | None
+    message: str
+    payload: dict | None = None
+    created_at: datetime
