@@ -29,7 +29,10 @@ def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
         patch("src.global_api.services.cluster_data.fetch_carbon_intensity", return_value=[]),
         patch("src.global_api.services.cluster_data.fetch_price_data", return_value=[]),
         patch("src.global_api.services.cluster_data.compute_cluster_load", return_value=1000.0),
-        patch("src.global_api.services.cluster_data.get_dk_hourly", return_value=[{"consumption_w": 250.0}]) as mock_dk,
+        patch(
+            "src.global_api.services.cluster_data.get_dk_hourly",
+            return_value=[{"consumption_w": 250.0}],
+        ) as mock_dk,
     ):
         result = get_cluster_runtime_data(
             cluster,
