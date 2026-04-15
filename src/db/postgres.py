@@ -114,7 +114,7 @@ def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
 	row = AppLogRecord(
 		config_id=config_id,
 		log_type=type(log_model).__name__,
-		payload_json=log_model.model_dump(mode="python"),
+		payload_json=log_model.model_dump(mode="json"),
 		terminal_debug=None,
 	)
 	with Session(_engine()) as session:
