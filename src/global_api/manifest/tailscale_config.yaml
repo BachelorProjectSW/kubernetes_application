@@ -4,17 +4,21 @@ metadata:
   name: global-api-tailscale-config
 
 data:
-  #HTTPS, tailscale forwards trafic from the tailscale-url to our localhost at port 8040, 
-  #TS_CERT_DOMAIN = DNS = Tailscale fills it themselves
+  # Expose the app through Tailscale Serve on port 8020 using HTTP.
+  # Incoming requests to the Tailscale device name/IP on port 8020
+  # are proxied to the app listening on localhost:8020 inside the Pod.
+  #
+  # TS_CERT_DOMAIN is the Tailscale DNS name for this node/service,
+  # provided automatically by Tailscale.
   serve.json: |
     {
       "TCP": {
-        "443": {
-          "HTTPS": true
+        "8040": {
+          "HTTP": true
         }
       },
       "Web": {
-        "${TS_CERT_DOMAIN}:443": {
+        "${TS_CERT_DOMAIN}:8040": {
           "Handlers": {
             "/": {
               "Proxy": "http://127.0.0.1:8020"
