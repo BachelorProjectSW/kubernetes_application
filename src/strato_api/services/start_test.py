@@ -1,12 +1,13 @@
 import requests
 from ...models.basemodels import Config
+from ...db.postgres import save_config
 from test.k3d.cluster_configs.test_config import get_test_config
 from .workload.run_workload import run_workload
 
 
 def start_test(config: Config):
     """Start test to the global scheduler."""
-    # TODO save config in DB.
+    save_config(config)
     # TODO setup current status, to ensure multiple test runs are running at the same time.
     ip = config.global_scheduler.ip
     port = config.global_scheduler.port

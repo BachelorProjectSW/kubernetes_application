@@ -9,3 +9,5 @@ pydantic
 aiohttp
 paramiko
 python-dotenv
+sqlmodel
+psycopg[binary]

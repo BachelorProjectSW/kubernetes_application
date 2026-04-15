@@ -1,20 +1,47 @@
 import structlog
-import csv
-import json
-import os
 import uuid
-from pathlib import Path
 from datetime import datetime, timezone
 from typing import TypeVar, Type
 
-from .models.log_models import RequestLog, PowerDecisionLog, NodeStatusLog
+from .models.log_models import NodeStatusLog, PowerDecisionLog, RequestLog, TerminalDebugLog
 from ..models.basemodels import ClusterConfig, WorkerNode
 from ..models.enum import WorkerStatus
+from ..db.postgres import (
+    read_all_node_status_logs,
+    read_all_power_decision_logs,
+    read_all_request_logs,
+    read_terminal_debug_logs,
+    read_model_logs,
+    save_model_log,
+    save_payload_log,
+    save_terminal_debug,
+)
+
+
+def _current_config_id() -> str | None:
+    try:
+        from ..global_api.util.all_configuration import config_store
+
+        cfg = config_store.get()
+        return cfg.id if cfg else None
+    except Exception:
+        return None
+
+
+def _get_terminal_logs(_, __, event_dict):
+    """Get all logs printed to terminal."""
+    level = str(event_dict.get("level", "info"))
+    message = str(event_dict.get("event", ""))
+    config_id = _current_config_id()
+    save_terminal_debug(config_id, message, level, dict(event_dict))
+    return event_dict
+
 
 structlog.configure(
     processors=[
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
+        _get_terminal_logs,
         structlog.dev.ConsoleRenderer(),
     ],
     wrapper_class=structlog.make_filtering_bound_logger(0),
@@ -25,70 +52,33 @@ structlog.configure(
 
 log = structlog.get_logger()
 
-REQUEST_CSV_FIELDS = list(RequestLog.model_fields.keys())
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-LOGS_DIR = PROJECT_ROOT / "logs"
-REQUEST_CSV_PATH = str(LOGS_DIR / "requests.csv")
-
-POWER_CSV_FIELDS = list(PowerDecisionLog.model_fields.keys())
-POWER_CSV_PATH = str(LOGS_DIR / "power_decisions.csv")
-
-NODE_STATUS_CSV_FIELDS = list(NodeStatusLog.model_fields.keys())
-NODE_STATUS_CSV_PATH = str(LOGS_DIR / "node_status.csv")
-
-
-def init_csv():
-    """Create all CSV files with headers if they don't exist."""
-    os.makedirs(LOGS_DIR, exist_ok=True)
-
-    for path, fields in [
-        (REQUEST_CSV_PATH, REQUEST_CSV_FIELDS),
-        (POWER_CSV_PATH, POWER_CSV_FIELDS),
-        (NODE_STATUS_CSV_PATH, NODE_STATUS_CSV_FIELDS),
-    ]:
-        if not os.path.exists(path):
-            with open(path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=fields)
-                writer.writeheader()
-            log.info("csv.created", path=path)
-
 
 T = TypeVar("T")
 
 
-def _append_csv_row(path: str, fields: list[str], row: dict):
-    """Append one row and ensure header exists when file is new/empty."""
-    with open(path, "a+", newline="") as f:
-        f.seek(0, os.SEEK_END)
-        writer = csv.DictWriter(f, fieldnames=fields)
-        if f.tell() == 0:
-            writer.writeheader()
-        writer.writerow(row)
+def get_logs(log_class: Type[T]) -> list[T]:
+    """Return typed logs from DB for the requested model class."""
+    try:
+        config_id = _current_config_id()
+        if log_class is RequestLog:
+            return read_all_request_logs(config_id)  # type: ignore[return-value]
+        if log_class is PowerDecisionLog:
+            return read_all_power_decision_logs(config_id)  # type: ignore[return-value]
+        if log_class is NodeStatusLog:
+            return read_all_node_status_logs(config_id)  # type: ignore[return-value]
+        return read_model_logs(log_class, _current_config_id())
+    except Exception as e:
+        log.warning("db.read_logs_failed", error=str(e), log_class=log_class.__name__)
+        return []
 
 
-def get_logs(log_class: Type[T], path: str) -> list[T]:
-    """Return logs from a CSV file parsed into the given Pydantic model class."""
-    logs = []
-    if not os.path.exists(path):
-        log.warning("csv.missing", path=path)
-        return logs
-
-    with open(path, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if log_class is RequestLog and ("success" not in row or row["success"] == ""):
-                row["success"] = "true"
-            logs.append(log_class(**row))
-    return logs
-
-
-def reset_logs():
-    """Delete existing logs and create fresh CSVs. Call at the start of experiment run."""
-    for path in [REQUEST_CSV_PATH, POWER_CSV_PATH, NODE_STATUS_CSV_PATH]:
-        if os.path.exists(path):
-            os.remove(path)
-    init_csv()
-    log.info("logs.reset")
+def get_terminal_debug_logs() -> list[TerminalDebugLog]:
+    """Return terminal debug log entries from DB as models."""
+    try:
+        return read_terminal_debug_logs(_current_config_id())
+    except Exception as e:
+        log.warning("db.read_terminal_debug_failed", error=str(e))
+        return []
 
 
 def log_request(
@@ -118,7 +108,10 @@ def log_request(
 
     row = entry.model_dump(mode="json")
 
-    _append_csv_row(REQUEST_CSV_PATH, REQUEST_CSV_FIELDS, row)
+    try:
+        save_model_log(_current_config_id(), entry)
+    except Exception as e:
+        log.warning("db.save_model_log_failed", error=str(e), log_type="RequestLog")
 
     log.info("request.logged", **row)
 
@@ -130,7 +123,7 @@ def log_power_decision(
     reason: str,
     system_avg_latency_ms: float,
 ):
-    """Log a power scheduler decision to the CSV and console.
+    """Log a power scheduler decision.
 
     TODO: Add active_nodes_before/after, energy forecast data
     when the power scheduler is implemented.
@@ -146,7 +139,10 @@ def log_power_decision(
 
     row = entry.model_dump(mode="json")
 
-    _append_csv_row(POWER_CSV_PATH, POWER_CSV_FIELDS, row)
+    try:
+        save_model_log(_current_config_id(), entry)
+    except Exception as e:
+        log.warning("db.save_model_log_failed", error=str(e), log_type="PowerDecisionLog")
 
     log.info(f"power.{action}", **row)
 
@@ -166,17 +162,20 @@ def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerN
             active_nodes=active_nodes,
             idle_nodes=idle_nodes,
         )
-        _append_csv_row(NODE_STATUS_CSV_PATH, NODE_STATUS_CSV_FIELDS, entry.model_dump(mode="json"))
+        try:
+            save_model_log(_current_config_id(), entry)
+        except Exception as e:
+            log.warning("db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
 
     log.info("node_status.snapshot", cluster=cluster.name, active=active_nodes, idle=idle_nodes)
 
 
-def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
-    """Read the request CSV and compute summary metrics."""
-    rows = get_logs(RequestLog, csv_path)
+def generate_summary() -> dict:
+    """Read request logs from DB and compute summary metrics."""
+    rows = get_logs(RequestLog)
 
     if not rows:
-        return {"error": "No requests in the CSV"}
+        return {"error": "No requests in the database"}
 
     total = len(rows)
     avg_latency = sum(r.latency_ms for r in rows) / total
@@ -224,9 +223,9 @@ def generate_summary(csv_path: str = REQUEST_CSV_PATH) -> dict:
     return summary
 
 
-# TODO - save to database instead of local JSON file when database is implemented
-def save_summary(summary: dict, output_path: str = "logs/summary.json"):
-    """Save the summary dictionary to a JSON file."""
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(summary, f, indent=2)
+def save_summary(summary: dict):
+    """Persist summary payload in DB instead of writing to a local file."""
+    try:
+        save_payload_log(_current_config_id(), "summary", summary)
+    except Exception as e:
+        log.warning("db.save_summary_failed", error=str(e))

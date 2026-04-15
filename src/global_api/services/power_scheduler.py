@@ -152,7 +152,7 @@ async def power_scheduler_loop():
     log.info("Global Power Scheduler Running")
     config = config_store.get()
     timeout = config.power_scheduler.timeout_s
-    while config.power_scheduler.start:
+    while config_store.get().power_scheduler.start:
         log.info("Global Power Scheduler Running Again")
         await asyncio.sleep(timeout)
         all_clusters = config_store.get_cluster_information()

@@ -1,0 +1,22 @@
+FROM docker:27-cli
+
+CMD ["sh", "-c", "\
+if docker inspect -f '{{.State.Running}}' p6-postgres 2>/dev/null | grep -q true; then \
+	echo 'p6-postgres already running'; \
+elif docker container inspect p6-postgres >/dev/null 2>&1; then \
+	echo 'starting existing p6-postgres'; \
+	docker start p6-postgres; \
+else \
+	echo 'creating p6-postgres'; \
+	docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5432:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16; \
+fi; \
+if docker inspect -f '{{.State.Running}}' pgadmin 2>/dev/null | grep -q true; then \
+	echo 'pgadmin already running'; \
+elif docker container inspect pgadmin >/dev/null 2>&1; then \
+	echo 'starting existing pgadmin'; \
+	docker start pgadmin; \
+else \
+	echo 'creating pgadmin'; \
+	docker run --name pgadmin -p 5050:80 -e PGADMIN_DEFAULT_EMAIL=admin@admin.com -e PGADMIN_DEFAULT_PASSWORD=admin -d dpage/pgadmin4; \
+fi\
+"]
