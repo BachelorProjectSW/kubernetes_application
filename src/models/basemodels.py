@@ -17,6 +17,7 @@ class WeightsConfig(BaseModel):
 
     gco2: float
     cost: float
+    latency: float = 0.0
 
 
 class PowerSchedulerConfig(BaseModel):
@@ -98,6 +99,7 @@ class ClusterRuntimeData(BaseModel):
     cluster_load_w: float
     grid_carbon_intensity: float
     grid_electricity_price: float
+    avg_latency_ms: float = 0.0  # EWMA-smoothed latency estimate for this cluster
 
 
 class ClusterInformation(BaseModel):

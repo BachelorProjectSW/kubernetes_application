@@ -98,17 +98,31 @@ def score_cluster(
     grid_electricity_price: float,
     carbon_weight: float,
     cost_weight: float,
+    latency_weight: float,
+    estimated_latency_ms: float,
+    max_latency_ms: float,
     energy: EnergyConfig,
 ) -> float:
     """Compute the score for a cluster.
+
+    The score is a weighted sum of three normalized objectives — carbon intensity,
+    electricity cost, and request latency — each mapped to [0, 1] where 1 is best.
+    Latency is normalized against the user-specified SLO (max_latency_ms), so a
+    cluster at the latency limit scores 0 and a cluster with no observed latency
+    scores 1. This follows the Weighted Sum Model (WSM) for multi-criteria
+    decision making (Hwang & Yoon, 1981).
 
     Args:
         renewable_output_w: Current renewable production in watts.
         cluster_load_w: Current cluster power consumption in watts.
         grid_carbon_intensity: Carbon intensity (gCO2/kWh) of the grid.
         grid_electricity_price: Current grid electricity price (EUR/kWh).
-        carbon_weight: weight specified by the user on carbon.
-        cost_weight: weight specified by the user on cost.
+        carbon_weight: Weight specified by the user on carbon.
+        cost_weight: Weight specified by the user on cost.
+        latency_weight: Weight specified by the user on latency.
+        estimated_latency_ms: EWMA-smoothed recent latency for this cluster (ms).
+        max_latency_ms: User-specified maximum acceptable latency (ms); used as
+                        the normalization reference — analogous to carbon_ref_max.
         energy: Energy configuration constants.
 
     Returns:
@@ -118,10 +132,16 @@ def score_cluster(
     blended_carbon = compute_carbon_blend(renewable_output_w, cluster_load_w, grid_carbon_intensity)
     blended_cost = compute_cost_blend(renewable_output_w, cluster_load_w, grid_electricity_price)
 
-    blended_carbon_normalized = normalize_value(blended_carbon, energy.carbon_ref_max)
-    blended_cost_normalized = normalize_value(blended_cost, energy.cost_ref_max)
+    norm_carbon = normalize_value(blended_carbon, energy.carbon_ref_max)
+    norm_cost = normalize_value(blended_cost, energy.cost_ref_max)
+    norm_latency = normalize_value(estimated_latency_ms, max_latency_ms)
 
-    return round((carbon_weight * blended_carbon_normalized) + (cost_weight * blended_cost_normalized), 4)
+    return round(
+        (carbon_weight * norm_carbon)
+        + (cost_weight * norm_cost)
+        + (latency_weight * norm_latency),
+        4,
+    )
 
 
 def choose_cluster(
@@ -129,14 +149,17 @@ def choose_cluster(
     cluster_energy_data_list: list[ClusterRuntimeData],
     weights: WeightsConfig,
     energy: EnergyConfig,
+    max_latency_ms: float,
 ) -> tuple[ClusterConfig, ClusterRuntimeData]:
     """Choose the best cluster based on scoring.
 
     Args:
         clusters: List of static cluster configurations.
         cluster_energy_data_list: Runtime values for each cluster, in the same order as clusters.
-        weights: User-specified carbon and cost weights.
+        weights: User-specified carbon, cost, and latency weights.
         energy: Energy configuration constants.
+        max_latency_ms: User-specified maximum acceptable latency (ms); passed to
+                        score_cluster as the latency normalization reference.
 
     Returns:
         Tuple of (best ClusterConfig, its ClusterRuntimeData).
@@ -154,6 +177,9 @@ def choose_cluster(
             cluster_energy_data.grid_electricity_price,
             weights.gco2,
             weights.cost,
+            weights.latency,
+            cluster_energy_data.avg_latency_ms,
+            max_latency_ms,
             energy,
         )
 

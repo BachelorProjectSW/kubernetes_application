@@ -87,6 +87,9 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             runtime_data.grid_electricity_price,
             config.weights.gco2,
             config.weights.cost,
+            config.weights.latency,
+            runtime_data.avg_latency_ms,
+            float(config.latency.max_ms),
             config.energy,
         )
         scored_clusters.append((cluster_score, cluster))

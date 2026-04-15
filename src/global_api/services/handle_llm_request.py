@@ -25,7 +25,7 @@ def handle_llm_request(question: QuestionConfig):
     ]
 
     cluster, cluster_energy_data = choose_cluster(
-        config.clusters, all_cluster_energy_data, config.weights, config.energy
+        config.clusters, all_cluster_energy_data, config.weights, config.energy, config.latency.max_ms
     )
 
     renewable_fraction = compute_grid_fraction(

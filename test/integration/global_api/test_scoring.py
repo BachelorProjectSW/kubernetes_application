@@ -17,5 +17,5 @@ def test_integration_scoring_chooses_correct_cluster():
                            grid_electricity_price=0.14),
     ]
 
-    chosen_cluster, _ = choose_cluster(config.clusters, cluster_energy_data, config.weights, config.energy)
+    chosen_cluster, _ = choose_cluster(config.clusters, cluster_energy_data, config.weights, config.energy, config.latency.max_ms)
     assert chosen_cluster == config.clusters[1]
