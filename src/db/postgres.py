@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, TypeVar
 
 from pydantic import BaseModel
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import JSON, Column, Text, create_engine, text
 from sqlalchemy.engine import URL, make_url
 from sqlmodel import Field, SQLModel, Session, select
@@ -128,10 +129,11 @@ def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
 
 def save_terminal_debug(config_id: str | None, message: str, level: str, payload: dict[str, Any]) -> None:
     """Save all logs to DB."""
+    safe_payload = jsonable_encoder(payload)
     row = AppLogRecord(
         config_id=config_id,
         log_type=level,
-        payload_json=payload,
+        payload_json=safe_payload,
         terminal_debug=message,
     )
     with Session(_engine()) as session:
@@ -141,10 +143,11 @@ def save_terminal_debug(config_id: str | None, message: str, level: str, payload
 
 def save_payload_log(config_id: str | None, log_type: str, payload: dict[str, Any]) -> None:
     """Persist an arbitrary structured payload log linked to config_id."""
+    safe_payload = jsonable_encoder(payload)
     row = AppLogRecord(
         config_id=config_id,
         log_type=log_type,
-        payload_json=payload,
+        payload_json=safe_payload,
         terminal_debug=None,
     )
     with Session(_engine()) as session:
@@ -172,7 +175,7 @@ def read_model_logs(log_model_class: type[TModel], config_id: str | None = None)
 
 def read_terminal_debug_logs(config_id: str | None = None) -> list[dict[str, Any]]:
     """Read terminal debug log rows from DB as typed models."""
-    query = select(AppLogRecord).where(AppLogRecord.log_type == "terminal_debug")
+    query = select(AppLogRecord).where(AppLogRecord.terminal_debug.is_not(None))
     if config_id is not None:
         query = query.where(AppLogRecord.config_id == config_id)
     query = query.order_by(AppLogRecord.created_at)
