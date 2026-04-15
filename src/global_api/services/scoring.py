@@ -28,6 +28,7 @@ def compute_grid_fraction(renewable_output_w: float, cluster_load_w: float) -> f
     Args:
         renewable_output_w: Current renewable production in watts.
         cluster_load_w: Current cluster power consumption in watts.
+
     Returns:
         Grid fraction between 0.0 (fully renewable) and 1.0 (fully grid).
 
