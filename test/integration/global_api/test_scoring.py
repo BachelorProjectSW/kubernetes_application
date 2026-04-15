@@ -7,7 +7,7 @@ from ...k3d.cluster_configs.test_config import get_test_config
 
 @pytest.mark.integration
 def test_integration_scoring_chooses_correct_cluster():
-    """Test that scoring works as intended and returns the cluster with the highest value."""
+    """Test that scoring uses runtime values and returns the highest-scoring cluster."""
     config = get_test_config()
 
     cluster_energy_data = [

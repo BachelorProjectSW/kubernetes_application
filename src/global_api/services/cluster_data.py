@@ -3,11 +3,28 @@ from datetime import datetime, timedelta
 import structlog
 
 from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig
+from .dk_energy import get_dk_hourly
 from .pv_power import get_power
 from .price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 from .scoring import compute_cluster_load
 
 log = structlog.get_logger()
+
+
+def _get_microgrid_base_load_w(
+    cluster: ClusterConfig,
+    simulated_time_start: datetime,
+    simulated_time_end: datetime,
+) -> float:
+    """Return extra base load for clusters backed by real microgrid data."""
+    country_code = cluster.simulated_country_code.upper()
+
+    match country_code:
+        case code if code.startswith("DK"):
+            dk_hourly = get_dk_hourly(simulated_time_start, simulated_time_end)
+            return float(dk_hourly[0]["consumption_w"])
+        case _:
+            return 0.0
 
 
 def get_cluster_runtime_data(
@@ -48,11 +65,19 @@ def get_cluster_runtime_data(
     # TODO: replace with actual active/idle node counts once node tracking is implemented
     cluster_load_w = compute_cluster_load(0, 0, energy)
 
+    microgrid_base_load_w = _get_microgrid_base_load_w(
+        cluster,
+        simulated_time_start,
+        simulated_time_end,
+    )
+    cluster_load_w += microgrid_base_load_w
+
     log.debug(
         "cluster.runtime_data_fetched",
         cluster=cluster.name,
         renewable_output_w=renewable_output_w,
         cluster_load_w=cluster_load_w,
+        microgrid_base_load_w=microgrid_base_load_w,
         grid_carbon_intensity=grid_carbon_intensity,
         grid_electricity_price=grid_electricity_price,
     )

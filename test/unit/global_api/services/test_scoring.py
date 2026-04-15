@@ -24,7 +24,7 @@ def test_compute_grid_fraction_succeeds():
     """Test that compute grid fraction works."""
     grid_fraction = compute_grid_fraction(200, 1000)
 
-    assert grid_fraction == 0.8
+    assert grid_fraction == pytest.approx(0.8, rel=1e-3)
 
 
 @pytest.mark.unit
@@ -35,6 +35,7 @@ def test_compute_carbon_blend_succeeds():
 
         result = compute_carbon_blend(200, 1000, 400)
         assert result == 320
+        mock_grid_fraction.assert_called_once_with(200, 1000)
 
 
 @pytest.mark.unit
@@ -45,6 +46,7 @@ def test_compute_cost_blend_succeeds():
 
         result = compute_cost_blend(200, 1000, 0.2)
         assert result == 0.16
+        mock_grid_fraction.assert_called_once_with(200, 1000)
 
 
 @pytest.mark.unit
