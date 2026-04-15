@@ -98,7 +98,6 @@ class ClusterRuntimeData(BaseModel):
     cluster_load_w: float
     grid_carbon_intensity: float
     grid_electricity_price: float
-    aau_base_load_w: float = 0.0
 
 
 class ClusterInformation(BaseModel):
