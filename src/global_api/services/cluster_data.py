@@ -92,5 +92,5 @@ def get_cluster_runtime_data(
         cluster_load_w=cluster_load_w,
         grid_carbon_intensity=grid_carbon_intensity,
         grid_electricity_price=grid_electricity_price,
-        aau_base_load_w=aau_base_load_w,
+        avg_latency_ms=avg_latency_ms,
     )
