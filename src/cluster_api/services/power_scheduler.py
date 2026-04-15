@@ -30,10 +30,9 @@ def turn_on_node(worker_node: WorkerNode):
     try:
         gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
-        # run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
-        run_cmd(f"sudo gpioset -z -c gpiochip0 {gpio}=1") #LOCAL PORTS FROM MY RPI
+        run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
         time.sleep(0.5)
-        # run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
+        run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
         log.debug("turning node on", node=worker_node.name)
         worker_node.status = WorkerStatus.TURNING_ON
         return True
@@ -82,7 +81,6 @@ def turn_off_node(worker_node: WorkerNode):
 def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: str = "default") -> bool:
     """Return True when a llama pod on this node is Running and Ready."""
     try:
-        run_cmd(f"sudo gpioset -z -c gpiochip0 {worker_node.gpio}=0") #DEBUG!!!
         pods = api_client.list_namespaced_pod(
             namespace=namespace,
             field_selector=f"spec.nodeName={worker_node.name}",
@@ -157,19 +155,12 @@ def change_node_status(number_of_nodes: int, status: str):
     else:
         raise ValueError("status must be 'on' or 'off'")
 
-    result = {
+    return {
         "requested": number_of_nodes,
         "status": status,
         "node_changed": len(nodes_to_change),
         "nodes": [node.name for node in nodes_to_change],
     }
-
-    if status == "on":
-        result["turned_on"] = len(nodes_to_change)
-    if status == "off":
-        result["turned_off"] = len(nodes_to_change)
-
-    return result
 
 
 def select_nodes_to_turn_on(number_of_nodes: int, worker_nodes: list[WorkerNode]) -> list[WorkerNode]:
@@ -230,17 +221,9 @@ def turn_off_idle_nodes(idle_time: int):
     request_logs = get_request_logs()
     nodes = config.worker_nodes
 
-    turned_off_nodes = []
     for node in nodes:
         if node.status != WorkerStatus.IDLE:
             continue
         last_request = get_idle_time(request_logs, node.name, cluster_name)
         if last_request > idle_time:
-            if turn_off_node(node):
-                turned_off_nodes.append(node.name)
-
-    return {
-        "idle_time": idle_time,
-        "turned_off": len(turned_off_nodes),
-        "nodes": turned_off_nodes,
-    }
+            turn_off_node(node)
