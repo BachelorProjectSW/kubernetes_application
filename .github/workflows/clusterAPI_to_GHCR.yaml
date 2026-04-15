@@ -5,6 +5,7 @@ on:
       - main
     paths-ignore:
       - 'src/cluster_api/manifest/deployment.yaml'
+      - 'src/global_api/manifest/deployment.yaml'
 
 permissions:
   contents: write 
