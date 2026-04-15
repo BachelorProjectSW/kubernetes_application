@@ -67,8 +67,8 @@ def get_logs(log_class: Type[T]) -> list[T]:
         if log_class is NodeStatusLog:
             return read_all_node_status_logs(config_id)  # type: ignore[return-value]
         return read_model_logs(log_class, _current_config_id())
-    except Exception as exc:
-        log.warning("db.read_logs_failed", error=str(exc), log_class=log_class.__name__)
+    except Exception as e:
+        log.warning("db.read_logs_failed", error=str(e), log_class=log_class.__name__)
         return []
 
 
@@ -76,8 +76,8 @@ def get_terminal_debug_logs() -> list[TerminalDebugLog]:
     """Return terminal debug log entries from DB as models."""
     try:
         return read_terminal_debug_logs(_current_config_id())
-    except Exception as exc:
-        log.warning("db.read_terminal_debug_failed", error=str(exc))
+    except Exception as e:
+        log.warning("db.read_terminal_debug_failed", error=str(e))
         return []
 
 
@@ -110,8 +110,8 @@ def log_request(
 
     try:
         save_model_log(_current_config_id(), entry)
-    except Exception as exc:
-        log.warning("db.save_model_log_failed", error=str(exc), log_type="RequestLog")
+    except Exception as e:
+        log.warning("db.save_model_log_failed", error=str(e), log_type="RequestLog")
 
     log.info("request.logged", **row)
 
@@ -141,8 +141,8 @@ def log_power_decision(
 
     try:
         save_model_log(_current_config_id(), entry)
-    except Exception as exc:
-        log.warning("db.save_model_log_failed", error=str(exc), log_type="PowerDecisionLog")
+    except Exception as e:
+        log.warning("db.save_model_log_failed", error=str(e), log_type="PowerDecisionLog")
 
     log.info(f"power.{action}", **row)
 
@@ -164,8 +164,8 @@ def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerN
         )
         try:
             save_model_log(_current_config_id(), entry)
-        except Exception as exc:
-            log.warning("db.save_model_log_failed", error=str(exc), log_type="NodeStatusLog")
+        except Exception as e:
+            log.warning("db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
 
     log.info("node_status.snapshot", cluster=cluster.name, active=active_nodes, idle=idle_nodes)
 
@@ -227,5 +227,5 @@ def save_summary(summary: dict):
     """Persist summary payload in DB instead of writing to a local file."""
     try:
         save_payload_log(_current_config_id(), "summary", summary)
-    except Exception as exc:
-        log.warning("db.save_summary_failed", error=str(exc))
+    except Exception as e:
+        log.warning("db.save_summary_failed", error=str(e))
