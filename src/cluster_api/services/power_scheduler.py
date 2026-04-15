@@ -30,9 +30,11 @@ def turn_on_node(worker_node: WorkerNode):
     try:
         gpio = worker_node.gpio
         log.debug("gpio to turn on", gpio=gpio)
-        run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
+        # run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
+        run_cmd(f"sudo gpioset -z -c gpiochip0 {gpio}=1") #LOCAL PORTS FROM MY RPI
         time.sleep(0.5)
-        run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
+        # run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
+        run_cmd(f"sudo gpioset -z -c gpiochip0 {gpio}=0") #LOCAL PORTS FROM MY RPI
         log.debug("turning node on", node=worker_node.name)
         worker_node.status = WorkerStatus.TURNING_ON
         return True
