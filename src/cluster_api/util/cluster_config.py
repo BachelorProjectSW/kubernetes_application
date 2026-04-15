@@ -125,11 +125,12 @@ class ConfigStore:
         found_ports = set()
 
         for pod in pods:
-            if getattr(pod.status, "phase", None) != "Running": #only choose pods that are running
+            if getattr(pod.status, "phase", None) != "Running":  # only choose pods that are running
                 continue
 
+            # only pods that are ready
             conditions = getattr(pod.status, "conditions", None) or []
-            pod_ready = any(c.type == "Ready" and c.status == "True" for c in conditions) #only pods that are ready
+            pod_ready = any(c.type == "Ready" and c.status == "True" for c in conditions)
             if not pod_ready:
                 continue
 
@@ -148,12 +149,13 @@ class ConfigStore:
         if len(found_ports) > 1:
             raise ValueError(f"Inconsistent llama hostPorts found: {sorted(found_ports)}")
 
-        self.config.cluster_config.llama_hostport = found_ports.pop() #Returns the removed value
+        self.config.cluster_config.llama_hostport = found_ports.pop()  # Returns the removed value
 
         log.debug(
             "cluster.hostport_discovered",
             llama_hostport=self.config.cluster_config.llama_hostport,
         )
+
     def populate_worker_capacities(self):
         """Fetch max_slots from each worker's llama server."""
         # Max slot = level of concurrency
