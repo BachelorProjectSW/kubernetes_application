@@ -28,16 +28,12 @@ def _current_config_id() -> str | None:
         return None
 
 
-def _persist_debug_processor(_, __, event_dict):
+def _get_terminal_logs(_, __, event_dict):
     """Get all logs printed to terminal."""
-    try:
-        level = str(event_dict.get("level", "info"))
-        message = str(event_dict.get("event", ""))
-        config_id = _current_config_id()
-        save_terminal_debug(config_id, message, level, dict(event_dict))
-    except Exception:
-        # Never let DB logging errors break API request handling.
-        pass
+    level = str(event_dict.get("level", "info"))
+    message = str(event_dict.get("event", ""))
+    config_id = _current_config_id()
+    save_terminal_debug(config_id, message, level, dict(event_dict))
     return event_dict
 
 
@@ -45,7 +41,7 @@ structlog.configure(
     processors=[
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
-        _persist_debug_processor,
+        _get_terminal_logs,
         structlog.dev.ConsoleRenderer(),
     ],
     wrapper_class=structlog.make_filtering_bound_logger(0),
