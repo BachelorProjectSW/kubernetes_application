@@ -88,7 +88,7 @@ class ClusterConfig(BaseModel):
     simulated_country_code: str
     k3d: bool = False
     llama_service_port: int | None = None
-    llama_hostport: int | None = None
+    llama_hostport: int = 8080
 
 
 class ClusterRuntimeData(BaseModel):

@@ -111,45 +111,44 @@ class ConfigStore:
             )
 
     def populate_host_port(self):
-        """Fetch llama hostPort from DaemonSets and save it in cluster config."""
+        """Fetch hostPort from running llama pods and save it in cluster config."""
         if self.config is None:
             raise Exception("Config is not set yet")
 
         api_client = get_api_client()
-        daemonset_names = ["llama-server-arm64", "llama-server-amd64"]
+
+        pods = api_client.list_namespaced_pod(
+            namespace="default",
+            label_selector="app=llama-server",
+        ).items
+
         found_ports = set()
 
-        for ds_name in daemonset_names:
-            try:
-                ds = api_client.read_namespaced_daemon_set(
-                    name=ds_name,
-                    namespace="default",
-                )
-
-                containers = ds.spec.template.spec.containers or []
-                for container in containers:
-                    if container.name != "llama":
-                        continue
-
-                    for port in container.ports or []:
-                        if port.host_port is not None:
-                            found_ports.add(port.host_port)
-
-            except Exception as e:
-                log.debug(
-                    "cluster.hostport_discovery_daemonset_skipped",
-                    daemonset=ds_name,
-                    error=str(e),
-                )
+        for pod in pods:
+            if getattr(pod.status, "phase", None) != "Running": #only choose pods that are running
                 continue
 
+            conditions = getattr(pod.status, "conditions", None) or []
+            pod_ready = any(c.type == "Ready" and c.status == "True" for c in conditions) #only pods that are ready
+            if not pod_ready:
+                continue
+
+            containers = getattr(pod.spec, "containers", None) or []
+            for container in containers:
+                if container.name != "llama":
+                    continue
+
+                for port in container.ports or []:
+                    if port.host_port is not None:
+                        found_ports.add(port.host_port)
+
         if not found_ports:
-            raise ValueError("No llama hostPort found in any DaemonSet")
+            raise ValueError("No running llama pod with hostPort found")
 
         if len(found_ports) > 1:
             raise ValueError(f"Inconsistent llama hostPorts found: {sorted(found_ports)}")
 
-        self.config.cluster_config.llama_hostport = found_ports.pop()
+        self.config.cluster_config.llama_hostport = found_ports.pop() #Returns the removed value
 
         log.debug(
             "cluster.hostport_discovered",
