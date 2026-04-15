@@ -18,7 +18,7 @@ def get_test_config():
         id="123",
         name="demo test",
         start=StartConfig(
-            duration_time_s=30,
+            duration_time_s=20,
             start_time_simulated="01/10/2021",
             start_time_real=None
         ),
@@ -28,7 +28,7 @@ def get_test_config():
         ),
         power_scheduler=PowerSchedulerConfig(
             start=True,
-            timeout_s=5,
+            timeout_s=2,
             idle_time_for_turn_off_s=1
         ),
         latency=LatencyConfig(
@@ -36,9 +36,9 @@ def get_test_config():
         ),
         workload=WorkloadConfig(
             request_per_minute=10,
-            pattern="steady",
+            pattern="peaks",
             seed=10,
-            peakiness=0
+            peakiness=1
         ),
         question=QuestionConfig(
             question="hey",
