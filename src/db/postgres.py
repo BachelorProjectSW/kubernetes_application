@@ -126,11 +126,11 @@ def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
         session.commit()
 
 
-def save_terminal_debug(config_id: str | None, message: str, payload: dict[str, Any] | None = None) -> None:
-    """Persist raw terminal debug text linked to config_id."""
+def save_terminal_debug(config_id: str | None, message: str, level: str, payload: dict[str, Any]) -> None:
+    """Save all logs to DB."""
     row = AppLogRecord(
         config_id=config_id,
-        log_type="terminal_debug",
+        log_type=level,
         payload_json=payload,
         terminal_debug=message,
     )
