@@ -28,7 +28,7 @@ spec:
 
       containers:
         - name: global-api
-          image: ghcr.io/bachelorprojectsw/global-api:test2
+          image: ghcr.io/bachelorprojectsw/global-api:5db44e71c11cc4c9e67b3846fd13bbf35a7e4ccc
           imagePullPolicy: IfNotPresent
 
         - name: tailscale
