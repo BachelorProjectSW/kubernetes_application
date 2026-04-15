@@ -23,8 +23,6 @@ def _get_microgrid_base_load_w(
     match country_code:
         case code if code.startswith("DK"):
             dk_hourly = get_dk_hourly(simulated_time_start, simulated_time_end)
-            if not dk_hourly:
-                return 0.0
             return float(dk_hourly[0]["consumption_w"])
         case _:
             return 0.0
