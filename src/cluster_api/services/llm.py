@@ -118,7 +118,7 @@ def handle_llm(question: QuestionConfig):
         if config.cluster_config.k3d:
             url = f"http://localhost:{worker_node.forwarded_port}/completion"
         else:
-            url = f"http://{worker_node.ip}:{config.cluster_config.llama_nodeport}/completion"
+            url = f"http://{worker_node.ip}:{config.cluster_config.llama_hostport}/completion"
 
         payload = {
             "prompt": question.question,

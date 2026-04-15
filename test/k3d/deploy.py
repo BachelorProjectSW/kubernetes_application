@@ -28,14 +28,6 @@ def deploy_clusters():
             "app=llama-server",
             "--timeout=180s",
         ])
-        run_cmd(["kubectl", "get", "svc", "llama-service"])
-        run_cmd([
-            "kubectl",
-            "wait",
-            "--for=jsonpath={.subsets[0].addresses[0].ip}",
-            "endpoints/llama-service",
-            "--timeout=180s",
-        ])
 
 
 if __name__ == "__main__":

@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cluster-api
+  name: global-api
 
 spec:
   replicas: 1
 
   selector:
     matchLabels:
-      app: cluster-api
+      app: global-api
 
   template:
     metadata:
       labels:
-        app: cluster-api
+        app: global-api
 
     spec:
-      serviceAccountName: cluster-api-sa
+      serviceAccountName: global-api-sa
 
       nodeSelector:
         node-role.kubernetes.io/control-plane: "true"
@@ -27,8 +27,8 @@ spec:
           effect: "NoSchedule"
 
       containers:
-        - name: cluster-api
-          image: ghcr.io/bachelorprojectsw/cluster-api:hostport-test3
+        - name: global-api
+          image: ghcr.io/bachelorprojectsw/global-api:test2
           imagePullPolicy: IfNotPresent
 
         - name: tailscale
@@ -48,7 +48,7 @@ spec:
               value: /config/serve.json
     
             - name: TS_HOSTNAME
-              value: cluster-api
+              value: global-api
 
           #Where the storage is at in the container
           volumeMounts:
@@ -59,4 +59,4 @@ spec:
       volumes:
         - name: tailscale-config
           configMap:
-            name: cluster-api-tailscale-config
+            name: global-api-tailscale-config

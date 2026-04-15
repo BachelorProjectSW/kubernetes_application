@@ -87,8 +87,8 @@ class ClusterConfig(BaseModel):
     gpio_list: list[int]
     simulated_country_code: str
     k3d: bool = False
-    llama_service_port: int
-    llama_nodeport: int = 30080
+    llama_service_port: int | None = None
+    llama_hostport: int = 8080
 
 
 class ClusterRuntimeData(BaseModel):
