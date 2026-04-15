@@ -28,9 +28,11 @@ def handle_llm_request(question: QuestionConfig):
         config.clusters, all_cluster_energy_data, config.weights, config.energy, config.latency.max_ms
     )
 
-    renewable_fraction = compute_grid_fraction(
-        cluster_energy_data.renewable_output_w, cluster_energy_data.cluster_load_w
+    grid_fraction = compute_grid_fraction(
+        cluster_energy_data.renewable_output_w,
+        cluster_energy_data.cluster_load_w,
     )
+    renewable_fraction = round(max(0.0, 1.0 - grid_fraction), 4)
     blended_carbon = compute_carbon_blend(
         cluster_energy_data.renewable_output_w,
         cluster_energy_data.cluster_load_w,
