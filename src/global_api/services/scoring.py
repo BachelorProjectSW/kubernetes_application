@@ -150,8 +150,7 @@ def choose_cluster(
         cluster_energy_data_list: Runtime values for each cluster, in the same order as clusters.
         weights: User-specified carbon, cost, and latency weights.
         energy: Energy configuration constants.
-        max_latency_ms: User-specified maximum acceptable latency (ms); passed to
-                        score_cluster as the latency normalization reference.
+        max_latency_ms: User-specified maximum acceptable latency (ms).
 
     Returns:
         Tuple of (best ClusterConfig, its ClusterRuntimeData).
