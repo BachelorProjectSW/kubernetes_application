@@ -35,6 +35,8 @@ class NodeStatusLog(BaseModel):
     cluster: str
     node: str
     status: str
+    active_nodes: int
+    idle_nodes: int
 
 
 class TerminalDebugLog(BaseModel):
