@@ -1,4 +1,4 @@
-name: ci
+name: ci-p7
 
 on:
   pull_request:
@@ -28,6 +28,12 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y python3-lgpio
+      
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
 
       - name: Install dependencies
         run: |
@@ -63,4 +69,4 @@ jobs:
         run: |
           python -m test.k3d.run_servers &
           sleep 10
-          python -m pytest -k "not test_get_dk_hourly_returns_correct_format"
+          python -m pytest test/integration/global_api/test_dk_energy.py
