@@ -8,7 +8,7 @@ on:
 jobs:
   test:
     name: Run Tests
-    runs-on: X64
+    runs-on: self-hosted
     env:
       ELECTRICITY_MAPS_API_KEY: ${{ secrets.ELECTRICITY_MAPS_API_KEY }}
     strategy:
@@ -28,6 +28,11 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y python3-lgpio
+      
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
 
       - name: Install dependencies
@@ -46,7 +51,6 @@ jobs:
         run: |
           # docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5432:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16
           echo hej
-
       - name: Create clusters and global scheduler
         run: |
           python -m test.k3d.create_clusters
