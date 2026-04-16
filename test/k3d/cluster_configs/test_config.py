@@ -48,7 +48,7 @@ def get_test_config():
         clusters=[
             ClusterConfig(
                 name="dk",
-                ip="100.76.22.120",
+                ip="100.114.88.102",
                 port="8040",
                 gpio_list=[17,27,23],
                 simulated_country_code="dk-dk1",
@@ -62,7 +62,7 @@ def get_test_config():
             ),
             ClusterConfig(
                 name="pt",
-                ip="100.120.12.39",
+                ip="100.83.243.61",
                 port="8040",
                 gpio_list=[17,27,23],
                 simulated_country_code="pt",
@@ -75,7 +75,7 @@ def get_test_config():
             ),
         ],
         global_scheduler=GlobalSchedulerConfig(
-            ip="100.65.249.75",
+            ip="100.84.252.101",
             port="8020"
         ),
         strato=StratoConfig(
