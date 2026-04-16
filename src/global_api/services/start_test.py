@@ -1,12 +1,14 @@
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
 import requests
+import structlog
 from .power_scheduler import power_scheduler_loop
 import asyncio
 import threading
 
 
 _power_scheduler_thread: threading.Thread | None = None
+log = structlog.get_logger()
 
 
 def _run_power_scheduler_loop():
@@ -19,6 +21,7 @@ def start_test(config: Config):
     try:
         global _power_scheduler_thread
         config_store.set(config)
+        log.info("global.start_test.begin", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
         for cluster in config.clusters:
 
@@ -31,8 +34,14 @@ def start_test(config: Config):
             port = cluster.port
             url = f"http://{ip}:{port}/set_config"
 
+            log.info("global.start_test.set_config.start", cluster=cluster.name, url=url)
             response = requests.post(url, json=cluster_information.model_dump(), timeout=30)
             response.raise_for_status()
+            log.info(
+                "global.start_test.set_config.done",
+                cluster=cluster.name,
+                status_code=response.status_code,
+            )
 
         if config.power_scheduler.start:
             thread_running = (
@@ -46,9 +55,12 @@ def start_test(config: Config):
                     name="global-power-scheduler",
                 )
                 _power_scheduler_thread.start()
+                log.info("global.start_test.power_scheduler.started")
         name = config.name
+        log.info("global.start_test.done", config_id=config.id, test_name=name)
         return f"{name} test are running succesfully"
     except Exception as e:
+        log.exception("global.start_test.failed", error=str(e))
         raise Exception(f"test failed: {e}")
 
 
