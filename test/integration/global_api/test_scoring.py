@@ -18,9 +18,9 @@ def test_integration_scoring_chooses_correct_cluster():
     ]
 
     chosen_cluster, _ = choose_cluster(
-        config.clusters, 
-        cluster_energy_data, 
-        config.weights, 
-        config.energy, 
+        config.clusters,
+        cluster_energy_data,
+        config.weights,
+        config.energy,
         config.latency.max_ms)
     assert chosen_cluster == config.clusters[1]
