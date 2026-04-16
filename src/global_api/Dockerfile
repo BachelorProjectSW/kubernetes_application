@@ -11,6 +11,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/requirements.txt
 
 ENV PYTHONPATH=/app
-COPY src /app/src
+COPY src/global_api /app/src/global_api
+COPY src/cluster_api /app/src/cluster_api
+COPY src/custom_logging /app/src/custom_logging
+COPY src/models /app/src/models
+COPY src/db /app/src/db
 
 CMD ["uvicorn", "src.global_api.app:app", "--host", "0.0.0.0", "--port", "8020"]
