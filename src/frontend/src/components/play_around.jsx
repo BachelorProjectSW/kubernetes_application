@@ -1,14 +1,20 @@
 // things to handle:
 //send data til backend  ( tjek om den gør dette )
+// et problem der sker er at tidligere experimenters data godt kan overgå det der allerede eksister. 
 // lav resten af experiemtn tingende 
 // tjekke at configurationer er det samme for det sammen experiement id (gør i backend)
 // refactor = del det op i flere filer. 
 // lav endpoint i backend. hvor navn er save-config 
+// igang med = du skal då det til at virke sådan at den opdater patterns og request pr minute med tidligere configurationer. 
 import { useState } from 'react';
 import Ids from './experimentID';
 import Start from './startTime';
+import Weights from './weights';
+import Power_schedular from './power_schedular';
+import Workload from './workloadbalance';
+import ClusterMangening from './cluster';
 
-function allConfigs(handleSubmit) {
+function allConfigs({ onSubmit }) {
     const [inputs, setInputs] = useState({});
 
     const handleChange = (e) => {
@@ -18,7 +24,7 @@ function allConfigs(handleSubmit) {
     };
 
     return (
-        <form onSubmit={(e) => handleSubmit(e, inputs)}>
+        <form onSubmit={(e) => onSubmit(e, inputs)}>
             <div style={{ marginBottom: "20px" }}>
                 <Ids
                     inputs={inputs}
@@ -26,7 +32,7 @@ function allConfigs(handleSubmit) {
                     handleChange={handleChange}
                 />
             </div>
-            <br/>
+            <br />
 
             <label> Name:
                 <input
@@ -36,7 +42,7 @@ function allConfigs(handleSubmit) {
                     onChange={handleChange}
                 />
             </label>
-            <br/>
+            <br />
             <div>
                 <Start
                     inputs={inputs}
@@ -46,9 +52,49 @@ function allConfigs(handleSubmit) {
 
             <br />
 
+            <div>
+                <Weights
+                    inputs={inputs}
+                    handleChange={handleChange}
+                />
+            </div>
+
+            <div>
+                <Power_schedular
+                    inputs={inputs}
+                    handleChange={handleChange}
+                />
+            </div>
+
+            <br />
+
+            <div>
+                <label> max latency in ms:
+                    <input
+                        type="number"
+                        name="max_latency"
+                        value={inputs.max_latency || ""}
+                        onChange={handleChange}
+                    />
+                </label>
+            </div>
+
+            <div>
+                <Workload
+                    inputs={inputs}
+                    handleChange={handleChange}
+                />
+            </div>
+
+            <div>
+                <ClusterMangening
+                    inputs={inputs}
+                    setInputs={setInputs}
+                    />
+            </div>
+
             <button type="submit"> Save configurations</button>
         </form>
-    );
-
+    )
 }
 export default allConfigs;

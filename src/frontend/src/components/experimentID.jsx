@@ -17,8 +17,20 @@ function Ids({ inputs, setInputs, handleChange }) {
                 ...prev,
                 expID: historicalData.id,
                 name: historicalData.name,
-                startDate: historicalData.startDate,
-                duration: historicalData.duration
+                startdate: historicalData.startdate,
+                dur_days: historicalData.dur_days,
+                dur_hours: historicalData.dur_hours, 
+                dur_minutes: historicalData.dur_minutes, 
+                gco2: historicalData.gco2, 
+                cost: historicalData.cost,
+                timeout_s: historicalData.timeout_s,
+                turn_off_s: historicalData.turn_off_s,
+                max_latency: historicalData.max_latency,
+                request_per_minute: historicalData.request_interval,
+                pattern: historicalData.pattern,
+                seed:historicalData.seed,
+                peakiness: historicalData.peakiness,
+                clusters: historicalData.clusters || []
             }));
         }
     };
@@ -26,7 +38,7 @@ function Ids({ inputs, setInputs, handleChange }) {
 
     return (
         <>
-            < label > ExpId:</label >
+            < label > ExpId:
             <button type="button"
                 onClick={toggleMode}
                 style={{ marginLeft: "10px", fontSize: "0.8em" }}
@@ -53,6 +65,7 @@ function Ids({ inputs, setInputs, handleChange }) {
                     />
                 )
             }
+            </label >
         </>
     );
 

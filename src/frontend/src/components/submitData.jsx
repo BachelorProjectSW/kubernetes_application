@@ -1,3 +1,23 @@
+/*class Config(BaseModel):
+    """Config."""
+
+    id: str
+    name: str
+    start: StartConfig
+    weights: WeightsConfig
+    power_scheduler: PowerSchedulerConfig
+    latency: LatencyConfig
+    workload: WorkloadConfig
+    question: QuestionConfig
+    clusters: list[ClusterConfig]
+    global_scheduler: GlobalSchedulerConfig
+    strato: StratoConfig
+    energy: EnergyConfig = EnergyConfig()
+
+*/
+
+
+
 export const handleSubmit = async (e, inputs) => {
     e.preventDefault();
 
@@ -8,12 +28,13 @@ export const handleSubmit = async (e, inputs) => {
 
     const totalSeconds = (days * 86400) + (hours * 3600) + (minutes * 60);
 
+
     const exportData = {
-        id: inputs.exID || "",
+        id: inputs.expID || "",
         name: inputs.name || "",
         start: {
-            duration_time_s: inputs.duration,
-            start_time: totalSeconds || "",
+            duration_time_s: totalSeconds,
+            start_time: inputs.startdate || "",
         } || "",
         weights: {
             gco2: inputs.gco2,
@@ -23,9 +44,11 @@ export const handleSubmit = async (e, inputs) => {
             timeout_s: inputs.timeout_s,
             idle_time_for_turn_off_s: inputs.turn_off_s
         } || "",
-        max_latency: inputs.max_latency || "",
+        latency: {
+            max_latency: inputs.max_latency || "",
+        },
         workload: {
-            request_per_minute: inputs.request_interval,
+            request_pr_min: inputs.request_pr_min,
             pattern: inputs.pattern,
             seed: inputs.seed,
             peakiness: inputs.peakiness
@@ -35,7 +58,14 @@ export const handleSubmit = async (e, inputs) => {
             max_output_tokens: inputs.max_output_tokens,
             context_window: inputs.context_window
         } || "",
-        clusters: inputs.clusters || "", // make funktion for submitting the correct amount of clusters.
+        clusters: (inputs.clusters || []).map((cluster) => ({
+            name: cluster.name || "",
+            ip: cluster.ip || "",
+            port: cluster.port || "",
+            gpio_list: cluster.gpio_list ||"",
+            simulated_country_code: cluster.simulated_country_code || "",
+            llama_service_port: cluster.llama_service_port || ""
+        })),
         global_scheduler: {
             ip: inputs.global_ip,
             port: inputs.global_ports
@@ -62,5 +92,5 @@ export const handleSubmit = async (e, inputs) => {
     //} catch (error) {
     //  console.error("Error connecting to FastAPI:", error);
     //}
-    console.log("Sending these configurations:", inputs);
+    console.log(JSON.stringify(exportData, null, 2));
 }

@@ -1,9 +1,5 @@
 function Start({ inputs, handleChange }) {
 
-    function convertTime(days, hours, minutes) {
-        return totalMinuts = (days * 1440) + (hours * 60) + minutes;
-    }
-
     return (
         <div style={{ border: "1px solid #ccc", padding: "10px", marginTop: "10px" }}>
             <label> StartDate:
@@ -17,7 +13,7 @@ function Start({ inputs, handleChange }) {
 
             <br />
 
-            <label>Duration:</label>
+            <p>Duration:</p>
             <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
                 <label> Days:
                     <input
@@ -54,6 +50,7 @@ function Start({ inputs, handleChange }) {
             </div>
         <div/>
     </div>
+    
     );
 }
 
