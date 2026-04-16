@@ -162,6 +162,7 @@ def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
         log.warning("db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
 
 
+
 def generate_summary() -> dict:
     """Read request logs from DB and compute summary metrics."""
     rows = get_logs(RequestLog)

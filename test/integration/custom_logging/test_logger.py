@@ -200,6 +200,9 @@ def test_log_node_status_snapshot_writes_one_row_per_node():
     assert len(result) == 1
 
 
+
+
+
 # --- generate_summary ---
 
 @pytest.mark.integration
