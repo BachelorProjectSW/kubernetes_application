@@ -3,18 +3,30 @@ from ...models.basemodels import Config
 from ...db.postgres import save_config
 from test.k3d.cluster_configs.test_config import get_test_config
 from .workload.run_workload import run_workload
+import structlog
+
+
+log = structlog.get_logger()
 
 
 def start_test(config: Config):
     """Start test to the global scheduler."""
     save_config(config)
+    log.info(
+        "test.begins",
+        source="strato_api",
+        config_id=config.id,
+        test_name=config.name,
+    )
     # TODO setup current status, to ensure multiple test runs are running at the same time.
     ip = config.global_scheduler.ip
     port = config.global_scheduler.port
     url = f"http://{ip}:{port}/start_test"  # url should be to global scheduler
 
+    log.info("test.forward_to_global", url=url)
     response = requests.post(url, json=config.model_dump(), timeout=60)
     response.raise_for_status()
+    log.info("test.global_started", status_code=response.status_code)
 
     host = f"http://{config.global_scheduler.ip}:{config.global_scheduler.port}"
     results = run_workload(
@@ -27,6 +39,7 @@ def start_test(config: Config):
         config.workload.seed,
         config.workload.peakiness
         )
+    log.info("test.completed", responses=len(results))
     return f"Got {len(results)} responses"
     # TODO return analysed logs to frontend.
 
