@@ -43,7 +43,7 @@ def get_dk_hourly(start: datetime, end: datetime) -> list[dict]:
         response = requests.get(
             f"{ORIN_BASE_URL}/energy/hourly",
             params={"start": start_ms, "end": end_ms},
-            timeout=15,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.HTTPError as e:
