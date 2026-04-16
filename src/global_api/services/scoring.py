@@ -105,13 +105,6 @@ def score_cluster(
 ) -> float:
     """Compute the score for a cluster.
 
-    The score is a weighted sum of three normalized objectives — carbon intensity,
-    electricity cost, and request latency — each mapped to [0, 1] where 1 is best.
-    Latency is normalized against the user-specified SLO (max_latency_ms), so a
-    cluster at the latency limit scores 0 and a cluster with no observed latency
-    scores 1. This follows the Weighted Sum Model (WSM) for multi-criteria
-    decision making (Hwang & Yoon, 1981).
-
     Args:
         renewable_output_w: Current renewable production in watts.
         cluster_load_w: Current cluster power consumption in watts.
@@ -121,8 +114,7 @@ def score_cluster(
         cost_weight: Weight specified by the user on cost.
         latency_weight: Weight specified by the user on latency.
         estimated_latency_ms: Average observed latency for this cluster over the recent window (ms).
-        max_latency_ms: User-specified maximum acceptable latency (ms); used as
-                        the normalization reference — analogous to carbon_ref_max.
+        max_latency_ms: User-specified maximum acceptable latency (ms).
         energy: Energy configuration constants.
 
     Returns:
