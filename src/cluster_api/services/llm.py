@@ -6,11 +6,10 @@ from src.models.enum import WorkerStatus
 from ...models.basemodels import QuestionConfig, WorkerNode, LLMResponse
 from ..util.cluster_config import config_store
 from threading import Lock
-from ...custom_logging.logger import log_node_status_snapshot
 
 worker_lock = Lock()  # Cannot have any race conditions
 
-logger = structlog.get_logger()
+logger = structlog.get_logger()  # TODO Use it ordentligt
 
 rr_index = 0
 
@@ -72,10 +71,8 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
 
 def sync_worker_status(worker: WorkerNode) -> None:
     """Sync the status of the worker."""
-    cluster = config_store.get()
-    cluster_name = cluster.cluster_config.name
     worker.status = WorkerStatus.IDLE if worker.inflight_requests == 0 else WorkerStatus.WORKING
-    log_node_status_snapshot(cluster_name, worker)
+
 
 
 def handle_llm(question: QuestionConfig):

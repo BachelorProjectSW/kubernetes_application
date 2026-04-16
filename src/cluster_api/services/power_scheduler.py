@@ -10,7 +10,6 @@ from ...custom_logging.models.log_models import RequestLog
 from datetime import datetime, timezone
 import subprocess
 import time
-from ...custom_logging.logger import log_node_status_snapshot
 
 log = structlog.get_logger()
 
@@ -26,7 +25,7 @@ def run_cmd(cmd):
     return result.stdout
 
 
-def turn_on_node(worker_node: WorkerNode, cluster_name: str):
+def turn_on_node(worker_node: WorkerNode):
     """Turn on the node via GPIO."""
     try:
         gpio = worker_node.gpio
@@ -36,14 +35,13 @@ def turn_on_node(worker_node: WorkerNode, cluster_name: str):
         run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
         log.debug("turning node on", node=worker_node.name)
         worker_node.status = WorkerStatus.TURNING_ON
-        log_node_status_snapshot(cluster_name, worker_node)
         return True
     except Exception as e:
         log.debug(f"failed to turn on node: {e}")
         return False
 
 
-def turn_off_node(worker_node: WorkerNode, cluster_name: str):
+def turn_off_node(worker_node: WorkerNode):
     """Turn of node with SSH."""
     try:
         client = paramiko.SSHClient()
@@ -74,7 +72,6 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         client.close()
 
         worker_node.status = WorkerStatus.OFF
-        log_node_status_snapshot(cluster_name, worker_node)
         return True
     except Exception as e:
         log.debug("power.error", error=e)
@@ -112,7 +109,6 @@ def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: 
 
 def wait_for_nodes_to_be_ready(
         worker_nodes: list[WorkerNode],
-        cluster_name: str,
         timeout_s: int = 120,
         poll_interval_s: int = 2
         ) -> bool:
@@ -125,7 +121,6 @@ def wait_for_nodes_to_be_ready(
 
         for node in ready_nodes:
             node.status = WorkerStatus.IDLE
-            log_node_status_snapshot(cluster_name, node)
 
         if len(ready_nodes) == len(worker_nodes):
             return True
@@ -157,7 +152,7 @@ def change_node_status(number_of_nodes: int, status: str):
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, nodes)
         for node in nodes_to_change:
-            turn_off_node(node, cluster_config.cluster_config.name)
+            turn_off_node(node)
     else:
         raise ValueError("status must be 'on' or 'off'")
 
@@ -181,7 +176,7 @@ def select_nodes_to_turn_on(number_of_nodes: int, worker_nodes: list[WorkerNode]
 
 
 def select_nodes_to_turn_off(number_of_nodes: int, worker_nodes: list[WorkerNode]) -> list[WorkerNode]:
-    """Select active nodes to turn off, this is only used for manually turn off x nodes."""
+    """Select active nodes to turn off."""
     nodes_to_turn_off = []
     for node in worker_nodes:
         if len(nodes_to_turn_off) >= number_of_nodes:
@@ -232,4 +227,4 @@ def turn_off_idle_nodes(idle_time: int):
             continue
         last_request = get_idle_time(request_logs, node.name, cluster_name)
         if last_request > idle_time:
-            turn_off_node(node, cluster_name)
+            turn_off_node(node)

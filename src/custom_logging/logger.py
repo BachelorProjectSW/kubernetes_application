@@ -146,21 +146,27 @@ def log_power_decision(
     log.info(f"power.{action}", **row)
 
 
-def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
+def log_node_status_snapshot(cluster: ClusterConfig, node_statuses: list[WorkerNode]):
     """Log a snapshot of all node statuses for a cluster."""
     timestamp = datetime.now(timezone.utc)
+    active_nodes = sum(1 for n in node_statuses if n.status == WorkerStatus.WORKING)
+    idle_nodes = sum(1 for n in node_statuses if n.status == WorkerStatus.IDLE)
 
-    entry = NodeStatusLog(
-        timestamp=timestamp,
-        cluster=cluster_name,
-        node=node.name,
-        status=node.status
-    )
-    try:
-        save_model_log(_current_config_id(), entry)
-    except Exception as e:
-        log.warning("db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
+    for node in node_statuses:
+        entry = NodeStatusLog(
+            timestamp=timestamp,
+            cluster=cluster.name,
+            node=node.name,
+            status=node.status,
+            active_nodes=active_nodes,
+            idle_nodes=idle_nodes,
+        )
+        try:
+            save_model_log(_current_config_id(), entry)
+        except Exception as e:
+            log.warning("db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
 
+    log.info("node_status.snapshot", cluster=cluster.name, active=active_nodes, idle=idle_nodes)
 
 def generate_summary() -> dict:
     """Read request logs from DB and compute summary metrics."""

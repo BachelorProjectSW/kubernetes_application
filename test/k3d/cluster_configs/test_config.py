@@ -15,8 +15,8 @@ from src.models.basemodels import (
 def get_test_config():
     """Start test test."""
     test_config = Config(
-        id="first_full_run",
-        name="RUUUUN!",
+        id="db_test_v2",
+        name="db test",
         start=StartConfig(
             duration_time_s=30,
             start_time_simulated="01/10/2021",
@@ -50,38 +50,39 @@ def get_test_config():
         clusters=[
             ClusterConfig(
                 name="dk",
-                ip="100.114.88.102",
-                port="8033",
-                gpio_list=[17, 27, 23],
-                simulated_country_code="ES",
+                ip="100.76.22.120",
+                port="8040",
+                gpio_list=[21, 22],
+                simulated_country_code="dk-dk1",
                 llama_service_port="8083",
                 renewable_output_w=200,
                 cluster_load_w=1000,
                 grid_carbon_intensity=100,
                 grid_electricity_price=0.12,
                 k3d=False
+
             ),
             ClusterConfig(
                 name="pt",
-                ip="100.83.243.61",
-                port="8033",
-                gpio_list=[17, 27, 23],
+                ip="100.120.12.39",
+                port="8040",
+                gpio_list=[16],
                 simulated_country_code="pt",
                 llama_service_port="8082",
                 renewable_output_w=400,
                 cluster_load_w=1000,
                 grid_carbon_intensity=300,
                 grid_electricity_price=0.14,
-                k3d=False
+                k3d=True
             ),
         ],
         global_scheduler=GlobalSchedulerConfig(
-            ip="100.84.252.101",
-            port="8022"
+            ip="100.65.249.75",
+            port="8020"
         ),
         strato=StratoConfig(
             ip="100.109.95.2",
-            port="8011"
+            port="8090"
         )
     )
     return test_config
