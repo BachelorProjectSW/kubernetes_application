@@ -13,12 +13,12 @@ data:
   serve.json: |
     {
       "TCP": {
-        "8040": {
+        "8020": {
           "HTTP": true
         }
       },
       "Web": {
-        "${TS_CERT_DOMAIN}:8040": {
+        "${TS_CERT_DOMAIN}:8020": {
           "Handlers": {
             "/": {
               "Proxy": "http://127.0.0.1:8020"
