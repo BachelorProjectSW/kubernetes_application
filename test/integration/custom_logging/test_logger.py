@@ -188,19 +188,34 @@ def test_log_power_decision_writes_startup():
 @pytest.mark.integration
 def test_log_node_status_snapshot_writes_one_row_per_node():
     """Test that log_node_status_snapshot writes one row per node."""
-    log_node_status_snapshot(
-        "denmark",
+    log_node_status_snapshot("denmark", [
         WorkerNode(name="worker-1", ip="127.0.0.1", status=WorkerStatus.WORKING, gpio=1),
-    )
+        WorkerNode(name="worker-2", ip="127.0.0.1", status=WorkerStatus.IDLE, gpio=2),
+        WorkerNode(name="worker-3", ip="127.0.0.1", status=WorkerStatus.OFF, gpio=3),
+    ])
 
     from src.custom_logging.logger import get_logs
     from src.custom_logging.models.log_models import NodeStatusLog
     result = get_logs(NodeStatusLog)
 
-    assert len(result) == 1
+    assert len(result) == 3
 
 
+@pytest.mark.integration
+def test_log_node_status_snapshot_counts_active_and_idle():
+    """Test that log_node_status_snapshot correctly counts active and idle nodes."""
+    log_node_status_snapshot("denmark", [
+        WorkerNode(name="worker-1", ip="127.0.0.1", status=WorkerStatus.WORKING, gpio=1),
+        WorkerNode(name="worker-2", ip="127.0.0.1", status=WorkerStatus.IDLE, gpio=2),
+        WorkerNode(name="worker-3", ip="127.0.0.1", status=WorkerStatus.OFF, gpio=3),
+    ])
 
+    from src.custom_logging.logger import get_logs
+    from src.custom_logging.models.log_models import NodeStatusLog
+    result = get_logs(NodeStatusLog)
+
+    assert result[0].active_nodes == 1
+    assert result[0].idle_nodes == 1
 
 
 # --- generate_summary ---
