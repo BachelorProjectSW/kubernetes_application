@@ -2,8 +2,12 @@ import asyncio
 import time
 import aiohttp
 import json
+import structlog
 from .generator import generate_workload
 from ....models.basemodels import QuestionConfig
+
+
+log = structlog.get_logger()
 
 
 async def execute_workload(
@@ -17,6 +21,7 @@ async def execute_workload(
     peakiness: float,
 ):
     """Generate and execute scheduled HTTP requests against an endpoint."""
+    request_timeout_s = 90
     # TODO setup logging matching for our output. Logs should be appended to a global log file.
     start_time = time.perf_counter()
 
@@ -28,10 +33,16 @@ async def execute_workload(
         peakiness=peakiness,
     )
 
-    print(f"Generated {len(timestamps)} requests over {duration_s}s")
-    print(f"Target: {host}{endpoint}")
+    log.info(
+        "workload.generated",
+        request_count=len(timestamps),
+        duration_s=duration_s,
+        target=f"{host}{endpoint}",
+        request_timeout_s=request_timeout_s,
+    )
 
-    async with aiohttp.ClientSession(base_url=host) as session:
+    timeout = aiohttp.ClientTimeout(total=request_timeout_s)
+    async with aiohttp.ClientSession(base_url=host, timeout=timeout) as session:
 
         async def _send_request(ts: float):
             """Wait until the scheduled timestamp, then send the request."""
@@ -45,10 +56,13 @@ async def execute_workload(
 
                 async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                     body = await resp.text()
-                    print(f"request.success status={resp.status} body={body}")
+                    log.info("workload.request_done", status=resp.status)
                     return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
+            except asyncio.TimeoutError:
+                log.warning("workload.request_timeout", timeout_s=request_timeout_s)
+                return {"ok": False, "error": f"request timeout after {request_timeout_s}s"}
             except Exception as e:
-                print(f"request.failure error={e} ")
+                log.warning("workload.request_failed", error=str(e))
                 return {"ok": False, "error": str(e)}
 
         # Schedule all requests
@@ -57,7 +71,7 @@ async def execute_workload(
 
     success_count = sum(1 for r in results if r.get("ok"))
     failure_count = len(results) - success_count
-    print(f"Completed requests: success={success_count}, failure={failure_count}")
+    log.info("workload.completed", success=success_count, failure=failure_count)
     return results
 
 

@@ -13,7 +13,7 @@ def start_test(config: Config):
     port = config.global_scheduler.port
     url = f"http://{ip}:{port}/start_test"  # url should be to global scheduler
 
-    response = requests.post(url, json=config.model_dump())
+    response = requests.post(url, json=config.model_dump(), timeout=60)
     response.raise_for_status()
 
     host = f"http://{config.global_scheduler.ip}:{config.global_scheduler.port}"

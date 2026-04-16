@@ -31,7 +31,7 @@ def start_test(config: Config):
             port = cluster.port
             url = f"http://{ip}:{port}/set_config"
 
-            response = requests.post(url, json=cluster_information.model_dump())
+            response = requests.post(url, json=cluster_information.model_dump(), timeout=30)
             response.raise_for_status()
 
         if config.power_scheduler.start:
