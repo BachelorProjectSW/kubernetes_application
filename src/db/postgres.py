@@ -8,7 +8,6 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import JSON, Column, Text, create_engine, text
 from sqlalchemy.engine import URL, make_url
 from sqlmodel import Field, SQLModel, Session, select
-
 from ..custom_logging.models.log_models import (
     NodeStatusLog,
     PowerDecisionLog,
@@ -25,7 +24,7 @@ def _database_url() -> str:
     if url:
         return url
 
-    host = os.getenv("POSTGRES_HOST", "localhost")
+    host = os.getenv("POSTGRES_HOST", "100.109.95.2") #Strato ip which hosting the DB.
     port = os.getenv("POSTGRES_PORT", "5432")
     user = os.getenv("POSTGRES_USER", "strato")
     password = os.getenv("POSTGRES_PASSWORD", "strato")
