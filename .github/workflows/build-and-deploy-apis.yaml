@@ -3,7 +3,7 @@ name: Build and deploy APIs
 on:
   push:
     branches:
-      - main
+      - logdone
     paths-ignore:
       - 'src/cluster_api/manifest/deployment.yaml'
       - 'src/global_api/manifest/deployment.yaml'
