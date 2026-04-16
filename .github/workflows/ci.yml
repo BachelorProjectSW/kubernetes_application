@@ -43,13 +43,7 @@ jobs:
 
       - name: Setup postgres
         run: |
-          # docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5432:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16
-          echo hej
-
-      - name: Check Orin energy proxy
-        run: |
-          tailscale status
-          curl -v --max-time 20 http://aauorin-desktop.tail5363c5.ts.net:5050/health
+          docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5432:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16
           
       - name: Create clusters and global scheduler
         run: |
