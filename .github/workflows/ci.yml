@@ -29,6 +29,11 @@ jobs:
           sudo apt update
           sudo apt install -y python3-lgpio
 
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+      
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
