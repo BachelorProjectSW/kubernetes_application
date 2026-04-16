@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from datetime import datetime, timezone
 from typing import Any, TypeVar
 
@@ -71,12 +72,15 @@ class AppLogRecord(SQLModel, table=True):
 
 
 _ENGINE = None
+_ENGINE_LOCK = threading.Lock()
 
 
 def _engine():
     global _ENGINE
     if _ENGINE is None:
-        _ENGINE = create_engine(_database_url(), pool_pre_ping=True)
+        with _ENGINE_LOCK:
+            if _ENGINE is None:  # re-check after acquiring lock
+                _ENGINE = create_engine(_database_url(), pool_pre_ping=True)
     return _ENGINE
 
 

@@ -78,7 +78,8 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         runtime_data: ClusterRuntimeData = get_cluster_runtime_data(
             cluster.cluster_config,
             simulated_time,
-            config.energy
+            config.energy,
+            config.power_scheduler.timeout_s,
         )
         cluster_score = score_cluster(
             runtime_data.renewable_output_w,
