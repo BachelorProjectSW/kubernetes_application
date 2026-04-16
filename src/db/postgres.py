@@ -15,6 +15,9 @@ from ..custom_logging.models.log_models import (
     TerminalDebugLog,
 )
 from ..models.basemodels import Config
+import structlog
+
+log = structlog.get_logger()
 
 TModel = TypeVar("TModel", bound=BaseModel)
 
@@ -24,12 +27,11 @@ def _database_url() -> str:
     if url:
         return url
 
-    host = os.getenv("POSTGRES_HOST", "100.109.95.2") #Strato ip which hosting the DB.
-    port = os.getenv("POSTGRES_PORT", "5432")
+    url = os.getenv("POSTGRES_URL", "https://strato.tailb5c9d3.ts.net/")#Strato ip which hosting the DB.
     user = os.getenv("POSTGRES_USER", "strato")
     password = os.getenv("POSTGRES_PASSWORD", "strato")
     db_name = os.getenv("POSTGRES_DB", "strato")
-    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db_name}"
+    return f"postgresql+psycopg://{user}:{password}@{url}/{db_name}"
 
 
 def _admin_url(url: URL) -> URL:
@@ -72,11 +74,13 @@ _ENGINE = None
 
 
 def _engine():
-    global _ENGINE
-    if _ENGINE is None:
-        _ENGINE = create_engine(_database_url(), pool_pre_ping=True)
-    return _ENGINE
-
+    try:
+        global _ENGINE
+        if _ENGINE is None:
+            _ENGINE = create_engine(_database_url(), pool_pre_ping=True)
+        return _ENGINE
+    except Exception as e:
+        log.warning("DB.error", error=e)
 
 def _ensure_database_exists() -> None:
     url = make_url(_database_url())
