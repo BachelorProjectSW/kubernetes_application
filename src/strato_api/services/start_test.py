@@ -1,6 +1,7 @@
 import requests
 from ...models.basemodels import Config
 from ...db.postgres import save_config
+from ...custom_logging.logger import set_current_config_id
 from test.k3d.cluster_configs.test_config import get_test_config
 from .workload.run_workload import run_workload
 import structlog
@@ -11,6 +12,7 @@ log = structlog.get_logger()
 
 def start_test(config: Config):
     """Start test to the global scheduler."""
+    set_current_config_id(config.id)
     save_config(config)
     log.info(
         "test.begins",

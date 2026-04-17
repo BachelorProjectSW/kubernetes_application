@@ -1,5 +1,6 @@
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
+from ...custom_logging.logger import set_current_config_id
 import requests
 import structlog
 from .power_scheduler import power_scheduler_loop
@@ -20,12 +21,14 @@ def start_test(config: Config):
     """Start the test and send configs."""
     try:
         global _power_scheduler_thread
+        set_current_config_id(config.id)
         config_store.set(config)
         log.info("global.start_test.begin", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
         for cluster in config.clusters:
 
             cluster_information = ClusterInformation(
+                config_id=config.id,
                 cluster_config=cluster,
                 question_config=config.question,
                 worker_nodes=[]
