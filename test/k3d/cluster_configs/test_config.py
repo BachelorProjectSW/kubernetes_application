@@ -53,14 +53,13 @@ def get_test_config():
                 ip="100.114.88.102",
                 port="8040",
                 gpio_list=[17, 27, 23],
-                simulated_country_code="dk-dk1",
+                simulated_country_code="ES",
                 llama_service_port="8083",
                 renewable_output_w=200,
                 cluster_load_w=1000,
                 grid_carbon_intensity=100,
                 grid_electricity_price=0.12,
                 k3d=False
-
             ),
             ClusterConfig(
                 name="pt",
