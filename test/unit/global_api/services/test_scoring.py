@@ -66,7 +66,8 @@ def test_score_cluster():
     ):
         mock_carbon.return_value = 200
         mock_cost.return_value = 0.5
-        mock_normalize.side_effect = [0.4, 0.6]
+        # Three normalize calls: carbon, cost, latency
+        mock_normalize.side_effect = [0.4, 0.6, 0.5]
 
         result = score_cluster(
             renewable_output_w=500,
@@ -75,9 +76,13 @@ def test_score_cluster():
             grid_electricity_price=0.2,
             carbon_weight=0.7,
             cost_weight=0.3,
+            latency_weight=0.0,
+            estimated_latency_ms=1000.0,
+            max_latency_ms=5000.0,
             energy=EnergyConfig(),
         )
 
+        # (0.7 * 0.4) + (0.3 * 0.6) + (0.0 * 0.5) = 0.28 + 0.18 + 0.0 = 0.46
         assert result == 0.46
         mock_carbon.assert_called_once_with(500, 1000, 300)
         mock_cost.assert_called_once_with(500, 1000, 0.2)
