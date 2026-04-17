@@ -15,7 +15,7 @@ from src.models.basemodels import (
 def get_test_config():
     """Start test test."""
     test_config = Config(
-        id="5555",
+        id="first_full_run",
         name="first_end_to_end",
         start=StartConfig(
             duration_time_s=30,
