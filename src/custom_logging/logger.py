@@ -5,7 +5,6 @@ from typing import TypeVar, Type
 
 from .models.log_models import NodeStatusLog, PowerDecisionLog, RequestLog, TerminalDebugLog
 from ..models.basemodels import ClusterConfig, WorkerNode
-from ..models.enum import WorkerStatus
 from ..db.postgres import (
     read_all_node_status_logs,
     read_all_power_decision_logs,
@@ -161,7 +160,6 @@ def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
         save_model_log(_current_config_id(), entry)
     except Exception as e:
         log.warning("db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
-
 
 
 def generate_summary() -> dict:
