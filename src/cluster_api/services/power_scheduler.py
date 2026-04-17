@@ -141,15 +141,16 @@ def change_node_status(number_of_nodes: int, status: str):
     status: 'on' or 'off'.
     """
     cluster_config = config_store.get()
+    cluster_name = cluster_config.cluster_config.name
     nodes = cluster_config.worker_nodes
     if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, nodes)
         with ThreadPoolExecutor(max_workers=max(1, len(nodes_to_change))) as executor:
-            futures = [executor.submit(turn_on_node, node) for node in nodes_to_change]
+            futures = [executor.submit(turn_on_node, node, cluster_name) for node in nodes_to_change]
             for future in futures:
                 future.result()
 
-        all_ready = wait_for_nodes_to_be_ready(nodes_to_change)
+        all_ready = wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
         if not all_ready:
             log.warning("power.nodes_not_ready_before_timeout", nodes=[node.name for node in nodes_to_change])
 

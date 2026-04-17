@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 log = structlog.get_logger()
 
-ORIN_BASE_URL = "http://100.72.251.69:5050"
+ORIN_BASE_URL = "http://100.74.156.93:5050"
 
 
 def _ms_to_iso(ms: int) -> str:

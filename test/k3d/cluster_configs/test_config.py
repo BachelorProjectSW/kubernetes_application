@@ -15,16 +15,17 @@ from src.models.basemodels import (
 def get_test_config():
     """Start test test."""
     test_config = Config(
-        id="5555",
-        name="first_end_to_end",
+        id="first_full_run",
+        name="RUUUUN!",
         start=StartConfig(
             duration_time_s=30,
             start_time_simulated="01/10/2021",
             start_time_real=None
         ),
         weights=WeightsConfig(
-            gco2=0.1,
-            cost=0.9
+            gco2=0.3,
+            cost=0.1,
+            latency=0.6
         ),
         power_scheduler=PowerSchedulerConfig(
             start=True,
@@ -32,6 +33,7 @@ def get_test_config():
             idle_time_for_turn_off_s=1
         ),
         latency=LatencyConfig(
+            latency_window_s=60,
             max_ms=12000
         ),
         workload=WorkloadConfig(
@@ -48,23 +50,22 @@ def get_test_config():
         clusters=[
             ClusterConfig(
                 name="dk",
-                ip="100.76.22.120",
-                port="8040",
-                gpio_list=[21, 22],
-                simulated_country_code="dk-dk1",
+                ip="100.114.88.102",
+                port="8033",
+                gpio_list=[17, 27, 23],
+                simulated_country_code="ES",
                 llama_service_port="8083",
                 renewable_output_w=200,
                 cluster_load_w=1000,
                 grid_carbon_intensity=100,
                 grid_electricity_price=0.12,
                 k3d=False
-
             ),
             ClusterConfig(
                 name="pt",
-                ip="100.120.12.39",
-                port="8040",
-                gpio_list=[16],
+                ip="100.83.243.61",
+                port="8033",
+                gpio_list=[17, 27, 23],
                 simulated_country_code="pt",
                 llama_service_port="8082",
                 renewable_output_w=400,
@@ -75,12 +76,12 @@ def get_test_config():
             ),
         ],
         global_scheduler=GlobalSchedulerConfig(
-            ip="100.65.249.75",
-            port="8020"
+            ip="100.84.252.101",
+            port="8022"
         ),
         strato=StratoConfig(
             ip="100.109.95.2",
-            port="8090"
+            port="8011"
         )
     )
     return test_config

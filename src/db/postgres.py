@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import os
 import threading
 from datetime import datetime, timezone
 from typing import Any, TypeVar
+import structlog
 
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
@@ -19,6 +21,7 @@ from ..custom_logging.models.log_models import (
 from ..models.basemodels import Config
 
 TModel = TypeVar("TModel", bound=BaseModel)
+log = structlog.get_logger()
 
 
 def _database_url() -> str:
@@ -26,7 +29,7 @@ def _database_url() -> str:
     if url:
         return url
 
-    host = os.getenv("POSTGRES_HOST", "localhost")
+    host = os.getenv("POSTGRES_HOST", "100.109.95.2")  # Strato IP
     port = os.getenv("POSTGRES_PORT", "5432")
     user = os.getenv("POSTGRES_USER", "strato")
     password = os.getenv("POSTGRES_PASSWORD", "strato")
@@ -100,8 +103,10 @@ def _ensure_database_exists() -> None:
 
 def init_database() -> None:
     """Create postgres database and tables when missing."""
+    log.info("db.init_database.start")
     _ensure_database_exists()
     SQLModel.metadata.create_all(_engine())
+    log.info("db.init_database.done")
 
 
 def save_config(config: Config) -> None:
@@ -115,6 +120,7 @@ def save_config(config: Config) -> None:
     with Session(_engine()) as session:
         session.add(row)
         session.commit()
+    log.info("db.save_config", config_id=config.id, config_name=config.name)
 
 
 def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
@@ -128,6 +134,7 @@ def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
     with Session(_engine()) as session:
         session.add(row)
         session.commit()
+    log.info("db.save_model_log", config_id=config_id, log_type=type(log_model).__name__)
 
 
 def save_terminal_debug(config_id: str | None, message: str, level: str, payload: dict[str, Any]) -> None:
@@ -156,6 +163,7 @@ def save_payload_log(config_id: str | None, log_type: str, payload: dict[str, An
     with Session(_engine()) as session:
         session.add(row)
         session.commit()
+    log.info("db.save_payload_log", config_id=config_id, log_type=log_type)
 
 
 def read_model_logs(log_model_class: type[TModel], config_id: str | None = None) -> list[TModel]:
@@ -173,6 +181,12 @@ def read_model_logs(log_model_class: type[TModel], config_id: str | None = None)
         if row.payload_json is None:
             continue
         logs.append(log_model_class(**row.payload_json))
+    log.info(
+        "db.read_model_logs",
+        config_id=config_id,
+        log_type=log_model_class.__name__,
+        count=len(logs),
+    )
     return logs
 
 
@@ -186,7 +200,7 @@ def read_terminal_debug_logs(config_id: str | None = None) -> list[dict[str, Any
     with Session(_engine()) as session:
         rows = session.exec(query).all()
 
-    return [
+    logs = [
         TerminalDebugLog(
             config_id=row.config_id,
             message=row.terminal_debug or "",
@@ -195,6 +209,8 @@ def read_terminal_debug_logs(config_id: str | None = None) -> list[dict[str, Any
         )
         for row in rows
     ]
+    log.info("db.read_terminal_debug_logs", config_id=config_id, count=len(logs))
+    return logs
 
 
 def read_all_request_logs(config_id: str | None = None) -> list[RequestLog]:
