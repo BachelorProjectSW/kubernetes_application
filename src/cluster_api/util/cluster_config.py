@@ -112,7 +112,10 @@ class ConfigStore:
             )
 
     def populate_host_port(self):
-        """Fetch hostPort from running llama pods and save it in cluster config."""
+        """Fetch hostPort from running llama pods and save it in cluster config.
+
+        If no suitable pod is found, keep existing config value and continue.
+        """
         if self.config is None:
             raise Exception("Config is not set yet")
 
@@ -145,7 +148,12 @@ class ConfigStore:
                         found_ports.add(port.host_port)
 
         if not found_ports:
-            raise ValueError("No running llama pod with hostPort found")
+            log.warning(
+                "cluster.hostport_not_found",
+                reason="no_running_ready_llama_pod_with_hostport",
+                fallback_llama_hostport=self.config.cluster_config.llama_hostport,
+            )
+            return
 
         if len(found_ports) > 1:
             raise ValueError(f"Inconsistent llama hostPorts found: {sorted(found_ports)}")
