@@ -77,6 +77,7 @@ def sync_worker_status(worker: WorkerNode) -> None:
     worker.status = WorkerStatus.IDLE if worker.inflight_requests == 0 else WorkerStatus.WORKING
     log_node_status_snapshot(cluster_name, worker)
 
+
 def handle_llm(question: QuestionConfig):
     """Send the request to the correct working node and log."""
     config = None

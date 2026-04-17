@@ -28,7 +28,7 @@ def _database_url() -> str:
     if url:
         return url
 
-    host = os.getenv("POSTGRES_HOST", "100.109.95.2") #Strato IP
+    host = os.getenv("POSTGRES_HOST", "100.109.95.2")  # Strato IP
     port = os.getenv("POSTGRES_PORT", "5432")
     user = os.getenv("POSTGRES_USER", "strato")
     password = os.getenv("POSTGRES_PASSWORD", "strato")
