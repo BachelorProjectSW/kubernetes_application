@@ -3,6 +3,29 @@ from ..logger import get_logs, get_terminal_debug_logs
 from ..models.log_models import NodeStatusLog, RequestLog, TerminalDebugLog
 
 
+def get_avg_latency_for_cluster(cluster_name: str, time_interval_s: int) -> float:
+    """Return average latency (ms) for a specific cluster over the last time_interval_s seconds.
+
+    Args:
+        cluster_name: Name of the cluster to filter logs by.
+        time_interval_s: How far back to look, in seconds.
+
+    Returns:
+        Average latency in milliseconds, or 0.0 if no data in the window.
+
+    """
+    now = datetime.now(timezone.utc)
+
+    latencies = [
+        entry.latency_ms
+        for entry in get_logs(RequestLog)
+        if entry.cluster == cluster_name
+        and (now - entry.timestamp).total_seconds() <= time_interval_s
+    ]
+
+    return round(sum(latencies) / len(latencies), 2) if latencies else 0.0
+
+
 def get_avg_latency(time_interval_s: int) -> float:
     """Return avg latency (ms) across requests in the last time_interval_s seconds.
 
