@@ -125,7 +125,7 @@ def wait_for_nodes_to_be_ready(
 
         for node in ready_nodes:
             node.status = WorkerStatus.IDLE
-            log_node_status_snapshot(node, cluster_name)
+            log_node_status_snapshot(cluster_name, node)
 
         if len(ready_nodes) == len(worker_nodes):
             return True
