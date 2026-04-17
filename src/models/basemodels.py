@@ -106,6 +106,7 @@ class ClusterRuntimeData(BaseModel):
 class ClusterInformation(BaseModel):
     """All information the clusters need."""
 
+    config_id: str | None = None
     cluster_config: ClusterConfig
     question_config: QuestionConfig
     worker_nodes: list[WorkerNode]

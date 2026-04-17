@@ -3,6 +3,7 @@ import threading
 import requests
 from ...models.basemodels import Config
 from ...db.postgres import save_config
+from ...custom_logging.logger import set_current_config_id
 from test.k3d.cluster_configs.test_config import get_test_config
 from .workload.run_workload import run_workload
 import structlog
@@ -17,6 +18,18 @@ stop_requested = False
 def start_test(config: Config):
     """Start test to the global scheduler."""
     global test_running, stop_requested
+    set_current_config_id(config.id)
+    save_config(config)
+    log.info(
+        "test.begins",
+        source="strato_api",
+        config_id=config.id,
+        test_name=config.name,
+    )
+    # TODO setup current status, to ensure multiple test runs are running at the same time.
+    ip = config.global_scheduler.ip
+    port = config.global_scheduler.port
+    url = f"http://{ip}:{port}/start_test"  # url should be to global scheduler
 
     with test_state_lock:
         if test_running:

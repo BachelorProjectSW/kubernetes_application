@@ -2,7 +2,6 @@ import structlog
 import uuid
 from datetime import datetime, timezone
 from typing import TypeVar, Type
-
 from .models.log_models import NodeStatusLog, PowerDecisionLog, RequestLog, TerminalDebugLog
 from ..models.basemodels import ClusterConfig, WorkerNode
 from ..db.postgres import (
@@ -16,15 +15,19 @@ from ..db.postgres import (
     save_terminal_debug,
 )
 
+log = structlog.get_logger()
+
+_LOGGER_CONFIG_ID: str | None = None
+
+
+def set_current_config_id(config_id: str | None):
+    """Set logger-scoped config id for this service instance."""
+    global _LOGGER_CONFIG_ID
+    _LOGGER_CONFIG_ID = config_id
+
 
 def _current_config_id() -> str | None:
-    try:
-        from ..global_api.util.all_configuration import config_store
-
-        cfg = config_store.get()
-        return cfg.id if cfg else None
-    except Exception:
-        return None
+    return _LOGGER_CONFIG_ID
 
 
 def _get_terminal_logs(_, __, event_dict):
@@ -49,7 +52,6 @@ structlog.configure(
     cache_logger_on_first_use=True,
 )
 
-log = structlog.get_logger()
 
 
 T = TypeVar("T")
@@ -82,8 +84,8 @@ def get_terminal_debug_logs() -> list[TerminalDebugLog]:
 
 def log_request(
     request_id: str,
-    cluster: ClusterConfig,
-    node: WorkerNode,
+    cluster_name: str,
+    worker_node_name: str,
     latency_ms: float,
     cluster_load_w: float,
     renewable_fraction: float,
@@ -95,8 +97,8 @@ def log_request(
     entry = RequestLog(
         request_id=request_id,
         timestamp=datetime.now(timezone.utc),
-        cluster=cluster.name,
-        node=node.name,
+        cluster=cluster_name,
+        node=worker_node_name,
         success=success,
         latency_ms=round(latency_ms, 2),
         cluster_load_w=round(cluster_load_w, 2),
