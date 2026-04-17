@@ -17,6 +17,7 @@ class WeightsConfig(BaseModel):
 
     gco2: float
     cost: float
+    latency: float
 
 
 class PowerSchedulerConfig(BaseModel):
@@ -30,6 +31,7 @@ class PowerSchedulerConfig(BaseModel):
 class LatencyConfig(BaseModel):
     """Max Latency pr request."""
 
+    latency_window_s: int
     max_ms: int
 
 
@@ -98,6 +100,7 @@ class ClusterRuntimeData(BaseModel):
     cluster_load_w: float
     grid_carbon_intensity: float
     grid_electricity_price: float
+    avg_latency_ms: float
 
 
 class ClusterInformation(BaseModel):

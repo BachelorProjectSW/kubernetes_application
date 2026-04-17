@@ -20,12 +20,12 @@ def handle_llm_request(question: QuestionConfig):
     simulated_time = datetime.now(timezone.utc)
 
     all_cluster_energy_data = [
-        get_cluster_runtime_data(cluster, simulated_time, config.energy)
+        get_cluster_runtime_data(cluster, simulated_time, config.energy, config.latency.latency_window_s)
         for cluster in config.clusters
     ]
 
     cluster, cluster_energy_data = choose_cluster(
-        config.clusters, all_cluster_energy_data, config.weights, config.energy
+        config.clusters, all_cluster_energy_data, config.weights, config.energy, config.latency.max_ms
     )
 
     grid_fraction = compute_grid_fraction(
