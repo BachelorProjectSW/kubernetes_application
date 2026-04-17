@@ -25,8 +25,19 @@ def set_current_config_id(config_id: str | None):
     global _LOGGER_CONFIG_ID
     _LOGGER_CONFIG_ID = config_id
 
+log = structlog.get_logger()
+
+_LOGGER_CONFIG_ID: str | None = None
+
+
+def set_current_config_id(config_id: str | None):
+    """Set logger-scoped config id for this service instance."""
+    global _LOGGER_CONFIG_ID
+    _LOGGER_CONFIG_ID = config_id
+
 
 def _current_config_id() -> str | None:
+    return _LOGGER_CONFIG_ID
     return _LOGGER_CONFIG_ID
 
 
@@ -51,6 +62,7 @@ structlog.configure(
     logger_factory=structlog.PrintLoggerFactory(),
     cache_logger_on_first_use=True,
 )
+
 
 
 T = TypeVar("T")
@@ -85,6 +97,8 @@ def log_request(
     request_id: str,
     cluster_name: str,
     worker_node_name: str,
+    cluster_name: str,
+    worker_node_name: str,
     latency_ms: float,
     cluster_load_w: float,
     renewable_fraction: float,
@@ -96,6 +110,8 @@ def log_request(
     entry = RequestLog(
         request_id=request_id,
         timestamp=datetime.now(timezone.utc),
+        cluster=cluster_name,
+        node=worker_node_name,
         cluster=cluster_name,
         node=worker_node_name,
         success=success,
