@@ -1,5 +1,6 @@
 import structlog
 from ...models.basemodels import ClusterInformation, WorkerNode
+from ...models.enum import WorkerStatus
 from .client_setup import get_api_client
 import requests
 
@@ -48,11 +49,11 @@ class ConfigStore:
                 if not ip:
                     ip = node.status.addresses[0].address
 
-            status = "unknown"
+            status = WorkerStatus.OFF
             if getattr(node.status, "conditions", None):
                 for condition in node.status.conditions:
                     if condition.type == "Ready":
-                        status = "idle" if condition.status == "True" else "off"
+                        status = WorkerStatus.IDLE if condition.status == "True" else WorkerStatus.OFF
                         break
             worker_node = WorkerNode(
                 name=name,
@@ -111,7 +112,10 @@ class ConfigStore:
             )
 
     def populate_host_port(self):
-        """Fetch hostPort from running llama pods and save it in cluster config."""
+        """Fetch hostPort from running llama pods and save it in cluster config.
+
+        If no suitable pod is found, keep existing config value and continue.
+        """
         if self.config is None:
             raise Exception("Config is not set yet")
 
@@ -144,7 +148,12 @@ class ConfigStore:
                         found_ports.add(port.host_port)
 
         if not found_ports:
-            raise ValueError("No running llama pod with hostPort found")
+            log.warning(
+                "cluster.hostport_not_found",
+                reason="no_running_ready_llama_pod_with_hostport",
+                fallback_llama_hostport=self.config.cluster_config.llama_hostport,
+            )
+            return
 
         if len(found_ports) > 1:
             raise ValueError(f"Inconsistent llama hostPorts found: {sorted(found_ports)}")
@@ -169,7 +178,7 @@ class ConfigStore:
         for worker in self.config.worker_nodes:
             if not worker.ip:
                 worker.max_slots = 0
-                worker.status = "off"
+                worker.status = WorkerStatus.OFF
                 continue
 
             try:
@@ -198,7 +207,7 @@ class ConfigStore:
                 )
 
                 worker.max_slots = props.get("total_slots", 0)
-                worker.status = "idle" if worker.max_slots > 0 else "off"
+                worker.status = WorkerStatus.IDLE if worker.max_slots > 0 else WorkerStatus.OFF
 
             except Exception as e:
                 log.debug(
@@ -208,7 +217,7 @@ class ConfigStore:
                     error=str(e),
                 )
                 worker.max_slots = 0
-                worker.status = "off"
+                worker.status = WorkerStatus.OFF
 
 
 config_store = ConfigStore()
