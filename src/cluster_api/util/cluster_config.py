@@ -1,5 +1,6 @@
 import structlog
 from ...models.basemodels import ClusterInformation, WorkerNode
+from ...models.enum import WorkerStatus
 from .client_setup import get_api_client
 import requests
 
@@ -48,11 +49,11 @@ class ConfigStore:
                 if not ip:
                     ip = node.status.addresses[0].address
 
-            status = "unknown"
+            status = WorkerStatus.OFF
             if getattr(node.status, "conditions", None):
                 for condition in node.status.conditions:
                     if condition.type == "Ready":
-                        status = "idle" if condition.status == "True" else "off"
+                        status = WorkerStatus.IDLE if condition.status == "True" else WorkerStatus.OFF
                         break
             worker_node = WorkerNode(
                 name=name,
@@ -169,7 +170,7 @@ class ConfigStore:
         for worker in self.config.worker_nodes:
             if not worker.ip:
                 worker.max_slots = 0
-                worker.status = "off"
+                worker.status = WorkerStatus.OFF
                 continue
 
             try:
@@ -198,7 +199,7 @@ class ConfigStore:
                 )
 
                 worker.max_slots = props.get("total_slots", 0)
-                worker.status = "idle" if worker.max_slots > 0 else "off"
+                worker.status = WorkerStatus.IDLE if worker.max_slots > 0 else WorkerStatus.OFF
 
             except Exception as e:
                 log.debug(
@@ -208,7 +209,7 @@ class ConfigStore:
                     error=str(e),
                 )
                 worker.max_slots = 0
-                worker.status = "off"
+                worker.status = WorkerStatus.OFF
 
 
 config_store = ConfigStore()
