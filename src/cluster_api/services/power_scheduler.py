@@ -150,7 +150,7 @@ def change_node_status(number_of_nodes: int, status: str):
             for future in futures:
                 future.result()
 
-        all_ready = wait_for_nodes_to_be_ready(nodes_to_change)
+        all_ready = wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
         if not all_ready:
             log.warning("power.nodes_not_ready_before_timeout", nodes=[node.name for node in nodes_to_change])
 
