@@ -146,3 +146,4 @@ jobs:
           git diff --cached --quiet && exit 0
           
           git commit -m "Deploy APIs ${GITHUB_SHA}"
+          git push origin HEAD:main
