@@ -20,7 +20,7 @@ def handle_llm_request(question: QuestionConfig):
     simulated_time = datetime.now(timezone.utc)
 
     all_cluster_energy_data = [
-        get_cluster_runtime_data(cluster, simulated_time, config.energy, config.power_scheduler.timeout_s)
+        get_cluster_runtime_data(cluster, simulated_time, config.energy, config.latency.latency_window_s)
         for cluster in config.clusters
     ]
 

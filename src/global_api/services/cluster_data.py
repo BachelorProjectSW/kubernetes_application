@@ -32,7 +32,7 @@ def get_cluster_runtime_data(
     cluster: ClusterConfig,
     simulated_time_start: datetime,
     energy: EnergyConfig,
-    latency_window_s: int = 60,
+    latency_window_s: int,
 ) -> ClusterRuntimeData:
     """Fetch all runtime values for a cluster at the given simulated time.
 
@@ -41,7 +41,7 @@ def get_cluster_runtime_data(
         simulated_time_start: Start time for the simulation window.
         energy: Energy configuration constants.
         latency_window_s: How far back to look when computing the average latency
-                          for this cluster (seconds). Defaults to 60.
+                          for this cluster (seconds).
 
     Returns:
         ClusterRuntimeData with renewable_output_w, cluster_load_w,
@@ -84,7 +84,6 @@ def get_cluster_runtime_data(
         renewable_output_w=renewable_output_w,
         cluster_load_w=cluster_load_w,
         microgrid_base_load_w=microgrid_base_load_w,
-        microgrid_base_load_w=microgrid_base_load_w,
         grid_carbon_intensity=grid_carbon_intensity,
         grid_electricity_price=grid_electricity_price,
         avg_latency_ms=avg_latency_ms,
@@ -95,5 +94,5 @@ def get_cluster_runtime_data(
         cluster_load_w=cluster_load_w,
         grid_carbon_intensity=grid_carbon_intensity,
         grid_electricity_price=grid_electricity_price,
-        aau_base_load_w=aau_base_load_w,
+        avg_latency_ms=avg_latency_ms,
     )

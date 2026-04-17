@@ -30,7 +30,7 @@ class PowerSchedulerConfig(BaseModel):
 
 class LatencyConfig(BaseModel):
     """Max Latency pr request."""
-
+    latency_window_s: int
     max_ms: int
 
 
