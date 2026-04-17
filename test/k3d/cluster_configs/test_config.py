@@ -23,8 +23,9 @@ def get_test_config():
             start_time_real=None
         ),
         weights=WeightsConfig(
-            gco2=0.1,
-            cost=0.9
+            gco2=0.3,
+            cost=0.1,
+            latency=0.6
         ),
         power_scheduler=PowerSchedulerConfig(
             start=True,
@@ -32,6 +33,7 @@ def get_test_config():
             idle_time_for_turn_off_s=1
         ),
         latency=LatencyConfig(
+            latency_window_s=60,
             max_ms=12000
         ),
         workload=WorkloadConfig(
