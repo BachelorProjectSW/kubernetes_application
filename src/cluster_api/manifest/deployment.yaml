@@ -17,6 +17,8 @@ spec:
 
     spec:
       serviceAccountName: cluster-api-sa
+      strategy:
+        type: Recreate
 
       nodeSelector:
         node-role.kubernetes.io/control-plane: "true"
