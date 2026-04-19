@@ -22,8 +22,8 @@ function Workload({ inputs, handleChange }) {
                         onChange={handleChange}
                     >
                         <option value="" disabled>Select a pattern</option>
-                        <option value="steady">Steady</option>
-                        <option value="peaks">Peaks</option>
+                        <option value="steady">steady</option>
+                        <option value="peaks">peaks</option>
                     </select>
                 </label>
             </div>
