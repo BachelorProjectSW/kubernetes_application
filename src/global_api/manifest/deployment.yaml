@@ -27,5 +27,5 @@ spec:
 
       containers:
         - name: global-api
-          image: ghcr.io/bachelorprojectsw/global-api:53102a1ee8c744a2e043b800f44ac6f76200d05f
+          image: ghcr.io/bachelorprojectsw/global-api:test89
           imagePullPolicy: IfNotPresent
