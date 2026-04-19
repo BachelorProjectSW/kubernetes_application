@@ -67,7 +67,7 @@ export const handleSubmit = async (e, inputs) => {
     };
 
 try {
-        const response = await fetch('/start_test', { // Ensure port matches your FastAPI server
+        const response = await fetch('http://100.109.95.2:8095/start_test', { // Ensure port matches your FastAPI server
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
