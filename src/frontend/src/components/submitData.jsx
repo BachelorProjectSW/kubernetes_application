@@ -67,6 +67,7 @@ export const handleSubmit = async (e, inputs) => {
     };
 
 try {
+        console.log(exportData);
         const response = await fetch('http://100.109.95.2:8095/start_test', { // Ensure port matches your FastAPI server
             method: 'POST',
             headers: {
@@ -74,6 +75,7 @@ try {
             },
             body: JSON.stringify(exportData),
         });
+
 
         if (!response.ok) {
             const errorDetail = await response.json();
