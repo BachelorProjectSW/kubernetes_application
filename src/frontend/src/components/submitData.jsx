@@ -1,23 +1,4 @@
-/*class Config(BaseModel):
-    """Config."""
-
-    id: str
-    name: str
-    start: StartConfig
-    weights: WeightsConfig
-    power_scheduler: PowerSchedulerConfig
-    latency: LatencyConfig
-    workload: WorkloadConfig
-    question: QuestionConfig
-    clusters: list[ClusterConfig]
-    global_scheduler: GlobalSchedulerConfig
-    strato: StratoConfig
-    energy: EnergyConfig = EnergyConfig()
-
-*/
-
-
-
+mangler = starttime real 
 export const handleSubmit = async (e, inputs) => {
     e.preventDefault();
 
@@ -34,21 +15,26 @@ export const handleSubmit = async (e, inputs) => {
         name: inputs.name || "",
         start: {
             duration_time_s: totalSeconds,
-            start_time: inputs.startdate || "",
+            start_time_simulated: inputs.startdate || "", // opdater andre steder
+            start_time_real: null
         } || "",
+
         weights: {
             gco2: inputs.gco2,
-            cost: inputs.cost
+            cost: inputs.cost, 
+            latency: inputs.latency || "2"// opdater andre steder
         } || "",
         power_scheduler: {
+            start: true, 
             timeout_s: inputs.timeout_s,
             idle_time_for_turn_off_s: inputs.turn_off_s
         } || "",
         latency: {
+            latency_windows_s: inputs.window || "34", //opdater andre steder
             max_latency: inputs.max_latency || "",
         },
         workload: {
-            request_pr_min: inputs.request_pr_min,
+            request_pr_minute: inputs.request_pr_min, // opdate?
             pattern: inputs.pattern,
             seed: inputs.seed,
             peakiness: inputs.peakiness
@@ -64,7 +50,12 @@ export const handleSubmit = async (e, inputs) => {
             port: cluster.port || "",
             gpio_list: cluster.gpio_list ||"",
             simulated_country_code: cluster.simulated_country_code || "",
-            llama_service_port: cluster.llama_service_port || ""
+            llama_service_port: cluster.llama_service_port || "",
+            renewable_output_w: "200",
+            cluster_load_w: "1000",
+            grid_carbon_intensity: "100",
+            grid_electricity_price: "0.12",
+            k3d: false
         })),
         global_scheduler: {
             ip: inputs.ip_global,
@@ -77,7 +68,7 @@ export const handleSubmit = async (e, inputs) => {
     };
 
 try {
-        const response = await fetch('http://127.0.0.1:8090/start_test', { // Ensure port matches your FastAPI server
+        const response = await fetch('/start_test', { // Ensure port matches your FastAPI server
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
