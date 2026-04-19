@@ -1,4 +1,3 @@
-mangler = starttime real 
 export const handleSubmit = async (e, inputs) => {
     e.preventDefault();
 
