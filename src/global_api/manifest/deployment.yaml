@@ -29,3 +29,7 @@ spec:
         - name: global-api
           image: ghcr.io/bachelorprojectsw/global-api:test89
           imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8020
+              hostPort: 8020
+              protocol: TCP
