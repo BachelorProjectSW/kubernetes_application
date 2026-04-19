@@ -28,6 +28,9 @@ spec:
 
       containers:
         - name: cluster-api
-          image: ghcr.io/bachelorprojectsw/cluster-api:f8b705444a694cbda2e6b91132bc95dea7b21670
-
+          image: ghcr.io/bachelorprojectsw/cluster-api:test89
           imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8040
+              hostPort: 8040
+              protocol: TCP
