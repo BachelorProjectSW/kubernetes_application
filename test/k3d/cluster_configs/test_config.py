@@ -51,7 +51,7 @@ def get_test_config():
             ClusterConfig(
                 name="dk",
                 ip="100.114.88.102",
-                port="8033",
+                port="8040",
                 gpio_list=[17, 27, 23],
                 simulated_country_code="ES",
                 llama_service_port="8083",
@@ -64,7 +64,7 @@ def get_test_config():
             ClusterConfig(
                 name="pt",
                 ip="100.83.243.61",
-                port="8033",
+                port="8040",
                 gpio_list=[17, 27, 23],
                 simulated_country_code="pt",
                 llama_service_port="8082",
@@ -77,7 +77,7 @@ def get_test_config():
         ],
         global_scheduler=GlobalSchedulerConfig(
             ip="100.84.252.101",
-            port="8022"
+            port="8020"
         ),
         strato=StratoConfig(
             ip="100.109.95.2",
