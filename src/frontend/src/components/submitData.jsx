@@ -123,8 +123,8 @@ export const handleSubmit = async (e, inputs) => {
          "port": stringify(inputs.port_strato)
      } || ""
 */
-        "id": stringify(inputs.expID) || "",
-        "name": stringify(inputs.name) || "",
+        "id": JSON.stringify(inputs.expID) || "",
+        "name": JSON.stringify(inputs.name) || "",
         "start": {
             "duration_time_s": 30,
             "start_time_simulated": "01/10/2021",
