@@ -32,7 +32,3 @@ spec:
         - name: cluster-api
           image: ghcr.io/bachelorprojectsw/cluster-api:test91
           imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8040
-              hostPort: 8040
-              protocol: TCP
