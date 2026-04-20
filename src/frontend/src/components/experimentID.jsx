@@ -42,7 +42,7 @@ function Ids({ inputs, setInputs, handleChange }) {
 
     return (
         <>
-            < label > ExpId:
+            <label> ExpId:
             <button type="button"
                 onClick={toggleMode}
                 style={{ marginLeft: "10px", fontSize: "0.8em" }}
@@ -69,7 +69,7 @@ function Ids({ inputs, setInputs, handleChange }) {
                     />
                 )
             }
-            </label >
+            </label>
         </>
     );
 

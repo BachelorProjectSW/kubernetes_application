@@ -16,7 +16,7 @@ import ClusterMangening from './cluster';
 import GlobalScheduler from './global_schedular';
 import StratoConfigs from './strato_config';
 
-function allConfigs({ onSubmit }) {
+function AllConfigs({ onSubmit }) {
     const [inputs, setInputs] = useState({});
 
     const handleChange = (e) => {
@@ -111,4 +111,4 @@ function allConfigs({ onSubmit }) {
         </form>
     )
 }
-export default allConfigs;
+export default AllConfigs;
