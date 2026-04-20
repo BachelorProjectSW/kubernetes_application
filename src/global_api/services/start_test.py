@@ -35,7 +35,7 @@ def ensure_nodes_ready(cluster):
         response = requests.post(
             f"{base}/turn_on_nodes/",
             params={"number_of_nodes": total},
-            timeout=30,
+            timeout=180,
         )
         response.raise_for_status()
         log.info("global.start_test.turn_on_requested", cluster=cluster.name, requested=total)
