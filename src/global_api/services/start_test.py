@@ -16,6 +16,31 @@ def _run_power_scheduler_loop():
     """Run the async power scheduler in a dedicated thread."""
     asyncio.run(power_scheduler_loop())
 
+def ensure_nodes_ready(cluster):
+    """Turn on all nodes in the cluster before starting the test."""
+    base = f"http://{cluster.ip}:{cluster.port}"
+
+    try:
+        info = requests.get(f"{base}/get_cluster_information", timeout=10).json()
+    except Exception as e:
+        log.warning("global.start_test.cluster_info_failed", cluster=cluster.name, error=str(e))
+        return
+
+    nodes = info.get("worker_nodes", [])
+    total = len(nodes)
+
+    log.info("global.start_test.turning_on_all_nodes", cluster=cluster.name, total=total)
+
+    try:
+        response = requests.post(
+            f"{base}/turn_on_nodes/",
+            params={"number_of_nodes": total},
+            timeout=30,
+        )
+        response.raise_for_status()
+        log.info("global.start_test.turn_on_requested", cluster=cluster.name, requested=total)
+    except Exception as e:
+        log.warning("global.start_test.turn_on_failed", cluster=cluster.name, error=str(e))
 
 def start_test(config: Config):
     """Start the test and send configs."""
@@ -46,6 +71,7 @@ def start_test(config: Config):
                 cluster=cluster.name,
                 status_code=response.status_code,
             )
+            ensure_nodes_ready(cluster)
 
         if config.power_scheduler.start:
             thread_running = (
