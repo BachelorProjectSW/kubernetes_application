@@ -16,16 +16,8 @@ test_running = False
 stop_requested = False
 
 def start_test(config: Config):
-    """Start test to the global scheduler."""
+    """Start test in a background thread and return immediately."""
     global test_running, stop_requested
-
-    set_current_config_id(config.id)
-    save_config(config)
-    log.info("test.begins", source="strato_api", config_id=config.id, test_name=config.name)
-
-    ip = config.global_scheduler.ip
-    port = config.global_scheduler.port
-    url = f"http://{ip}:{port}/start_test"
 
     with test_state_lock:
         if test_running:
@@ -33,9 +25,24 @@ def start_test(config: Config):
         test_running = True
         stop_requested = False
 
+    thread = threading.Thread(target=run_test, args=(config,), daemon=True, name="test-runner")
+    thread.start()
+    log.info("test.started_in_background", config_id=config.id, test_name=config.name)
+    return {"message": f"{config.name} test started successfully"}
+
+def run_test(config: Config):
+    """Run the full test in a background thread."""
+    global test_running, stop_requested
     try:
-        log.info("test.forward_to_global", url=url)
-        response = requests.post(url, json=config.model_dump(), timeout=60)
+        set_current_config_id(config.id)
+        save_config(config)
+        log.info("test.begins", source="strato_api", config_id=config.id, test_name=config.name)
+
+        ip = config.global_scheduler.ip
+        port = config.global_scheduler.port
+
+        log.info("test.forward_to_global", url=f"http://{ip}:{port}/start_test")
+        response = requests.post(f"http://{ip}:{port}/start_test", json=config.model_dump(), timeout=60)
         response.raise_for_status()
         log.info("test.global_started", status_code=response.status_code)
 
@@ -54,18 +61,16 @@ def start_test(config: Config):
         if should_stop_test():
             requests.post(f"http://{ip}:{port}/stop_test", timeout=60)
             log.info("test.stopped", responses=len(results))
-            return f"Test stopped early. Got {len(results)} responses"
-
-        log.info("test.completed", responses=len(results))
-        return f"Got {len(results)} responses"
+        else:
+            log.info("test.completed", responses=len(results))
 
     except Exception as e:
         log.exception("test.failed", error=str(e))
-        raise
     finally:
         with test_state_lock:
             test_running = False
             stop_requested = False
+
 
 def start_test_test():
     """Start test test."""

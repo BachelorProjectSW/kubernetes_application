@@ -74,14 +74,16 @@ async def execute_workload(
 
         while not all(t.done() for t in tasks):
             if stop_check and stop_check():
-                log.info("workload.stop_requested — cancelling remaining tasks")
+                log.info("workload.stop_requested — draining in-flight requests")
+                # cancel tasks that have not been sent yet
                 for t in tasks:
-                    if not t.done():
+                    if not t.done() and not t.cancelled():
                         t.cancel()
                 break
             await asyncio.sleep(0.5)
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
+
 
     results = [r for r in results if isinstance(r, dict)]
     success_count = sum(1 for r in results if r.get("ok"))
