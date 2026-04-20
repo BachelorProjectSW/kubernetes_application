@@ -52,7 +52,6 @@ def start_test(config: Config):
         log.info("global.start_test.begin", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
         for cluster in config.clusters:
-            ensure_nodes_ready(cluster)
             cluster_information = ClusterInformation(
                 config_id=config.id,
                 cluster_config=cluster,
@@ -66,6 +65,7 @@ def start_test(config: Config):
             log.info("global.start_test.set_config.start", cluster=cluster.name, url=url)
             response = requests.post(url, json=cluster_information.model_dump(), timeout=30)
             response.raise_for_status()
+            ensure_nodes_ready(cluster)
             log.info(
                 "global.start_test.set_config.done",
                 cluster=cluster.name,
