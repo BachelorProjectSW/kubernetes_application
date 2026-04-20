@@ -53,7 +53,7 @@ def start_test(config: Config):
         url = f"http://{ip}:{port}/start_test"  # url should be to global scheduler
 
         log.info("test.forward_to_global", url=url)
-        response = requests.post(url, json=config.model_dump(), timeout=60)
+        response = requests.post(url, json=config.model_dump(), timeout=300)
         response.raise_for_status()
         log.info("test.global_started", status_code=response.status_code)
 
