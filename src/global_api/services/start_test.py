@@ -18,6 +18,7 @@ def _run_power_scheduler_loop():
 
 def start_test(config: Config):
     """Start the test and send configs."""
+
     try:
         global _power_scheduler_thread
         config_store.set(config)
