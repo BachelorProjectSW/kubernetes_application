@@ -52,7 +52,7 @@ def start_test(config: Config):
         log.info("global.start_test.begin", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
         for cluster in config.clusters:
-
+            ensure_nodes_ready(cluster)
             cluster_information = ClusterInformation(
                 config_id=config.id,
                 cluster_config=cluster,
@@ -71,7 +71,6 @@ def start_test(config: Config):
                 cluster=cluster.name,
                 status_code=response.status_code,
             )
-            ensure_nodes_ready(cluster)
 
         if config.power_scheduler.start:
             thread_running = (
