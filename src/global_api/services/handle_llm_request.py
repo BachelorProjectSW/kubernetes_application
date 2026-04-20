@@ -54,8 +54,8 @@ def handle_llm_request(question: QuestionConfig):
     if not isinstance(data, dict):
         log_request(
             request_id=request_id,
-            cluster=cluster,
-            node={},
+            cluster_name=cluster.name,
+            worker_node_name="unknown",
             success=False,
             latency_ms=latency_ms,
             cluster_load_w=cluster_energy_data.cluster_load_w,
@@ -78,8 +78,8 @@ def handle_llm_request(question: QuestionConfig):
 
     log_request(
         request_id=request_id,
-        cluster=cluster,
-        node=worker_node,
+        cluster_name=cluster.name,
+        worker_node_name=worker_node.name,
         success=True,
         latency_ms=latency_ms,
         cluster_load_w=cluster_energy_data.cluster_load_w,
