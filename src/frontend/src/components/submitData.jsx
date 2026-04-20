@@ -11,7 +11,7 @@ export const handleSubmit = async (e, inputs) => {
 
     const exportData = {
 
-        start: {
+        /*start: {
             duration_time_s: totalSeconds || "",
             start_time_simulated: inputs.startdate || "", // opdater andre steder
             start_time_real: null
@@ -65,7 +65,7 @@ export const handleSubmit = async (e, inputs) => {
         } || ""
     };
 
-    /*"id": stringify(inputs.expID) || "",
+    */"id": stringify(inputs.expID) || "",
     "name": stringify(inputs.name) || "",
     "start": {
         "duration_time_s": totalSeconds || "",
@@ -122,7 +122,7 @@ export const handleSubmit = async (e, inputs) => {
          "ip": stringify(inputs.ip_strato),
          "port": stringify(inputs.port_strato)
      } || ""
-};*/
+};
 
     try {
         console.log(exportData);
