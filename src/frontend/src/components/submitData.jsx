@@ -11,117 +11,118 @@ export const handleSubmit = async (e, inputs) => {
 
     const exportData = {
 
-        /* "start: {
-             duration_time_s: totalSeconds || "",
-             start_time_simulated: inputs.startdate || "", // opdater andre steder
-             start_time_real: null
-         } || "",
- 
-         weights: {
-             gco2: inputs.gco2,
-             cost: inputs.cost, 
-             latency: inputs.latency || "2"// opdater andre steder
-         } || "",
-         power_scheduler: {
-             start: true, 
-             timeout_s: inputs.timeout_s,
-             idle_time_for_turn_off_s: inputs.turn_off_s
-         } || "",
-         latency: {
-             latency_windows_s: inputs.window || "34", //opdater andre steder
-             max_latency: inputs.max_latency || "",
-         },
-         workload: {
-             request_pr_minute: inputs.request_pr_min, // opdate?
-             pattern: inputs.pattern,
-             seed: inputs.seed,
-             peakiness: inputs.peakiness
-         } || "",
-         question: {
-             question: inputs.question,
-             max_output_tokens: inputs.max_output_tokens,
-             context_window: inputs.context_window
-         } || "",
-         clusters: (inputs.clusters || []).map((cluster) => ({
-             name: cluster.name || "",
-             ip: cluster.ip || "",
-             port: cluster.port || "",
-             gpio_list: cluster.gpio_list ||"",
-             simulated_country_code: cluster.simulated_country_code || "",
-             llama_service_port: cluster.llama_service_port || "",
-             renewable_output_w: "200",
-             cluster_load_w: "1000",
-             grid_carbon_intensity: "100",
-             grid_electricity_price: "0.12",
-             k3d: false
-         })),
-         global_scheduler: {
-             ip: inputs.ip_global,
-             port: inputs.port_global
-         } || "",
-         strato: {
-             ip: inputs.ip_strato,
-             port: inputs.port_strato
-         } || ""
-          */
-        "id": stringify(inputs.expID) || "",
-        "name": stringify(inputs.name) || "",
-        "start": {
-            "duration_time_s": totalSeconds || "",
-            "start_time_simulated": stringify(inputs.startdate) || "", // opdater andre steder
-            "start_time_real": null
+        start: {
+            duration_time_s: totalSeconds || "",
+            start_time_simulated: inputs.startdate || "", // opdater andre steder
+            start_time_real: null
         } || "",
-        "weights": {
-            "gco2": stringify(inputs.gco2),
-            "cost": stringify(inputs.cost),
-            "latency": stringify(inputs.latency) || ""// opdater andre steder
+
+        weights: {
+            gco2: inputs.gco2,
+            cost: inputs.cost,
+            latency: inputs.latency || "2"// opdater andre steder
         } || "",
-        "power_scheduler": {
-            "start": true,
-            "timeout_s": inputs.timeout_s,
-            "idle_time_for_turn_off_s": inputs.turn_off_s
+        power_scheduler: {
+            start: true,
+            timeout_s: inputs.timeout_s,
+            idle_time_for_turn_off_s: inputs.turn_off_s
         } || "",
-        "latency": {
-            "latency_windows_s": inputs.window || "", //opdater andre steder
-            "max_latency": inputs.max_latency || "",
+        latency: {
+            latency_windows_s: inputs.window || "34", //opdater andre steder
+            max_latency: inputs.max_latency || "",
         },
-        "workload": {
-            "request_pr_minute": inputs.request_pr_min, // opdate?
-            "pattern": stringify(inputs.pattern),
-            "seed": inputs.seed,
-            "peakiness": inputs.peakiness
+        workload: {
+            request_pr_minute: inputs.request_pr_min, // opdate?
+            pattern: inputs.pattern,
+            seed: inputs.seed,
+            peakiness: inputs.peakiness
         } || "",
-
-        "question": {
-            "question": stringify(inputs.question),
-            "max_output_tokens": inputs.max_output_tokens,
-            "context_window": inputs.context_window
+        question: {
+            question: inputs.question,
+            max_output_tokens: inputs.max_output_tokens,
+            context_window: inputs.context_window
         } || "",
-
-        "clusters": (inputs.clusters || []).map((cluster) => ({
-            "name": stringify(cluster.name) || "",
-            "ip": stringify(cluster.ip) || "",
-            "port": stringify(cluster.port) || "",
-            "gpio_list": cluster.gpio_list || "", // lav om til array 
-            "simulated_country_code": stringify(cluster.simulated_country_code) || "",
-            "llama_service_port": stringify(cluster.llama_service_port) || "",
-            "renewable_output_w": 200, //should be hardcoded and  
-            "cluster_load_w": 1000, //should be hardcodede d
-            "grid_carbon_intensity": 100,
-            "grid_electricity_price": 0.12,
-            "k3d": false
+        clusters: (inputs.clusters || []).map((cluster) => ({
+            name: cluster.name || "",
+            ip: cluster.ip || "",
+            port: cluster.port || "",
+            gpio_list: cluster.gpio_list || "",
+            simulated_country_code: cluster.simulated_country_code || "",
+            llama_service_port: cluster.llama_service_port || "",
+            renewable_output_w: "200",
+            cluster_load_w: "1000",
+            grid_carbon_intensity: "100",
+            grid_electricity_price: "0.12",
+            k3d: false
         })),
-
-        "global_scheduler": {
-            "ip": stringify(inputs.ip_global),
-         "port": stringify(inputs.port_global)
+        global_scheduler: {
+            ip: inputs.ip_global,
+            port: inputs.port_global
         } || "",
-
-        "strato": {
-             "ip": stringify(inputs.ip_strato),
-             "port": stringify(inputs.port_strato)
-         } || ""
+        strato: {
+            ip: inputs.ip_strato,
+            port: inputs.port_strato
+        } || ""
     };
+
+    /*"id": stringify(inputs.expID) || "",
+    "name": stringify(inputs.name) || "",
+    "start": {
+        "duration_time_s": totalSeconds || "",
+        "start_time_simulated": stringify(inputs.startdate) || "", // opdater andre steder
+        "start_time_real": null
+    } || "",
+    "weights": {
+        "gco2": stringify(inputs.gco2),
+        "cost": stringify(inputs.cost),
+        "latency": stringify(inputs.latency) || ""// opdater andre steder
+    } || "",
+    "power_scheduler": {
+        "start": true,
+        "timeout_s": inputs.timeout_s,
+        "idle_time_for_turn_off_s": inputs.turn_off_s
+    } || "",
+    "latency": {
+        "latency_windows_s": inputs.window || "", //opdater andre steder
+        "max_latency": inputs.max_latency || "",
+    },
+    "workload": {
+        "request_pr_minute": inputs.request_pr_min, // opdate?
+        "pattern": stringify(inputs.pattern),
+        "seed": inputs.seed,
+        "peakiness": inputs.peakiness
+    } || "",
+
+    "question": {
+        "question": stringify(inputs.question),
+        "max_output_tokens": inputs.max_output_tokens,
+        "context_window": inputs.context_window
+    } || "",
+
+    "clusters": (inputs.clusters || []).map((cluster) => ({
+        "name": stringify(cluster.name) || "",
+        "ip": stringify(cluster.ip) || "",
+        "port": stringify(cluster.port) || "",
+        "gpio_list": cluster.gpio_list || "", // lav om til array 
+        "simulated_country_code": stringify(cluster.simulated_country_code) || "",
+        "llama_service_port": stringify(cluster.llama_service_port) || "",
+        "renewable_output_w": 200, //should be hardcoded and  
+        "cluster_load_w": 1000, //should be hardcodede d
+        "grid_carbon_intensity": 100,
+        "grid_electricity_price": 0.12,
+        "k3d": false
+    })),
+
+    "global_scheduler": {
+        "ip": stringify(inputs.ip_global),
+     "port": stringify(inputs.port_global)
+    } || "",
+
+    "strato": {
+         "ip": stringify(inputs.ip_strato),
+         "port": stringify(inputs.port_strato)
+     } || ""
+};*/
 
     try {
         console.log(exportData);
