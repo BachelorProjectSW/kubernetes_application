@@ -133,7 +133,7 @@ def handle_llm(question: QuestionConfig):
         payload = {
             "prompt": question.question,
             "n_predict": question.max_output_tokens,
-            "temperature": 0,
+            "temperature": 0.2,
         }
 
         response = requests.post(
