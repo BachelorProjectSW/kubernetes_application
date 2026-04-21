@@ -9,6 +9,7 @@ const earlierExpIds = [
         dur_minutes: 30,
         gco2: 0.4,
         cost: 15,
+        weight_latency:0.1,
         timeout_s: 300,
         turn_off_s: 600,
         max_latency: 100,
@@ -52,6 +53,7 @@ const earlierExpIds = [
         dur_minutes: 45,
         gco2: 0.9,
         cost: 150,
+        weight_latency:0.2,
         timeout_s: 30,
         turn_off_s: 60,
         max_latency: 20,
@@ -87,6 +89,7 @@ const earlierExpIds = [
         dur_minutes: 0,
         gco2: 0.1, // Very low carbon priority
         cost: 5,
+        weight_latency:0.3,
         timeout_s: 1200,
         turn_off_s: 3600,
         max_latency: 5000, // Willing to wait longer for green energy
