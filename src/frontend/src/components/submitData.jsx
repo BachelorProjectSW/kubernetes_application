@@ -84,22 +84,22 @@ export const handleSubmit = async (e, inputs) => {
         "name": inputs.name || "",
         "start": {
             "duration_time_s": totalSeconds || "",
-           "start_time_simulated": "01/10/2021",
+            "start_time_simulated": "01/10/2021",
             "start_time_real": null
         } || "",
         "weights": {
-            "gco2": inputs.gco2,
-            "cost": inputs.cost,
-           "latency": inputs.latency || "2"// opdater andre steder
-        } || "",
+            "gco2": 0.3,
+            "cost": 0.1,
+            "latency": 0.6
+        },
         "power_scheduler": {
-          "start": true,
-            "timeout_s": inputs.timeout_s,
-            "idle_time_for_turn_off_s": inputs.turn_off_s
-        } || "",
-        "latency": { //lav fil til dette
-           "latency_windows_s": inputs.window || "34", //opdater andre steder
-            "max_latency": inputs.max_latency || "",
+            "start": true,
+            "timeout_s": 5,
+            "idle_time_for_turn_off_s": 1
+        },
+        "latency": {
+            "latency_window_s": 60,
+            "max_ms": 12000
         },
         "workload": {
             "request_per_minute": 10,
