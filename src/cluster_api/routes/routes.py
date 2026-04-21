@@ -34,7 +34,7 @@ def turn_off_idle_nodes_endpoint(idle_time: int):
 @router.post("/set_config")
 def set_config(cluster_information: ClusterInformation):
     """Set the config in util."""
-    set_current_config_id(cluster_information.config_id or cluster_information.cluster_config.name)
+    set_current_config_id(cluster_information.config_id)
     config_store.set(cluster_information)
     config_store.build_worker_nodes()
     return config_store.get()

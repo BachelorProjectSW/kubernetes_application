@@ -12,10 +12,13 @@ log = structlog.get_logger()
 
 def start_test(config: Config):
     """Start test to the global scheduler."""
+    #TODO GENERE UNIKT ID.
+    #TODO Sikre sig at det nuværende navn også er unikt. 
+    
     set_current_config_id(config.id)
     save_config(config)
     log.info(
-        "test.begins",
+        "begin.test",
         source="strato_api",
         config_id=config.id,
         test_name=config.name,
@@ -28,7 +31,6 @@ def start_test(config: Config):
     log.info("test.forward_to_global", url=url)
     response = requests.post(url, json=config.model_dump(), timeout=60)
     response.raise_for_status()
-    log.info("test.global_started", status_code=response.status_code)
 
     host = f"http://{config.global_scheduler.ip}:{config.global_scheduler.port}"
     results = run_workload(
@@ -43,6 +45,7 @@ def start_test(config: Config):
         )
     log.info("test.completed", responses=len(results))
     return f"Got {len(results)} responses"
+    # TODO Sikre at de sidste llm request er behandlet før man analysere og retunere svarene. 
     # TODO return analysed logs to frontend.
 
 

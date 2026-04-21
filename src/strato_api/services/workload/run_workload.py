@@ -23,6 +23,7 @@ async def execute_workload(
     """Generate and execute scheduled HTTP requests against an endpoint."""
     request_timeout_s = 90
     # TODO setup logging matching for our output. Logs should be appended to a global log file.
+    #TODO make a end test "button" so it stop sending request when wanted. 
     start_time = time.perf_counter()
 
     timestamps = generate_workload(
