@@ -101,3 +101,12 @@ def stop_global_power_scheduler(ip, port):
 def start_test_test():
     """Start test test."""
     return start_test(get_test_config())
+
+def get_test_status() -> dict:
+    """Return current test status."""
+    with test_state_lock:
+        if not test_running:
+            return {"status": "idle"}
+        if stop_requested:
+            return {"status": "stopping"}
+        return {"status": "running"}

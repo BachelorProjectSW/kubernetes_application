@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from ..services.start_test import start_test, start_test_test, stop_test, test_state_lock, test_running, stop_requested
+from ..services.start_test import start_test, start_test_test, stop_test, get_test_status
 from ...models.basemodels import Config
 router = APIRouter()
 
@@ -34,9 +34,4 @@ def stop_test_endpoint():
 @router.get("/test_status")
 def test_status_endpoint():
     """Return current test status: idle, running, or stopping."""
-    with test_state_lock:
-        if not test_running:
-            return {"status": "idle"}
-        if stop_requested:
-            return {"status": "stopping"}
-        return {"status": "running"}
+    return get_test_status()
