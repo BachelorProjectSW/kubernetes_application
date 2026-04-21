@@ -148,7 +148,7 @@ class EnergyConfig(BaseModel):
 class Config(BaseModel):
     """Config."""
 
-    id: str
+    id: str | None = None
     name: str
     start: StartConfig
     weights: WeightsConfig

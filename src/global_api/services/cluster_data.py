@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+import threading
+import time
 
 import structlog
 
@@ -16,6 +18,16 @@ log = structlog.get_logger()
 # Key format: (zone_upper, start_hour_iso, end_hour_iso)
 _carbon_hourly_cache: dict[tuple[str, str, str], list[tuple[datetime, int]]] = {}
 _price_hourly_cache: dict[tuple[str, str, str], list[tuple[datetime, float]]] = {}
+
+# Per-key locks prevent cache stampede when many requests hit a cold cache at once.
+_market_cache_lock = threading.Lock()
+_carbon_locks: dict[tuple[str, str, str], threading.Lock] = {}
+_price_locks: dict[tuple[str, str, str], threading.Lock] = {}
+
+# Short TTL cache for DB-backed latency lookups.
+_latency_cache: dict[tuple[str, int], tuple[float, float]] = {}
+_latency_cache_lock = threading.Lock()
+_LATENCY_CACHE_TTL_S = 3.0
 
 
 def _hour_floor(value: datetime) -> datetime:
@@ -37,9 +49,20 @@ def _get_hourly_cached_carbon(start: datetime, end: datetime, zone: str) -> list
     if cached is not None:
         return cached
 
-    data = fetch_carbon_intensity(start, end, zone)
-    _carbon_hourly_cache[key] = data
-    return data
+    with _market_cache_lock:
+        lock = _carbon_locks.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _carbon_locks[key] = lock
+
+    with lock:
+        cached = _carbon_hourly_cache.get(key)
+        if cached is not None:
+            return cached
+
+        data = fetch_carbon_intensity(start, end, zone)
+        _carbon_hourly_cache[key] = data
+        return data
 
 
 def _get_hourly_cached_price(start: datetime, end: datetime, zone: str) -> list[tuple[datetime, float]]:
@@ -49,9 +72,38 @@ def _get_hourly_cached_price(start: datetime, end: datetime, zone: str) -> list[
     if cached is not None:
         return cached
 
-    data = fetch_price_data(start, end, zone)
-    _price_hourly_cache[key] = data
-    return data
+    with _market_cache_lock:
+        lock = _price_locks.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _price_locks[key] = lock
+
+    with lock:
+        cached = _price_hourly_cache.get(key)
+        if cached is not None:
+            return cached
+
+        data = fetch_price_data(start, end, zone)
+        _price_hourly_cache[key] = data
+        return data
+
+
+def _get_cached_avg_latency_ms(cluster_name: str, latency_window_s: int) -> float:
+    """Return recently computed avg latency to avoid repeated DB scans per burst."""
+    now = time.monotonic()
+    key = (cluster_name, latency_window_s)
+
+    with _latency_cache_lock:
+        cached = _latency_cache.get(key)
+        if cached is not None:
+            expires_at, value = cached
+            if now < expires_at:
+                return value
+
+    value = get_avg_latency_for_cluster(cluster_name, latency_window_s)
+    with _latency_cache_lock:
+        _latency_cache[key] = (now + _LATENCY_CACHE_TTL_S, value)
+    return value
 
 
 def _get_microgrid_base_load_w(
@@ -118,7 +170,7 @@ def get_cluster_runtime_data(
     )
     cluster_load_w += microgrid_base_load_w
 
-    avg_latency_ms = get_avg_latency_for_cluster(cluster.name, latency_window_s)
+    avg_latency_ms = _get_cached_avg_latency_ms(cluster.name, latency_window_s)
 
     log.debug(
         "global_api.cluster.runtime_data_fetched",

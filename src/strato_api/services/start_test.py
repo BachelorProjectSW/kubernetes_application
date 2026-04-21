@@ -1,4 +1,5 @@
 import requests
+import uuid
 from ...models.basemodels import Config
 from ...db.postgres import save_config
 from ...custom_logging.logger import set_current_config_id
@@ -12,9 +13,9 @@ log = structlog.get_logger()
 
 def start_test(config: Config):
     """Start test to the global scheduler."""
-    #TODO GENERE UNIKT ID.
-    #TODO Sikre sig at det nuværende navn også er unikt. 
-    
+    # TODO Sikre sig at det nuværende navn også er unikt.
+    config.id = str(uuid.uuid4())
+
     set_current_config_id(config.id)
     save_config(config)
     log.info(
