@@ -43,7 +43,7 @@ function Weights({ inputs, handleChange }) {
                 <label>latency:</label>
                 <input 
                     type="range" 
-                    name="latency" 
+                    name="weight_latency" 
                     min="0" 
                     max="1" 
                     step="0.01"
