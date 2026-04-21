@@ -50,9 +50,8 @@ function Weights({ inputs, handleChange }) {
                     value={inputs.weight_latency || 0.5} 
                     onChange={handleChange} 
                 />
-                {/* This displays the live value next to the slider */}
                 <span style={{ fontWeight: "bold", color: "#007bff" }}>
-                    {inputs.gco2 || 0.5}
+                    {inputs.weight_latency || 0.5}
                 </span>
             </div>
         </div>
