@@ -25,7 +25,7 @@ function Weights({ inputs, handleChange }) {
              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <label>cost:</label>
                 <input 
-                    type="range" 
+                    type="range"
                     name="cost" 
                     min="0" 
                     max="1" 

@@ -84,19 +84,19 @@ export const handleSubmit = async (e, inputs) => {
         "name": inputs.name || "",
         "start": {
             "duration_time_s": totalSeconds || "",
-            "start_time_simulated": inputs.startdate|| "",
+            "start_time_simulated": inputs.startdate || "",
             "start_time_real": null
         } || "",
-       "weights": {
+        "weights": {
             "gco2": inputs.gco2,
             "cost": inputs.cost,
-            "weight_latency": inputs.weight_latency 
+            "latency": inputs.weight_latency
         } || "",
         "power_scheduler": {
             "start": true,
-            "timeout_s": 5,
-            "idle_time_for_turn_off_s": 1
-        },
+            "timeout_s": inputs.timeout_s,
+            "idle_time_for_turn_offs": inputs.turn_off_s
+        } || "",
         "latency": {
             "latency_window_s": 60,
             "max_ms": 12000
