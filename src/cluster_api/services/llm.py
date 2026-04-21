@@ -131,7 +131,7 @@ def handle_llm(question: QuestionConfig):
             url = f"http://{worker_node.ip}:{config.cluster_config.llama_hostport}/completion"
 
         payload = {
-            "prompt": f"<s>[INST] {question.question} [/INST]",
+            "prompt": question.question,
             "n_predict": question.max_output_tokens,
             "temperature": 0.7,
         }
