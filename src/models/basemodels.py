@@ -41,7 +41,7 @@ class WorkloadConfig(BaseModel):
     request_per_minute: int
     pattern: Literal["steady", "peaks"]
     seed: int
-    peakiness: int
+    peakiness: float
 
 
 # --- Advanced user input
