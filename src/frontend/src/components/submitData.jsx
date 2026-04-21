@@ -87,11 +87,11 @@ export const handleSubmit = async (e, inputs) => {
             "start_time_simulated": inputs.startdate|| "",
             "start_time_real": null
         } || "",
-        "weights": {
-            "gco2": 0.3,
-            "cost": 0.1,
-            "latency": 0.6
-        },
+       " weights": {
+            "gco2": inputs.gco2,
+            "cost": inputs.cost,
+            "latency": inputs.weight_latency 
+        } || "",
         "power_scheduler": {
             "start": true,
             "timeout_s": 5,

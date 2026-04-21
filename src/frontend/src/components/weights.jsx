@@ -15,7 +15,7 @@ function Weights({ inputs, handleChange }) {
                     value={inputs.gco2 || 0.5} 
                     onChange={handleChange} 
                 />
-                {/* This displays the live value next to the slider */}
+                
                 <span style={{ fontWeight: "bold", color: "#007bff" }}>
                     {inputs.gco2 || 0.5}
                 </span>
@@ -33,9 +33,26 @@ function Weights({ inputs, handleChange }) {
                     value={inputs.cost || 0.5} 
                     onChange={handleChange} 
                 />
-                {/* This displays the live value next to the slider */}
+               
                 <span style={{ fontWeight: "bold", color: "#007bff" }}>
                     {inputs.cost || 0.5}
+                </span>
+            </div>
+        <br/>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <label>latency:</label>
+                <input 
+                    type="range" 
+                    name="latency" 
+                    min="0" 
+                    max="1" 
+                    step="0.01"
+                    value={inputs.weight_latency || 0.5} 
+                    onChange={handleChange} 
+                />
+                {/* This displays the live value next to the slider */}
+                <span style={{ fontWeight: "bold", color: "#007bff" }}>
+                    {inputs.gco2 || 0.5}
                 </span>
             </div>
         </div>
