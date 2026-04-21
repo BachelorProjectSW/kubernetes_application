@@ -76,6 +76,18 @@ def start_test(config: Config):
 
 def stop_test():
     """Stop the test."""
+    config = config_store.get()
     config_store.stop_power_scheduler()
+    if config:
+        for cluster in config.clusters:
+            try:
+                requests.post(
+                    f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
+                    timeout=60
+                )
+                log.info("global.stop_test.pods_deleted", cluster=cluster.name)
+            except Exception as e:
+                log.warning("global.stop_test.pods_delete_failed", 
+                           cluster=cluster.name, error=str(e))
     log.info("global.stop_test.done")
     return {"message": "Test stopped"}
