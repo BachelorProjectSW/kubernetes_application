@@ -93,9 +93,9 @@ export const handleSubmit = async (e, inputs) => {
             "latency": inputs.weight_latency
         } || "",
         "power_scheduler": {
+            "idle_time_for_turn_offs": inputs.turn_off_s,
             "start": true,
-            "timeout_s": inputs.timeout_s,
-            "idle_time_for_turn_offs": inputs.turn_off_s
+            "timeout_s": inputs.timeout_s
         } || "",
         "latency": {
             "latency_window_s": 60,
