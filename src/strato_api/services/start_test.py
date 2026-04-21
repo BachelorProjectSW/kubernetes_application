@@ -61,7 +61,6 @@ def run_test(config: Config):
         )
 
         if should_stop_test():
-            stop_global_power_scheduler(ip, port)
             log.info("test.stopped", responses=len(results))
         else:
             log.info("test.completed", responses=len(results))
