@@ -21,7 +21,7 @@ def get_current_active_nodes(clusters: list[ClusterInformation]):
             status = worker_node.status
             if status == WorkerStatus.WORKING or status == WorkerStatus.IDLE:
                 active_nodes_counter += 1
-    log.info("get.current.active.nodes", active_nodes=active_nodes_counter)
+    log.info("global_api.power.active_nodes_counted", active_nodes=active_nodes_counter)
     return active_nodes_counter
 
 
@@ -58,12 +58,12 @@ def estimate_nodes_to_add(
     """
     # how many nodes needed in total
     required_nodes = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
-    log.debug("required nodes", number=required_nodes)
+    log.debug("global_api.power.required_nodes_estimated", required_nodes=required_nodes)
 
     # how many more to add
     nodes_to_add = max(0, required_nodes - current_active_nodes)
 
-    log.info("estimated.nodes.to.add", number_of_nodes=nodes_to_add)
+    log.info("global_api.power.nodes_to_add_estimated", nodes_to_add=nodes_to_add)
     return nodes_to_add
 
 
@@ -120,7 +120,8 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
                 powered_off_nodes += 1
 
         log.debug(
-            "cluster.capacity",
+            "global_api.power.cluster_capacity_evaluated",
+            cluster_name=cluster.cluster_config.name,
             cluster_ip=cluster.cluster_config.ip,
             cluster_port=cluster.cluster_config.port,
             powered_off_nodes=powered_off_nodes,
@@ -136,7 +137,12 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             turned_on = response.json().get("turned_on", amount)
             nodes_to_add -= turned_on
         except Exception as e:
-            log.error("Power.On", error=e)
+            log.error(
+                "global_api.power.turn_on_request_failed",
+                cluster_name=cluster.cluster_config.name,
+                target_url=url,
+                error=str(e),
+            )
 
 
 def turn_off_idle_nodes(config: Config):
@@ -148,16 +154,21 @@ def turn_off_idle_nodes(config: Config):
             response = requests.post(url, params={"idle_time": idle_time}, timeout=20)
             response.raise_for_status()
         except Exception as e:
-            log.error("Power.Off", error=e)
+            log.error(
+                "global_api.power.turn_off_idle_request_failed",
+                cluster_name=cluster.name,
+                target_url=url,
+                error=str(e),
+            )
 
 
 async def power_scheduler_loop():
     """Check every x seconds whether more working nodes should be turn on or off."""
-    log.info("Global Power Scheduler Running")
+    log.info("global_api.power.scheduler_started")
     config = config_store.get()
     timeout = config.power_scheduler.timeout_s
     while config_store.get().power_scheduler.start:
-        log.info("Global Power Scheduler Running Again")
+        log.info("global_api.power.scheduler_iteration_started", timeout_s=timeout)
         await asyncio.sleep(timeout)
         all_clusters = config_store.get_cluster_information()
         turn_nodes_on(config, all_clusters)

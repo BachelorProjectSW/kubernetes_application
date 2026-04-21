@@ -79,8 +79,8 @@ def get_cluster_runtime_data(
     avg_latency_ms = get_avg_latency_for_cluster(cluster.name, latency_window_s)
 
     log.debug(
-        "cluster.runtime_data_fetched",
-        cluster=cluster.name,
+        "global_api.cluster.runtime_data_fetched",
+        cluster_name=cluster.name,
         renewable_output_w=renewable_output_w,
         cluster_load_w=cluster_load_w,
         microgrid_base_load_w=microgrid_base_load_w,

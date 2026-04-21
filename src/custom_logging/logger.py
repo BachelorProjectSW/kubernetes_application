@@ -68,7 +68,7 @@ def get_logs(log_class: Type[T]) -> list[T]:
             return read_all_node_status_logs(config_id)  # type: ignore[return-value]
         return read_model_logs(log_class, _current_config_id())
     except Exception as e:
-        log.warning("db.read_logs_failed", error=str(e), log_class=log_class.__name__)
+        log.warning("custom_logging.db.read_logs_failed", error=str(e), log_class=log_class.__name__)
         return []
 
 
@@ -77,7 +77,7 @@ def get_terminal_debug_logs() -> list[TerminalDebugLog]:
     try:
         return read_terminal_debug_logs(_current_config_id())
     except Exception as e:
-        log.warning("db.read_terminal_debug_failed", error=str(e))
+        log.warning("custom_logging.db.read_terminal_debug_failed", error=str(e))
         return []
 
 
@@ -111,9 +111,9 @@ def log_request(
     try:
         save_model_log(_current_config_id(), entry)
     except Exception as e:
-        log.warning("db.save_model_log_failed", error=str(e), log_type="RequestLog")
+        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="RequestLog")
 
-    log.info("request.logged", **row)
+    log.info("custom_logging.request.logged", **row)
 
 
 def log_power_decision(
@@ -142,9 +142,9 @@ def log_power_decision(
     try:
         save_model_log(_current_config_id(), entry)
     except Exception as e:
-        log.warning("db.save_model_log_failed", error=str(e), log_type="PowerDecisionLog")
+        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="PowerDecisionLog")
 
-    log.info(f"power.{action}", **row)
+    log.info("custom_logging.power.decision_logged", **row)
 
 
 def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
@@ -160,7 +160,7 @@ def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
     try:
         save_model_log(_current_config_id(), entry)
     except Exception as e:
-        log.warning("db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
+        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
 
 
 def generate_summary() -> dict:
@@ -221,4 +221,4 @@ def save_summary(summary: dict):
     try:
         save_payload_log(_current_config_id(), "summary", summary)
     except Exception as e:
-        log.warning("db.save_summary_failed", error=str(e))
+        log.warning("custom_logging.db.save_summary_failed", error=str(e))

@@ -18,8 +18,7 @@ def start_test(config: Config):
     set_current_config_id(config.id)
     save_config(config)
     log.info(
-        "begin.test",
-        source="strato_api",
+        "strato.test.started",
         config_id=config.id,
         test_name=config.name,
     )
@@ -28,7 +27,7 @@ def start_test(config: Config):
     port = config.global_scheduler.port
     url = f"http://{ip}:{port}/start_test"  # url should be to global scheduler
 
-    log.info("test.forward_to_global", url=url)
+    log.info("strato.test.forwarded_to_global_scheduler", url=url)
     response = requests.post(url, json=config.model_dump(), timeout=60)
     response.raise_for_status()
 
@@ -43,7 +42,7 @@ def start_test(config: Config):
         config.workload.seed,
         config.workload.peakiness
         )
-    log.info("test.completed", responses=len(results))
+    log.info("strato.test.completed", response_count=len(results))
     return f"Got {len(results)} responses"
     # TODO Sikre at de sidste llm request er behandlet før man analysere og retunere svarene. 
     # TODO return analysed logs to frontend.

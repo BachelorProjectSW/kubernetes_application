@@ -35,7 +35,7 @@ async def execute_workload(
     )
 
     log.info(
-        "workload.generated",
+        "strato.workload.generated",
         request_count=len(timestamps),
         duration_s=duration_s,
         target=f"{host}{endpoint}",
@@ -57,13 +57,13 @@ async def execute_workload(
 
                 async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                     body = await resp.text()
-                    log.info("workload.request_done", status=resp.status)
+                    log.info("strato.workload.request_completed", status_code=resp.status)
                     return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
             except asyncio.TimeoutError:
-                log.warning("workload.request_timeout", timeout_s=request_timeout_s)
+                log.warning("strato.workload.request_timeout", timeout_s=request_timeout_s)
                 return {"ok": False, "error": f"request timeout after {request_timeout_s}s"}
             except Exception as e:
-                log.warning("workload.request_failed", error=str(e))
+                log.warning("strato.workload.request_failed", error=str(e))
                 return {"ok": False, "error": str(e)}
 
         # Schedule all requests
@@ -72,7 +72,7 @@ async def execute_workload(
 
     success_count = sum(1 for r in results if r.get("ok"))
     failure_count = len(results) - success_count
-    log.info("workload.completed", success=success_count, failure=failure_count)
+    log.info("strato.workload.completed", success_count=success_count, failure_count=failure_count)
     return results
 
 
