@@ -6,6 +6,7 @@ import structlog
 from .power_scheduler import power_scheduler_loop
 import asyncio
 import threading
+from .ensure_nodes_ready import ensure_nodes_ready
 
 
 _power_scheduler_thread: threading.Thread | None = None
@@ -45,6 +46,8 @@ def start_test(config: Config):
                 cluster=cluster.name,
                 status_code=response.status_code,
             )
+            ensure_nodes_ready(cluster, timeout_s=120)
+
 
         if config.power_scheduler.start:
             thread_running = (
