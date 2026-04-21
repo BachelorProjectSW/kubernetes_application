@@ -167,9 +167,11 @@ async def power_scheduler_loop():
     log.info("global_api.power.scheduler_started")
     config = config_store.get()
     timeout = config.power_scheduler.timeout_s
-    while config_store.get().power_scheduler.start:
+    while True:
         log.info("global_api.power.scheduler_iteration_started", timeout_s=timeout)
         await asyncio.sleep(timeout)
+        if not config_store.get().power_scheduler.start:
+            break
         all_clusters = config_store.get_cluster_information()
         turn_nodes_on(config, all_clusters)
         turn_off_idle_nodes(config)
