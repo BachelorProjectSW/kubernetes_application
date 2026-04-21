@@ -15,7 +15,7 @@ function Weights({ inputs, handleChange }) {
                     value={inputs.gco2 || 0.5} 
                     onChange={handleChange} 
                 />
-                
+
                 <span style={{ fontWeight: "bold", color: "#007bff" }}>
                     {inputs.gco2 || 0.5}
                 </span>
@@ -43,13 +43,14 @@ function Weights({ inputs, handleChange }) {
                 <label>latency:</label>
                 <input 
                     type="range" 
-                    name="latency" 
+                    name="weight_latency" 
                     min="0" 
                     max="1" 
                     step="0.01"
                     value={inputs.weight_latency || 0.5} 
-                    onChange={handleChange} 
+                    onChange={handleChange}
                 />
+
                 <span style={{ fontWeight: "bold", color: "#007bff" }}>
                     {inputs.weight_latency || 0.5}
                 </span>
