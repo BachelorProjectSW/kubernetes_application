@@ -144,10 +144,11 @@ def validate_pv_data(config: Config) -> list[str]:
     end = start + timedelta(seconds=config.start.duration_time_s)
     pv_capacity_w = EnergyConfig().pv_capacity_w
     for cluster in config.clusters:
+        upperase_country=cluster.simulated_country_code.upper()
         try:
-            data = get_power(start, end, cluster.simulated_country_code, pv_capacity_w=pv_capacity_w)
+            data = get_power(start, end, upperase_country, pv_capacity_w=pv_capacity_w)
             if not data:
-                errors.append(f"cluster {cluster.name}: no PV data for zone={cluster.simulated_country_code} at {start} to {end}")
+                errors.append(f"cluster {cluster.name}: no PV data for zone={upperase_country} at {start} to {end}")
         except Exception as e:
             errors.append(f"cluster {cluster.name}: PV data error: {str(e)}")
 
