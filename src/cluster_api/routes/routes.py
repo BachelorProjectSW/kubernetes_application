@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..services.cancel_llama_pods import cancel_all_llama_pods
+from ..services.cancel_all_llama_pods import cancel_all_llama_pods
 from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
 from ..services.llm import handle_llm
 from ...models.basemodels import ClusterInformation, QuestionConfig
