@@ -26,7 +26,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
         requests.post(
             f"{base}/turn_on_nodes/",
             params={"number_of_nodes": total},
-            timeout=30,
+            timeout=60,
         )
     except Exception as e:
         log.warning("ensure_nodes_ready.turn_on_failed", cluster=cluster.name, error=str(e))
