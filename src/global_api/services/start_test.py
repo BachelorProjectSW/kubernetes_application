@@ -74,7 +74,7 @@ def start_test(config: Config):
         log.exception("global.start_test.failed", error=str(e))
         raise Exception(f"test failed: {e}")
 
-def wait_for_clusters_to_drain(config: Config, timeout_s: int = 120, poll_interval_s: int = 5):
+def wait_for_clusters_to_drain(config: Config, timeout_s: int = 180, poll_interval_s: int = 5):
     """Wait until all clusters have no in-flight requests."""
     deadline = time.time() + timeout_s
     
