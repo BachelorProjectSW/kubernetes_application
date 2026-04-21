@@ -87,7 +87,7 @@ export const handleSubmit = async (e, inputs) => {
             "start_time_simulated": inputs.startdate|| "",
             "start_time_real": null
         } || "",
-       " weights": {
+       "weights": {
             "gco2": inputs.gco2,
             "cost": inputs.cost,
             "latency": inputs.weight_latency 
