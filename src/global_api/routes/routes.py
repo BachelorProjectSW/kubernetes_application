@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from global_api.services import validate_config
+from ..services.validate_config import validate_config
 from ..services.get_all_worker_nodes import get_all_worker_nodes
 from ..services.handle_llm_request import handle_llm_request
 from ..services.start_test import start_test, stop_test
