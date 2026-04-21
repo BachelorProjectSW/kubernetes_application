@@ -195,14 +195,14 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     except Exception as e:
         duration_ms = int((time.monotonic() - start_time) * 1000)
 
-        loggservice="cluster_api",
+        logger.exception(
+            "cluster_api.llm.request_failed",
+            service="cluster_api",
             cluster_name=cluster_name,
             worker_node=worker_node.name if worker_node else None,
             trace_id=trace_id,
             worker_ip=worker_node.ip if worker_node else None,
-            cluster_total_time=trace_id,
-            worker_ip=worker_node.ip if worker_node else None,
-            duration_ms=duration_ms,
+            cluster_total_time_ms=duration_ms,
             error=str(e),
         )
         return f"failed: {e}"
@@ -217,6 +217,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
 
                 logger.info(
                     "cluster_api.llm.worker_released",
+                    service="cluster_api",
                     cluster_name=cluster_name,
                     worker_node=worker_node.name,
                     trace_id=trace_id,
