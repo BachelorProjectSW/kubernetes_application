@@ -84,7 +84,7 @@ export const handleSubmit = async (e, inputs) => {
         "name": inputs.name || "",
         "start": {
             "duration_time_s": totalSeconds || "",
-            "start_time_simulated": inputs.startdate || "", // opdater andre steder
+           "start_time_simulated": "01/10/2021",
             "start_time_real": null
         } || "",
         "weights": {
