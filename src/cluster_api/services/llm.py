@@ -93,6 +93,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
 
         logger.info(
             "cluster_api.llm.request_started",
+            service="cluster_api",
             cluster_name=cluster_name,
             worker_node=None,
             trace_id=trace_id,
@@ -123,6 +124,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
 
             logger.info(
                 "cluster_api.llm.worker_selected",
+                service="cluster_api",
                 cluster_name=cluster_name,
                 worker_node=worker_node.name,
                 worker_ip=worker_node.ip,
@@ -148,7 +150,8 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
 
         llama_call_start = time.monotonic()
         logger.info(
-            "cluster_api.llm.worker_call_started",
+            "cluster_api.llm.llama_inference_started",
+            service="cluster_api",
             cluster_name=cluster_name,
             worker_node=worker_node.name,
             trace_id=trace_id,
@@ -162,18 +165,19 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         )
         response.raise_for_status()
 
-        worker_call_ms = int((time.monotonic() - llama_call_start) * 1000)
+        cluster_llama_inference_ms = int((time.monotonic() - llama_call_start) * 1000)
 
         duration_ms = int((time.monotonic() - start_time) * 1000)
         logger.info(
             "cluster_api.llm.request_succeeded",
+            service="cluster_api",
             cluster_name=cluster_name,
             worker_node=worker_node.name,
             trace_id=trace_id,
             worker_ip=worker_node.ip,
             target_url=url,
-            worker_call_ms=worker_call_ms,
-            duration_ms=duration_ms,
+            cluster_llama_inference_ms=cluster_llama_inference_ms,
+            cluster_total_time_ms=duration_ms,
             status_code=response.status_code,
             max_output_tokens=question.max_output_tokens,
         )
@@ -191,11 +195,12 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     except Exception as e:
         duration_ms = int((time.monotonic() - start_time) * 1000)
 
-        logger.exception(
-            "cluster_api.llm.request_failed",
+        loggservice="cluster_api",
             cluster_name=cluster_name,
             worker_node=worker_node.name if worker_node else None,
             trace_id=trace_id,
+            worker_ip=worker_node.ip if worker_node else None,
+            cluster_total_time=trace_id,
             worker_ip=worker_node.ip if worker_node else None,
             duration_ms=duration_ms,
             error=str(e),

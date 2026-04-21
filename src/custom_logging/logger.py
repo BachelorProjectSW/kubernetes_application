@@ -94,10 +94,16 @@ def log_request(
     answer: str | None = None,
     all_content: dict | list | str | None = None,
     success: bool = True,
+    trace_id: str | None = None,
+    global_market_data_fetch_ms: int | None = None,
+    global_cluster_scoring_ms: int | None = None,
+    global_cluster_api_call_ms: int | None = None,
+    global_total_time_ms: int | None = None,
 ):
     """Log a completed request to the CSV and console."""
     entry = RequestLog(
         request_id=request_id,
+        trace_id=trace_id,
         timestamp=datetime.now(timezone.utc),
         cluster=cluster_name,
         node=worker_node_name,
@@ -110,6 +116,10 @@ def log_request(
         question=question,
         answer=answer,
         all_content=all_content,
+        global_market_data_fetch_ms=global_market_data_fetch_ms,
+        global_cluster_scoring_ms=global_cluster_scoring_ms,
+        global_cluster_api_call_ms=global_cluster_api_call_ms,
+        global_total_time_ms=global_total_time_ms,
     )
 
     row = entry.model_dump(mode="json")
