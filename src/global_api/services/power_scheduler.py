@@ -173,3 +173,4 @@ async def power_scheduler_loop():
         all_clusters = config_store.get_cluster_information()
         turn_nodes_on(config, all_clusters)
         turn_off_idle_nodes(config)
+    log.info("global_api.power.scheduler_ended")

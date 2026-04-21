@@ -42,6 +42,8 @@ def start_test(config: Config):
         config.workload.seed,
         config.workload.peakiness
         )
+    config.power_scheduler.start = False
+
     log.info("strato.test.completed", response_count=len(results))
     return f"Got {len(results)} responses"
     # TODO Sikre at de sidste llm request er behandlet før man analysere og retunere svarene. 
