@@ -29,12 +29,6 @@ def start_test(config: Config):
         log.info("global.start_test.begin", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
 
-        # validate before doing anything
-        validation = validate_config(config)
-        if not validation["valid"]:
-            log.error("global.start_test.invalid_config", errors=validation["errors"])
-            raise Exception(f"Invalid config: {validation['errors']}")
-
 
         for cluster in config.clusters:
             cluster_information = ClusterInformation(

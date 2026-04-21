@@ -20,6 +20,23 @@ def start_test(config: Config):
     """Start test in a background thread and return immediately."""
     global test_running, stop_requested, current_config
 
+    try:
+        ip = config.global_scheduler.ip
+        port = config.global_scheduler.port
+        response = requests.post(
+            f"http://{ip}:{port}/validate_config",
+            json=config.model_dump(),
+            timeout=30
+        )
+        response.raise_for_status()
+        validation = response.json()
+        if not validation["valid"]:
+            raise RuntimeError(f"Invalid config: {validation['errors']}")
+    except RuntimeError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Validation failed: {str(e)}")
+
     with test_state_lock:
         if test_running:
             raise RuntimeError("A test is already running. Stop the current test before starting a new one.")
