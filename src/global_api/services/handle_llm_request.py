@@ -1,7 +1,6 @@
 import time
 import uuid
 import requests
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import structlog
 from fastapi import HTTPException
@@ -35,20 +34,15 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
 
     market_data_fetch_start = time.monotonic()
 
-    all_cluster_energy_data: list = [None] * len(config.clusters)
-    with ThreadPoolExecutor(max_workers=max(1, len(config.clusters))) as executor:
-        futures = {
-            executor.submit(
-                get_cluster_runtime_data,
-                cluster,
-                simulated_time,
-                config.energy,
-                config.latency.latency_window_s,
-            ): index
-            for index, cluster in enumerate(config.clusters)
-        }
-        for future, index in ((f, i) for f, i in futures.items()):
-            all_cluster_energy_data[index] = future.result()
+    all_cluster_energy_data = [
+        get_cluster_runtime_data(
+            cluster,
+            simulated_time,
+            config.energy,
+            config.latency.latency_window_s,
+        )
+        for cluster in config.clusters
+    ]
 
     global_market_data_fetch_ms = int((time.monotonic() - market_data_fetch_start) * 1000)
 

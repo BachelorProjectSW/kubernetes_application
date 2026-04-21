@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-import threading
 
 from ..services.price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 
@@ -18,10 +17,9 @@ class _PriceCacheEntry:
 
 
 class MarketDataStore:
-    """Thread-safe in-memory store for hourly market data."""
+    """In-memory store for hourly market data."""
 
     def __init__(self):
-        self._lock = threading.Lock()
         self._carbon_by_zone: dict[str, _CarbonCacheEntry] = {}
         self._price_by_zone: dict[str, _PriceCacheEntry] = {}
         self._ttl = timedelta(hours=1)
@@ -34,14 +32,12 @@ class MarketDataStore:
         zone_key = zone.upper()
         now = datetime.now(timezone.utc)
 
-        with self._lock:
-            entry = self._carbon_by_zone.get(zone_key)
-            if entry is not None and not self._is_stale(entry.last_updated, now):
-                return entry.data
+        entry = self._carbon_by_zone.get(zone_key)
+        if entry is not None and not self._is_stale(entry.last_updated, now):
+            return entry.data
 
         data = fetch_carbon_intensity(start, end, zone)
-        with self._lock:
-            self._carbon_by_zone[zone_key] = _CarbonCacheEntry(data=data, last_updated=now)
+        self._carbon_by_zone[zone_key] = _CarbonCacheEntry(data=data, last_updated=now)
         return data
 
     def get_price(self, start: datetime, end: datetime, zone: str) -> list[tuple[datetime, float]]:
@@ -49,14 +45,12 @@ class MarketDataStore:
         zone_key = zone.upper()
         now = datetime.now(timezone.utc)
 
-        with self._lock:
-            entry = self._price_by_zone.get(zone_key)
-            if entry is not None and not self._is_stale(entry.last_updated, now):
-                return entry.data
+        entry = self._price_by_zone.get(zone_key)
+        if entry is not None and not self._is_stale(entry.last_updated, now):
+            return entry.data
 
         data = fetch_price_data(start, end, zone)
-        with self._lock:
-            self._price_by_zone[zone_key] = _PriceCacheEntry(data=data, last_updated=now)
+        self._price_by_zone[zone_key] = _PriceCacheEntry(data=data, last_updated=now)
         return data
 
 
