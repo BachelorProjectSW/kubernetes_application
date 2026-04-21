@@ -12,6 +12,48 @@ from ...custom_logging.util.log_reader import get_avg_latency_for_cluster
 log = structlog.get_logger()
 
 
+# Hourly cache for market data only.
+# Key format: (zone_upper, start_hour_iso, end_hour_iso)
+_carbon_hourly_cache: dict[tuple[str, str, str], list[tuple[datetime, int]]] = {}
+_price_hourly_cache: dict[tuple[str, str, str], list[tuple[datetime, float]]] = {}
+
+
+def _hour_floor(value: datetime) -> datetime:
+    """Round down to the start of the hour."""
+    return value.replace(minute=0, second=0, microsecond=0)
+
+
+def _hourly_cache_key(zone: str, start: datetime, end: datetime) -> tuple[str, str, str]:
+    """Build cache key based on zone and hour-normalized time range."""
+    start_hour = _hour_floor(start)
+    end_hour = _hour_floor(end)
+    return zone.upper(), start_hour.isoformat(), end_hour.isoformat()
+
+
+def _get_hourly_cached_carbon(start: datetime, end: datetime, zone: str) -> list[tuple[datetime, int]]:
+    """Return hourly carbon data from cache when available, else fetch and store."""
+    key = _hourly_cache_key(zone, start, end)
+    cached = _carbon_hourly_cache.get(key)
+    if cached is not None:
+        return cached
+
+    data = fetch_carbon_intensity(start, end, zone)
+    _carbon_hourly_cache[key] = data
+    return data
+
+
+def _get_hourly_cached_price(start: datetime, end: datetime, zone: str) -> list[tuple[datetime, float]]:
+    """Return hourly price data from cache when available, else fetch and store."""
+    key = _hourly_cache_key(zone, start, end)
+    cached = _price_hourly_cache.get(key)
+    if cached is not None:
+        return cached
+
+    data = fetch_price_data(start, end, zone)
+    _price_hourly_cache[key] = data
+    return data
+
+
 def _get_microgrid_base_load_w(
     cluster: ClusterConfig,
     simulated_time_start: datetime,
@@ -55,13 +97,13 @@ def get_cluster_runtime_data(
     )
     renewable_output_w = pv[0][1] if pv else 0.0
 
-    carbon_data = fetch_carbon_intensity(
+    carbon_data = _get_hourly_cached_carbon(
         simulated_time_start, simulated_time_end, cluster.simulated_country_code
     )
     grid_carbon_intensity = float(carbon_data[0][1]) if carbon_data else 0.0
 
     # fetch_price_data returns EUR/MWh; scoring expects EUR/kWh so we divide by 1000.
-    price_data = fetch_price_data(
+    price_data = _get_hourly_cached_price(
         simulated_time_start, simulated_time_end, cluster.simulated_country_code
     )
     grid_electricity_price = (price_data[0][1] / 1000) if price_data else 0.0
