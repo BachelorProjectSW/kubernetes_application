@@ -1,3 +1,4 @@
+from .validate_config import validate_config
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import set_current_config_id
@@ -27,6 +28,14 @@ def start_test(config: Config):
         config_store.set(config)
         log.info("global.start_test.begin", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
+
+        # validate before doing anything
+        validation = validate_config(config)
+        if not validation["valid"]:
+            log.error("global.start_test.invalid_config", errors=validation["errors"])
+            raise Exception(f"Invalid config: {validation['errors']}")
+
+
         for cluster in config.clusters:
             cluster_information = ClusterInformation(
                 config_id=config.id,
