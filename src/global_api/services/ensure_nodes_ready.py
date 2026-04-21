@@ -48,10 +48,29 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
 
             if len(ready) >= total:
                 log.info("ensure_nodes_ready.all_ready", cluster=cluster.name)
-                return
+                break
 
         except Exception as e:
             log.warning("ensure_nodes_ready.poll_failed", cluster=cluster.name, error=str(e))
+
+        time.sleep(poll_interval_s)
+    
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        try:
+            info = requests.get(f"{base}/get_cluster_information", timeout=10).json()
+            nodes = info.get("worker_nodes", [])
+            in_flight = sum(n["inflight_requests"] for n in nodes)
+
+            if in_flight == 0:
+                log.info("ensure_nodes_ready.no_inflight", cluster=cluster.name)
+                return
+
+            log.info("ensure_nodes_ready.waiting_for_inflight",
+                    cluster=cluster.name,
+                    in_flight=in_flight)
+        except Exception as e:
+            log.warning("ensure_nodes_ready.inflight_check_failed", cluster=cluster.name, error=str(e))
 
         time.sleep(poll_interval_s)
 

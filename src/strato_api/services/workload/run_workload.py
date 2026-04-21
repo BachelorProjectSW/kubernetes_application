@@ -74,10 +74,9 @@ async def execute_workload(
 
         while not all(t.done() for t in tasks):
             if stop_check and stop_check():
-                log.info("workload.stop_requested — draining in-flight requests")
-                # cancel tasks that have not been sent yet
+                log.info("workload.stop_requested — cancelling all tasks")
                 for t in tasks:
-                    if not t.done() and not t.cancelled():
+                    if not t.done():
                         t.cancel()
                 break
             await asyncio.sleep(0.5)
