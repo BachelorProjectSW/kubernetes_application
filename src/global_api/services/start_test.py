@@ -2,7 +2,6 @@ from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import set_current_config_id
 import requests
-import uuid
 import structlog
 from .power_scheduler import power_scheduler_loop
 import asyncio
