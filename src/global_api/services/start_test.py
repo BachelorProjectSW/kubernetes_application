@@ -51,7 +51,7 @@ def start_test(config: Config):
                 cluster=cluster.name,
                 status_code=response.status_code,
             )
-            ensure_nodes_ready(cluster, timeout_s=120)
+            ensure_nodes_ready(cluster, timeout_s=400)
 
 
         if config.power_scheduler.start:
