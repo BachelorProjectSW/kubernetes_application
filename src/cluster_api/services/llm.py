@@ -1,6 +1,7 @@
 import time
 import requests
 import structlog
+import uuid
 
 from src.models.enum import WorkerStatus
 from ...models.basemodels import QuestionConfig, WorkerNode, LLMResponse
@@ -78,16 +79,25 @@ def sync_worker_status(worker: WorkerNode) -> None:
     log_node_status_snapshot(cluster_name, worker)
 
 
-def handle_llm(question: QuestionConfig):
+def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     """Send the request to the correct working node and log."""
     try:
         config = None
         cluster_name = None
         worker_node = None
+        trace_id = trace_id or str(uuid.uuid4())
         start_time = time.monotonic()
 
         config = config_store.get()
         cluster_name = config.cluster_config.name
+
+        logger.info(
+            "cluster_api.llm.request_started",
+            cluster_name=cluster_name,
+            worker_node=None,
+            trace_id=trace_id,
+            worker_count=len(config.worker_nodes),
+        )
 
         with worker_lock:
             for worker in config.worker_nodes:
@@ -136,6 +146,15 @@ def handle_llm(question: QuestionConfig):
             "temperature": 0.7,
         }
 
+        llama_call_start = time.monotonic()
+        logger.info(
+            "cluster_api.llm.worker_call_started",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            trace_id=trace_id,
+            target_url=url,
+        )
+
         response = requests.post(
             url,
             json=payload,
@@ -143,13 +162,17 @@ def handle_llm(question: QuestionConfig):
         )
         response.raise_for_status()
 
+        worker_call_ms = int((time.monotonic() - llama_call_start) * 1000)
+
         duration_ms = int((time.monotonic() - start_time) * 1000)
         logger.info(
             "cluster_api.llm.request_succeeded",
             cluster_name=cluster_name,
             worker_node=worker_node.name,
+            trace_id=trace_id,
             worker_ip=worker_node.ip,
             target_url=url,
+            worker_call_ms=worker_call_ms,
             duration_ms=duration_ms,
             status_code=response.status_code,
             max_output_tokens=question.max_output_tokens,
@@ -172,6 +195,7 @@ def handle_llm(question: QuestionConfig):
             "cluster_api.llm.request_failed",
             cluster_name=cluster_name,
             worker_node=worker_node.name if worker_node else None,
+            trace_id=trace_id,
             worker_ip=worker_node.ip if worker_node else None,
             duration_ms=duration_ms,
             error=str(e),
@@ -190,6 +214,7 @@ def handle_llm(question: QuestionConfig):
                     "cluster_api.llm.worker_released",
                     cluster_name=cluster_name,
                     worker_node=worker_node.name,
+                    trace_id=trace_id,
                     worker_ip=worker_node.ip,
                     status_after=worker_node.status,
                     inflight_after=worker_node.inflight_requests,

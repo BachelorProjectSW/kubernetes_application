@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
 from ..services.llm import handle_llm
 from ...models.basemodels import ClusterInformation, QuestionConfig
@@ -41,9 +41,10 @@ def set_config(cluster_information: ClusterInformation):
 
 
 @router.post("/handle_llm_request")
-def handle_llm_request_endpoint(question: QuestionConfig):
+def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
     """Handle llm request."""
-    return handle_llm(question)
+    trace_id = request.headers.get("X-Trace-Id")
+    return handle_llm(question, trace_id=trace_id)
 
 
 @router.get("/get_cluster_information")

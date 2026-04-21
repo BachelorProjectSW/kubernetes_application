@@ -14,22 +14,36 @@ from ...custom_logging.logger import log_request
 log = structlog.get_logger()
 
 
-def handle_llm_request(question: QuestionConfig):
+def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     """Send the question to the local cluster request scheduler llama-service."""
     request_id = str(uuid.uuid4())
+    trace_id = trace_id or request_id
     config = config_store.get()
+    total_start = time.monotonic()
+
+    log.info(
+        "global_api.llm.request_started",
+        trace_id=trace_id,
+        request_id=request_id,
+        cluster_count=len(config.clusters),
+    )
 
     # TODO: compute actual simulated time from (datetime.now() - start_time_real + start_time_simulated)
     simulated_time = datetime.now(timezone.utc)
+
+    runtime_fetch_start = time.monotonic()
 
     all_cluster_energy_data = [
         get_cluster_runtime_data(cluster, simulated_time, config.energy, config.latency.latency_window_s)
         for cluster in config.clusters
     ]
+    runtime_fetch_ms = int((time.monotonic() - runtime_fetch_start) * 1000)
 
+    cluster_select_start = time.monotonic()
     cluster, cluster_energy_data = choose_cluster(
         config.clusters, all_cluster_energy_data, config.weights, config.energy, config.latency.max_ms
     )
+    cluster_select_ms = int((time.monotonic() - cluster_select_start) * 1000)
 
     grid_fraction = compute_grid_fraction(
         cluster_energy_data.renewable_output_w,
@@ -50,11 +64,35 @@ def handle_llm_request(question: QuestionConfig):
     url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
 
     t_start = time.monotonic()
-    response = requests.post(url, json=question.model_dump())
+    log.info(
+        "global_api.llm.cluster_forward_started",
+        trace_id=trace_id,
+        request_id=request_id,
+        cluster_name=cluster.name,
+        target_url=url,
+        runtime_fetch_ms=runtime_fetch_ms,
+        cluster_select_ms=cluster_select_ms,
+    )
+
+    response = requests.post(
+        url,
+        json=question.model_dump(),
+        headers={"X-Trace-Id": trace_id},
+    )
     latency_ms = (time.monotonic() - t_start) * 1000
+    total_ms = int((time.monotonic() - total_start) * 1000)
     data = response.json()
 
     if not isinstance(data, dict):
+        log.warning(
+            "global_api.llm.invalid_cluster_response",
+            trace_id=trace_id,
+            request_id=request_id,
+            cluster_name=cluster.name,
+            cluster_forward_ms=int(latency_ms),
+            total_ms=total_ms,
+            payload_type=type(data).__name__,
+        )
         log_request(
             request_id=request_id,
             cluster_name=cluster.name,
@@ -109,6 +147,18 @@ def handle_llm_request(question: QuestionConfig):
         question=question.question,
         answer=answer,
         all_content=llm_content,
+    )
+
+    log.info(
+        "global_api.llm.request_completed",
+        trace_id=trace_id,
+        request_id=request_id,
+        cluster_name=cluster.name,
+        worker_node=worker_node.name,
+        runtime_fetch_ms=runtime_fetch_ms,
+        cluster_select_ms=cluster_select_ms,
+        cluster_forward_ms=int(latency_ms),
+        total_ms=total_ms,
     )
 
     return llm_content

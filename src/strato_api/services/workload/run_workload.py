@@ -3,6 +3,7 @@ import time
 import aiohttp
 import json
 import structlog
+import uuid
 from .generator import generate_workload
 from ....models.basemodels import QuestionConfig
 
@@ -52,18 +53,47 @@ async def execute_workload(
                 await asyncio.sleep(delay)
 
             try:
+                trace_id = str(uuid.uuid4())
+                request_start = time.perf_counter()
                 payload_json = json.dumps(question.model_dump())
-                headers = {"Content-Type": "application/json"}  # ensure FastAPI parses it
+                headers = {
+                    "Content-Type": "application/json", 
+                    "X-Trace-Id": trace_id,
+                }
+
+                log.info(
+                    "strato.workload.request_started",
+                    trace_id=trace_id,
+                    target=f"{host}{endpoint}",
+                )
 
                 async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                     body = await resp.text()
-                    log.info("strato.workload.request_completed", status_code=resp.status)
+                    duration_ms = int((time.perf_counter() - request_start) * 1000)
+                    log.info(
+                        "strato.workload.request_completed",
+                        trace_id=trace_id,
+                        status_code=resp.status,
+                        duration_ms=duration_ms,
+                    )
                     return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
             except asyncio.TimeoutError:
-                log.warning("strato.workload.request_timeout", timeout_s=request_timeout_s)
+                duration_ms = int((time.perf_counter() - request_start) * 1000)
+                log.warning(
+                    "strato.workload.request_timeout",
+                    trace_id=trace_id,
+                    timeout_s=request_timeout_s,
+                    duration_ms=duration_ms,
+                )
                 return {"ok": False, "error": f"request timeout after {request_timeout_s}s"}
             except Exception as e:
-                log.warning("strato.workload.request_failed", error=str(e))
+                duration_ms = int((time.perf_counter() - request_start) * 1000)
+                log.warning(
+                    "strato.workload.request_failed",
+                    trace_id=trace_id,
+                    error=str(e),
+                    duration_ms=duration_ms,
+                )
                 return {"ok": False, "error": str(e)}
 
         # Schedule all requests
