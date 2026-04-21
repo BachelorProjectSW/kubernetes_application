@@ -16,12 +16,13 @@ test_running = False
 stop_requested = False
 current_config = None
 
+
 def start_test(config: Config):
     """Start test in a background thread and return immediately."""
     global test_running, stop_requested, current_config
 
     try:
-        #Sanity checks of the config entries
+        # Sanity checks of the config entries
         ip = config.global_scheduler.ip
         port = config.global_scheduler.port
         response = requests.post(
@@ -36,19 +37,20 @@ def start_test(config: Config):
     except Exception as e:
         raise RuntimeError(f"Validation failed: {str(e)}")
 
-    #Only run one test at a time
+    # Only run one test at a time
     with test_state_lock:
         if test_running:
             raise RuntimeError("A test is already running. Stop the current test before starting a new one.")
         test_running = True
         stop_requested = False
         current_config = config
-    
-    #run the test in a background thread, such the main thread is still open
+
+    # run the test in a background thread, such the main thread is still open
     thread = threading.Thread(target=run_test, args=(config,), daemon=True, name="test-runner")
     thread.start()
     log.info("test.started_in_background", config_id=config.id, test_name=config.name)
     return {"message": f"{config.name} test started successfully"}
+
 
 def run_test(config: Config):
     """Run the full test in a background thread."""
@@ -86,18 +88,26 @@ def run_test(config: Config):
     except Exception as e:
         log.exception("test.failed", error=str(e))
     finally:
-        #regardless we return them to default values, such that we are ready for new test
+        # regardless we return them to default values, such that we are ready for new test
         with test_state_lock:
             test_running = False
             stop_requested = False
             current_config = None
+
 
 def should_stop_test() -> bool:
     """Return True if the running test should stop."""
     with test_state_lock:
         return stop_requested
 
+
 def stop_test():
+    """Stop the currently running test.
+
+    Sets the stop flag which signals the workload generator to cancel all in-flight requests.
+    Then calls global to stop the power scheduler and delete all llama pods on all clusters.
+    Raises RuntimeError if no test is currently running.
+    """
     global stop_requested
     with test_state_lock:
         if not test_running:
@@ -109,6 +119,7 @@ def stop_test():
     stop_global_power_scheduler(config.global_scheduler.ip, config.global_scheduler.port)
     return {"message": "Stop requested"}
 
+
 def stop_global_power_scheduler(ip, port):
     """Tell global API to stop the power scheduler."""
     try:
@@ -117,9 +128,11 @@ def stop_global_power_scheduler(ip, port):
     except Exception as e:
         log.warning("test.global_stop_failed", error=str(e))
 
+
 def start_test_test():
     """Start test test."""
     return start_test(get_test_config())
+
 
 def get_test_status() -> dict:
     """Return current test status."""

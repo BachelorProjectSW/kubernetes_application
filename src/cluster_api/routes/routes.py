@@ -53,6 +53,7 @@ def get_cluster_information_endpoint():
     """Return cluster information."""
     return config_store.get()
 
+
 @router.post("/cancel_all_llama_pods")
 def cancel_all_llama_pods_endpoint():
     """Delete all llama pods."""

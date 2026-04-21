@@ -24,13 +24,15 @@ def start_test_test_endpoint():
 
 @router.post("/stop_test")
 def stop_test_endpoint():
+    """Stop the test."""
     try:
         return stop_test()
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
 @router.get("/test_status")
 def test_status_endpoint():
     """Return current test status: idle, running, or stopping."""

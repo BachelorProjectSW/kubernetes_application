@@ -34,6 +34,7 @@ def stop_test_endpoint():
     """Stop current test."""
     return stop_test()
 
+
 @router.post("/validate_config")
 def validate_config_endpoint(config: Config):
     """Validate config before starting test."""

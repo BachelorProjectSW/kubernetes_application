@@ -72,17 +72,16 @@ async def execute_workload(
         # Schedule all requests
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
 
-        while not all(t.done() for t in tasks): #Keep looping while tasks are being schedueled
-            if stop_check(): #If the user decided to stop (this calls the function)
+        while not all(t.done() for t in tasks):  # Keep looping while tasks are being schedueled
+            if stop_check():  # If the user decided to stop (this calls the function)
                 log.info("workload.stop_requested — cancelling all tasks")
-                for t in tasks: #Loop through every task. If it iss still running or waiting, cancel it.
+                for t in tasks:  # Loop through every task. If it iss still running or waiting, cancel it.
                     if not t.done():
                         t.cancel()
                 break
-            await asyncio.sleep(0.5) #Runs every 0.5 sec
+            await asyncio.sleep(0.5)  # Runs every 0.5 sec
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
-
 
     results = [r for r in results if isinstance(r, dict)]
     success_count = sum(1 for r in results if r.get("ok"))

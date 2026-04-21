@@ -1,14 +1,16 @@
 import requests
 import structlog
 from ...models.basemodels import Config, EnergyConfig
-
-log = structlog.get_logger()
 from datetime import datetime, timezone, timedelta
 from .price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 from .dk_energy import get_dk_hourly
 from .pv_power import get_power
 
+log = structlog.get_logger()
+
+
 def validate_config_values(config: Config) -> list[str]:
+    """Validate the values in the config file."""
     errors = []
 
     # duration and workload
@@ -18,7 +20,7 @@ def validate_config_values(config: Config) -> list[str]:
         errors.append("request per minute must be > 0")
     total_requests = (config.start.duration_time_s / 60) * config.workload.request_per_minute
     if total_requests < 1:
-        errors.append(f"config would generate 0 requests")
+        errors.append("config would generate 0 requests")
 
     # weights
     weight_sum = config.weights.gco2 + config.weights.cost + config.weights.latency
@@ -55,7 +57,7 @@ def validate_config_values(config: Config) -> list[str]:
     try:
         datetime.strptime(config.start.start_time_simulated, "%d/%m/%Y")
     except ValueError:
-        errors.append(f"start time invalid format, expected DD/MM/YYYY")
+        errors.append("start time invalid format, expected DD/MM/YYYY")
 
     return errors
 
@@ -78,17 +80,18 @@ def validate_cluster_reachability(config: Config) -> list[str]:
 
     return errors
 
+
 def validate_electricity_maps(config: Config) -> list[str]:
     """Check electricity maps API has data for each cluster's zone."""
     errors = []
 
-    #Use simulated start time from config
+    # Use simulated start time from config
     try:
         start = datetime.strptime(config.start.start_time_simulated, "%d/%m/%Y").replace(tzinfo=timezone.utc)
     except ValueError:
         return ["cannot validate APIs: invalid start_time_simulated format"]
 
-    #Start + duration = full duration
+    # Start + duration = full duration
     end = start + timedelta(seconds=config.start.duration_time_s)
 
     for cluster in config.clusters:
@@ -96,7 +99,7 @@ def validate_electricity_maps(config: Config) -> list[str]:
         try:
             carbon = fetch_carbon_intensity(start, end, zone)
             if not carbon:
-                errors.append(f"cluster {cluster.name}: no carbon intensity data for zone={zone} at {start} to {end}")
+                errors.append(f"{cluster.name}: no carbon intensity data for zone={zone} at {start} to {end}")
         except Exception as e:
             errors.append(f"cluster {cluster.name}: carbon intensity API failed: {str(e)}")
 
@@ -108,6 +111,7 @@ def validate_electricity_maps(config: Config) -> list[str]:
             errors.append(f"cluster {cluster.name}: price API failed: {str(e)}")
 
     return errors
+
 
 def validate_dk_energy(config: Config) -> list[str]:
     """Check Orin proxy has data for DK clusters at simulated time."""
@@ -132,6 +136,7 @@ def validate_dk_energy(config: Config) -> list[str]:
 
     return errors
 
+
 def validate_pv_data(config: Config) -> list[str]:
     """Check PV CSV has data for each cluster's zone."""
     errors = []
@@ -144,15 +149,16 @@ def validate_pv_data(config: Config) -> list[str]:
     end = start + timedelta(seconds=config.start.duration_time_s)
     pv_capacity_w = EnergyConfig().pv_capacity_w
     for cluster in config.clusters:
-        uppercase_country=cluster.simulated_country_code.upper()
+        uppercase_country = cluster.simulated_country_code.upper()
         try:
             data = get_power(start, end, uppercase_country, pv_capacity_w=pv_capacity_w)
             if not data:
-                errors.append(f"cluster {cluster.name}: no PV data for zone={uppercase_country} at {start} to {end}")
+                errors.append(f"{cluster.name}: no PV data for zone={uppercase_country} at {start} to {end}")
         except Exception as e:
             errors.append(f"cluster {cluster.name}: PV data error: {str(e)}")
 
     return errors
+
 
 def validate_config(config: Config) -> dict:
     """Run all validations and return result."""
@@ -162,7 +168,6 @@ def validate_config(config: Config) -> dict:
     errors.extend(validate_electricity_maps(config))
     errors.extend(validate_dk_energy(config))
     errors.extend(validate_pv_data(config))
-
 
     valid = len(errors) == 0
     log.info("validate.config", valid=valid, errors=errors)
