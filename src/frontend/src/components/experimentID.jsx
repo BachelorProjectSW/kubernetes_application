@@ -23,7 +23,7 @@ function Ids({ inputs, setInputs, handleChange }) {
                 dur_minutes: historicalData.dur_minutes, 
                 gco2: historicalData.gco2, 
                 cost: historicalData.cost,
-                latency: historicalData.weight_latency,
+                weight_latency: historicalData.weight_latency,
                 timeout_s: historicalData.timeout_s,
                 turn_off_s: historicalData.turn_off_s,
                 max_latency: historicalData.max_latency,
