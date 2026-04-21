@@ -90,6 +90,9 @@ def log_request(
     renewable_fraction: float,
     blended_carbon_gco2_per_kwh: float,
     blended_cost_eur_per_kwh: float,
+    question: str | None = None,
+    answer: str | None = None,
+    all_content: dict | list | str | None = None,
     success: bool = True,
 ):
     """Log a completed request to the CSV and console."""
@@ -104,6 +107,9 @@ def log_request(
         renewable_fraction=round(renewable_fraction, 4),
         blended_carbon_gco2_per_kwh=round(blended_carbon_gco2_per_kwh, 4),
         blended_cost_eur_per_kwh=round(blended_cost_eur_per_kwh, 6),
+        question=question,
+        answer=answer,
+        all_content=all_content,
     )
 
     row = entry.model_dump(mode="json")

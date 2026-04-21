@@ -2,13 +2,16 @@ import time
 import uuid
 import requests
 from datetime import datetime, timezone
-
+import structlog
 from fastapi import HTTPException
 from ...models.basemodels import QuestionConfig, LLMResponse
 from .cluster_data import get_cluster_runtime_data
 from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import log_request
+
+
+log = structlog.get_logger()
 
 
 def handle_llm_request(question: QuestionConfig):
@@ -62,6 +65,9 @@ def handle_llm_request(question: QuestionConfig):
             renewable_fraction=renewable_fraction,
             blended_carbon_gco2_per_kwh=blended_carbon,
             blended_cost_eur_per_kwh=blended_cost,
+            question=question.question,
+            answer=None,
+            all_content=data,
         )
         return HTTPException(status_code=500, detail=str(data))
 
@@ -75,6 +81,20 @@ def handle_llm_request(question: QuestionConfig):
     )
     worker_node = result.worker_node
     llm_content = result.llm_content
+    log.debug("global_api.llm_content", llm_content=llm_content)
+    answer = None
+
+    if isinstance(llm_content, dict):
+        answer = (
+            llm_content.get("content")
+            or llm_content.get("response")
+            or llm_content.get("text")
+            or llm_content.get("completion")
+        )
+        if answer is not None:
+            answer = str(answer)
+    else:
+        answer = str(llm_content)
 
     log_request(
         request_id=request_id,
@@ -86,6 +106,9 @@ def handle_llm_request(question: QuestionConfig):
         renewable_fraction=renewable_fraction,
         blended_carbon_gco2_per_kwh=blended_carbon,
         blended_cost_eur_per_kwh=blended_cost,
+        question=question.question,
+        answer=answer,
+        all_content=llm_content,
     )
 
     return llm_content

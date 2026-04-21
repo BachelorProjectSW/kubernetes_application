@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Any
 
 
 class RequestLog(BaseModel):
@@ -15,6 +16,9 @@ class RequestLog(BaseModel):
     renewable_fraction: float
     blended_carbon_gco2_per_kwh: float
     blended_cost_eur_per_kwh: float
+    question: str | None = None
+    answer: str | None = None
+    all_content: Any | None = None
 
 
 class PowerDecisionLog(BaseModel):
