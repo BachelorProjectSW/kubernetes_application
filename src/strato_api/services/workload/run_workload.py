@@ -19,7 +19,7 @@ async def execute_workload(
     pattern: str,
     seed: int,
     peakiness: float,
-    stop_check=None,
+    stop_check,
 ):
     """Generate and execute scheduled HTTP requests against an endpoint."""
     request_timeout_s = 90
@@ -72,14 +72,14 @@ async def execute_workload(
         # Schedule all requests
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
 
-        while not all(t.done() for t in tasks):
-            if stop_check and stop_check():
+        while not all(t.done() for t in tasks): #Keep looping while tasks are being schedueled
+            if stop_check(): #If the user decided to stop (this calls the function)
                 log.info("workload.stop_requested — cancelling all tasks")
-                for t in tasks:
+                for t in tasks: #Loop through every task. If it iss still running or waiting, cancel it.
                     if not t.done():
                         t.cancel()
                 break
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.5) #Runs every 0.5 sec
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -100,7 +100,7 @@ def run_workload(
     pattern: str,
     seed: int,
     peakiness: float,
-    stop_check=None
+    stop_check
 ):
     """Run workload executor."""
     return asyncio.run(

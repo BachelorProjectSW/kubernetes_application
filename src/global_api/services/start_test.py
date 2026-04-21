@@ -1,5 +1,3 @@
-import time
-
 from .validate_config import validate_config
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
@@ -51,7 +49,8 @@ def start_test(config: Config):
                 cluster=cluster.name,
                 status_code=response.status_code,
             )
-            ensure_nodes_ready(cluster, timeout_s=400)
+            #ensure that all nodes + pods are on and ready to recieve requests
+            ensure_nodes_ready(cluster, timeout_s=400) 
 
 
         if config.power_scheduler.start:
@@ -81,13 +80,15 @@ def stop_test():
     if config:
         for cluster in config.clusters:
             try:
+                #All pods are deleted (recreated automatically).
+                #Because when the test is stopped --> possibility of inflight-requests
+                #These needs to be deleted, such that the next test can run deterministcally
                 requests.post(
                     f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
                     timeout=60
                 )
                 log.info("global.stop_test.pods_deleted", cluster=cluster.name)
             except Exception as e:
-                log.warning("global.stop_test.pods_delete_failed", 
-                           cluster=cluster.name, error=str(e))
+                log.warning("global.stop_test.pods_delete_failed",cluster=cluster.name, error=str(e))
     log.info("global.stop_test.done")
     return {"message": "Test stopped"}

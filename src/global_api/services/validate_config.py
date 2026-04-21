@@ -82,17 +82,17 @@ def validate_electricity_maps(config: Config) -> list[str]:
     """Check electricity maps API has data for each cluster's zone."""
     errors = []
 
-    # use simulated start time from config
+    #Use simulated start time from config
     try:
         start = datetime.strptime(config.start.start_time_simulated, "%d/%m/%Y").replace(tzinfo=timezone.utc)
     except ValueError:
         return ["cannot validate APIs: invalid start_time_simulated format"]
 
+    #Start + duration = full duration
     end = start + timedelta(seconds=config.start.duration_time_s)
 
     for cluster in config.clusters:
         zone = cluster.simulated_country_code
-
         try:
             carbon = fetch_carbon_intensity(start, end, zone)
             if not carbon:
@@ -126,7 +126,7 @@ def validate_dk_energy(config: Config) -> list[str]:
         try:
             data = get_dk_hourly(start, end)
             if not data:
-                errors.append(f"cluster {cluster.name}: no DK energy data for {start} - is the Orin proxy running and does it have data for this time range?")
+                errors.append(f"cluster {cluster.name}: no DK energy data for {start} to {end}")
         except Exception as e:
             errors.append(f"cluster {cluster.name}: DK energy proxy unreachable: {str(e)}")
 
@@ -144,11 +144,11 @@ def validate_pv_data(config: Config) -> list[str]:
     end = start + timedelta(seconds=config.start.duration_time_s)
     pv_capacity_w = EnergyConfig().pv_capacity_w
     for cluster in config.clusters:
-        upperase_country=cluster.simulated_country_code.upper()
+        uppercase_country=cluster.simulated_country_code.upper()
         try:
-            data = get_power(start, end, upperase_country, pv_capacity_w=pv_capacity_w)
+            data = get_power(start, end, uppercase_country, pv_capacity_w=pv_capacity_w)
             if not data:
-                errors.append(f"cluster {cluster.name}: no PV data for zone={upperase_country} at {start} to {end}")
+                errors.append(f"cluster {cluster.name}: no PV data for zone={uppercase_country} at {start} to {end}")
         except Exception as e:
             errors.append(f"cluster {cluster.name}: PV data error: {str(e)}")
 

@@ -14,13 +14,14 @@ log = structlog.get_logger()
 test_state_lock = threading.Lock()
 test_running = False
 stop_requested = False
-current_config: Config
+current_config = None
 
 def start_test(config: Config):
     """Start test in a background thread and return immediately."""
     global test_running, stop_requested, current_config
 
     try:
+        #Sanity checks of the config entries
         ip = config.global_scheduler.ip
         port = config.global_scheduler.port
         response = requests.post(
@@ -32,18 +33,18 @@ def start_test(config: Config):
         validation = response.json()
         if not validation["valid"]:
             raise RuntimeError(f"Invalid config: {validation['errors']}")
-    except RuntimeError:
-        raise
     except Exception as e:
         raise RuntimeError(f"Validation failed: {str(e)}")
 
+    #Only run one test at a time
     with test_state_lock:
         if test_running:
             raise RuntimeError("A test is already running. Stop the current test before starting a new one.")
         test_running = True
         stop_requested = False
         current_config = config
-
+    
+    #run the test in a background thread, such the main thread is still open
     thread = threading.Thread(target=run_test, args=(config,), daemon=True, name="test-runner")
     thread.start()
     log.info("test.started_in_background", config_id=config.id, test_name=config.name)
@@ -85,6 +86,7 @@ def run_test(config: Config):
     except Exception as e:
         log.exception("test.failed", error=str(e))
     finally:
+        #regardless we return them to default values, such that we are ready for new test
         with test_state_lock:
             test_running = False
             stop_requested = False

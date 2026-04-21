@@ -10,7 +10,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
     """
     base = f"http://{cluster.ip}:{cluster.port}"
 
-    # Step 1: Get total node count
+    #Step 1: Get total node count
     try:
         info = requests.get(f"{base}/get_cluster_information", timeout=10).json()
     except Exception as e:
@@ -21,7 +21,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
     total = len(nodes)
     log.info("ensure_nodes_ready.turning_on", cluster=cluster.name, total=total)
 
-    # Step 2: Turn on all nodes (even if already on)
+    #Step 2: Turn on all nodes (even if already on)
     try:
         requests.post(
             f"{base}/turn_on_nodes/",
@@ -31,6 +31,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
     except Exception as e:
         log.warning("ensure_nodes_ready.turn_on_failed", cluster=cluster.name, error=str(e))
 
+    #Step 3: Contiously check that the pods are up and running
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         try:
@@ -54,7 +55,8 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
             log.warning("ensure_nodes_ready.poll_failed", cluster=cluster.name, error=str(e))
 
         time.sleep(poll_interval_s)
-    
+
+    #Step 4: Contiously check that the pods have no inflight requests
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         try:
