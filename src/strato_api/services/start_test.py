@@ -26,7 +26,7 @@ def start_test(config: Config):
         response = requests.post(
             f"http://{ip}:{port}/validate_config",
             json=config.model_dump(),
-            timeout=30
+            timeout=60
         )
         response.raise_for_status()
         validation = response.json()
