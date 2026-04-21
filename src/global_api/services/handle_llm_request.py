@@ -87,32 +87,37 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
 
     if not isinstance(data, dict):
         log.warning(
+            "global_api.llm.invalid_cluster_response",
             service="global_api",
             trace_id=trace_id,
             request_id=request_id,
             cluster_name=cluster.name,
             global_cluster_api_call_ms=int(global_cluster_api_call_ms),
-            global_total_time_ms=global_total_timed_ms=int(latency_ms),
-            total_ms=total_ms,
+            global_total_time_ms=global_total_time_ms,
             payload_type=type(data).__name__,
         )
         log_request(
             request_id=request_id,
             cluster_name=cluster.name,
             worker_node_name="unknown",
-        latency_ms=global_cluster_api_call_ms,
-        cluster_load_w=cluster_energy_data.cluster_load_w,
-        renewable_fraction=renewable_fraction,
-        blended_carbon_gco2_per_kwh=blended_carbon,
-        blended_cost_eur_per_kwh=blended_cost,
-        question=question.question,
-        answer=None,
-        all_content=data,
-        trace_id=trace_id,
-        global_market_data_fetch_ms=global_market_data_fetch_ms,
-        global_cluster_scoring_ms=global_cluster_scoring_ms,
-        global_cluster_api_call_ms=global_cluster_api_call_ms,
-        global_total_time_ms=global_total_time_ms,
+            success=False,
+            latency_ms=global_cluster_api_call_ms,
+            cluster_load_w=cluster_energy_data.cluster_load_w,
+            renewable_fraction=renewable_fraction,
+            blended_carbon_gco2_per_kwh=blended_carbon,
+            blended_cost_eur_per_kwh=blended_cost,
+            question=question.question,
+            answer=None,
+            all_content=data,
+            trace_id=trace_id,
+            global_market_data_fetch_ms=global_market_data_fetch_ms,
+            global_cluster_scoring_ms=global_cluster_scoring_ms,
+            global_cluster_api_call_ms=global_cluster_api_call_ms,
+            global_total_time_ms=global_total_time_ms,
+        )
+        return HTTPException(status_code=500, detail=str(data))
+
+    result = LLMResponse(
         llm_content=data["llm_content"],
         worker_node=data["worker_node"],
         inflight_requests_at_selection=data["inflight_requests_at_selection"],
@@ -136,7 +141,8 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             answer = str(answer)
     else:
         answer = str(llm_content)
-.info(
+
+    log.info(
         "global_api.llm.request_completed",
         service="global_api",
         trace_id=trace_id,
@@ -166,20 +172,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         global_market_data_fetch_ms=global_market_data_fetch_ms,
         global_cluster_scoring_ms=global_cluster_scoring_ms,
         global_cluster_api_call_ms=global_cluster_api_call_ms,
-        global_total_time_ms=global_total_time_ms
-        all_content=llm_content,
+        global_total_time_ms=global_total_time_ms,
     )
 
-    log.info(
-        "global_api.llm.request_completed",
-        trace_id=trace_id,
-        request_id=request_id,
-        cluster_name=cluster.name,
-        worker_node=worker_node.name,
-        runtime_fetch_ms=runtime_fetch_ms,
-        cluster_select_ms=cluster_select_ms,
-        cluster_forward_ms=int(latency_ms),
-        total_ms=total_ms,
-    )
-
-    return llm_content
+    return result
