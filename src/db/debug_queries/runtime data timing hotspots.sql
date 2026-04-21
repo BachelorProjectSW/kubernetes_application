@@ -11,7 +11,7 @@ SELECT
   (payload_json->>'slowest_step_ms')::int AS slowest_step_ms,
   (payload_json->>'total_runtime_data_ms')::int AS total_runtime_data_ms
 FROM app_logs
-WHERE config_id = 'REPLACE_WITH_CONFIG_ID'
+WHERE config_id = '44dc3b8a-38db-400f-a5cb-8f186d8dc9c9'
   AND payload_json->>'event' = 'global_api.cluster.runtime_data_timing'
   AND payload_json->>'service' = 'global_api'
 ORDER BY slowest_step_ms DESC
@@ -29,7 +29,7 @@ SELECT
   AVG((payload_json->>'latency_lookup_ms')::int) AS avg_latency_lookup_ms,
   PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY (payload_json->>'total_runtime_data_ms')::int) AS p95_total_runtime_data_ms
 FROM app_logs
-WHERE config_id = 'REPLACE_WITH_CONFIG_ID'
+WHERE config_id = '44dc3b8a-38db-400f-a5cb-8f186d8dc9c9'
   AND payload_json->>'event' = 'global_api.cluster.runtime_data_timing'
   AND payload_json->>'service' = 'global_api'
 GROUP BY cluster_name

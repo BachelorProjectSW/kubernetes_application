@@ -5,7 +5,6 @@ import structlog
 
 from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig
 from .dk_energy import get_dk_hourly
-from .pv_power import get_power
 from .scoring import compute_cluster_load
 from ...custom_logging.util.log_reader import get_avg_latency_for_cluster
 from ..util.market_data_store import market_data_store
@@ -53,7 +52,7 @@ def get_cluster_runtime_data(
     runtime_start = time.monotonic()
 
     pv_start = time.monotonic()
-    pv = get_power(
+    pv = market_data_store.get_power(
         simulated_time_start, simulated_time_end, cluster.simulated_country_code, energy.pv_capacity_w
     )
     renewable_output_w = pv[0][1] if pv else 0.0
@@ -89,16 +88,7 @@ def get_cluster_runtime_data(
     latency_start = time.monotonic()
     avg_latency_ms = get_avg_latency_for_cluster(cluster.name, latency_window_s)
     latency_lookup_ms = int((time.monotonic() - latency_start) * 1000)
-
-    step_times = {
-        "pv_fetch_ms": pv_fetch_ms,
-        "carbon_fetch_ms": carbon_fetch_ms,
-        "price_fetch_ms": price_fetch_ms,
-        "load_compute_ms": load_compute_ms,
-        "latency_lookup_ms": latency_lookup_ms,
-    }
-    slowest_step = max(step_times, key=step_times.get)
-    slowest_step_ms = step_times[slowest_step]
+    
     total_runtime_data_ms = int((time.monotonic() - runtime_start) * 1000)
 
 
@@ -111,8 +101,6 @@ def get_cluster_runtime_data(
         price_fetch_ms=price_fetch_ms,
         load_compute_ms=load_compute_ms,
         latency_lookup_ms=latency_lookup_ms,
-        slowest_step=slowest_step,
-        slowest_step_ms=slowest_step_ms,
         total_runtime_data_ms=total_runtime_data_ms,
     )
 
