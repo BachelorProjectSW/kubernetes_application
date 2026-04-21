@@ -91,6 +91,8 @@ class ConfigStore:
         """Return worker nodes only, as list of dicts."""
         if self.config.worker_nodes is None:
             self.build_worker_nodes()
+        else:
+            self.populate_worker_capacities()
         return [node.model_dump() for node in self.config.worker_nodes]
 
     def assign_forwarded_ports(self):
