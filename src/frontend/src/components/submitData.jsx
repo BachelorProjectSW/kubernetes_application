@@ -97,7 +97,7 @@ export const handleSubmit = async (e, inputs) => {
             "timeout_s": inputs.timeout_s,
             "idle_time_for_turn_off_s":inputs.turn_off_s
         } || "",
-       " latency":{
+       "latency":{
             "latency_windows_s": inputs.window || "", //opdater andre steder
             "max_ms":inputs.max_latency || "",
         },
