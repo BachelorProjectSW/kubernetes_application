@@ -1,7 +1,6 @@
 import time
 import requests
 import structlog
-import uuid
 
 from src.models.enum import WorkerStatus
 from ...models.basemodels import QuestionConfig, WorkerNode, LLMResponse
@@ -122,13 +121,17 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             free_slots_after = worker_node.free_slots
             max_slots_at_selection = worker_node.max_slots
 
+            if config.cluster_config.k3d:
+                target_port = worker_node.forwarded_port
+            else:
+                target_port = config.cluster_config.llama_hostport
             logger.info(
                 "cluster_api.llm.worker_selected",
                 service="cluster_api",
                 cluster_name=cluster_name,
                 worker_node=worker_node.name,
                 worker_ip=worker_node.ip,
-                target_port=worker_node.forwarded_port if config.cluster_config.k3d else config.cluster_config.llama_hostport,
+                target_port=target_port,
                 status_after=worker_node.status,
                 inflight_after=worker_node.inflight_requests,
                 active_after=worker_node.active_requests,

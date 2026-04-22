@@ -1,5 +1,8 @@
 -- Process timeline for all trace_id values.
 -- Shows when each step happened and which cluster/node was chosen.
+WITH params AS (
+  SELECT '2e4168b2-bb0e-4bf3-b8f0-c70c70d6898c'::text AS config_id
+)
 SELECT
   created_at,
   payload_json->>'trace_id' AS trace_id,
@@ -26,11 +29,15 @@ SELECT
   END AS step_latency_ms,
   payload_json
 FROM app_logs
-WHERE config_id = '2e4168b2-bb0e-4bf3-b8f0-c70c70d6898c'
+JOIN params ON true
+WHERE config_id = params.config_id
   AND payload_json::jsonb ? 'trace_id'
 ORDER BY trace_id, created_at;
 
 -- Use this query to inspect one trace_id end-to-end.
+WITH params AS (
+  SELECT '2e4168b2-bb0e-4bf3-b8f0-c70c70d6898c'::text AS config_id
+)
 SELECT
   created_at,
   payload_json->>'trace_id' AS trace_id,
@@ -57,6 +64,7 @@ SELECT
   END AS step_latency_ms,
   payload_json
 FROM app_logs
-WHERE config_id = '2e4168b2-bb0e-4bf3-b8f0-c70c70d6898c'
+JOIN params ON true
+WHERE config_id = params.config_id
   AND payload_json->>'trace_id' = 'REPLACE_WITH_TRACE_ID'
 ORDER BY created_at;

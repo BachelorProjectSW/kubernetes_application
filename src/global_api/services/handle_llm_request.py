@@ -9,6 +9,7 @@ from .cluster_data import get_cluster_runtime_data
 from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import log_request
+from ..util.time_utils import compute_simulated_now
 
 
 log = structlog.get_logger()
@@ -29,8 +30,19 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         cluster_count=len(config.clusters),
     )
 
-    # TODO: compute actual simulated time from (datetime.now() - start_time_real + start_time_simulated)
-    simulated_time = datetime.now(timezone.utc)
+    try:
+        simulated_time = compute_simulated_now(
+            config.start.start_time_simulated,
+            config.start.start_time_real,
+        )
+    except Exception as e:
+        simulated_time = datetime.now(timezone.utc)
+        log.warning(
+            "global_api.llm.simulated_time_fallback_to_now",
+            trace_id=trace_id,
+            request_id=request_id,
+            error=str(e),
+        )
 
     market_data_fetch_start = time.monotonic()
 

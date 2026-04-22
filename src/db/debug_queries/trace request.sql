@@ -1,5 +1,8 @@
 -- Compare global scheduler time vs cluster worker time
 -- Shows queueing delay = global_total - (cluster_total + network_call)
+WITH params AS (
+  SELECT '2e4168b2-bb0e-4bf3-b8f0-c70c70d6898c'::text AS config_id
+)
 SELECT
   g.payload_json->>'trace_id' AS trace_id,
   (g.payload_json->>'global_total_time_ms')::int AS global_total_ms,
@@ -12,8 +15,8 @@ SELECT
 FROM app_logs g
 JOIN app_logs c
   ON g.payload_json->>'trace_id' = c.payload_json->>'trace_id'
-  AND g.config_id = c.config_id
-WHERE g.config_id = '2e4168b2-bb0e-4bf3-b8f0-c70c70d6898c'
+JOIN params ON g.config_id = params.config_id AND c.config_id = params.config_id
+WHERE g.config_id = params.config_id
   AND g.payload_json->>'event' = 'global_api.llm.request_completed'
   AND g.payload_json->>'service' = 'global_api'
   AND c.payload_json->>'event' = 'cluster_api.llm.request_succeeded'

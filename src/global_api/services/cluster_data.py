@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 import time
-
+import requests
 import structlog
 
-from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig
+from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig, WorkerNode
+from ...models.enum import WorkerStatus
 from .dk_energy import get_dk_hourly
 from .scoring import compute_cluster_load
 from ...custom_logging.util.log_reader import get_avg_latency_for_cluster
@@ -48,66 +49,114 @@ def get_cluster_runtime_data(
         grid_carbon_intensity, grid_electricity_price, and avg_latency_ms.
 
     """
-    simulated_time_end = simulated_time_start + timedelta(hours=1)
-    runtime_start = time.monotonic()
+    try:
+        simulated_time_end = simulated_time_start + timedelta(hours=1)
+        retrieved_at_utc = datetime.utcnow().isoformat() + "Z"
+        runtime_start = time.monotonic()
 
-    pv_start = time.monotonic()
-    pv = market_data_store.get_power(
-        simulated_time_start, simulated_time_end, cluster.simulated_country_code, energy.pv_capacity_w
-    )
-    renewable_output_w = pv[0][1] if pv else 0.0
-    pv_fetch_ms = int((time.monotonic() - pv_start) * 1000)
+        pv_start = time.monotonic()
+        pv = market_data_store.get_power(
+            simulated_time_start, simulated_time_end, cluster.simulated_country_code, energy.pv_capacity_w
+        )
+        renewable_output_w = pv[0][1] if pv else 0.0
+        pv_fetch_ms = int((time.monotonic() - pv_start) * 1000)
 
-    carbon_start = time.monotonic()
-    carbon_data = market_data_store.get_carbon(
-        simulated_time_start, simulated_time_end, cluster.simulated_country_code
-    )
-    grid_carbon_intensity = float(carbon_data[0][1]) if carbon_data else 0.0
-    carbon_fetch_ms = int((time.monotonic() - carbon_start) * 1000)
+        carbon_start = time.monotonic()
+        carbon_data = market_data_store.get_carbon(
+            simulated_time_start, simulated_time_end, cluster.simulated_country_code
+        )
+        grid_carbon_intensity = float(carbon_data[0][1]) if carbon_data else 0.0
+        carbon_fetch_ms = int((time.monotonic() - carbon_start) * 1000)
 
-    # fetch_price_data returns EUR/MWh; scoring expects EUR/kWh so we divide by 1000.
-    price_start = time.monotonic()
-    price_data = market_data_store.get_price(
-        simulated_time_start, simulated_time_end, cluster.simulated_country_code
-    )
-    grid_electricity_price = (price_data[0][1] / 1000) if price_data else 0.0
-    price_fetch_ms = int((time.monotonic() - price_start) * 1000)
+        # fetch_price_data returns EUR/MWh; scoring expects EUR/kWh so we divide by 1000.
+        price_start = time.monotonic()
+        price_data = market_data_store.get_price(
+            simulated_time_start, simulated_time_end, cluster.simulated_country_code
+        )
+        grid_electricity_price = (price_data[0][1] / 1000) if price_data else 0.0
+        price_fetch_ms = int((time.monotonic() - price_start) * 1000)
 
-    # TODO: replace with actual active/idle node counts once node tracking is implemented
-    load_start = time.monotonic()
-    cluster_load_w = compute_cluster_load(0, 0, energy)
+        load_start = time.monotonic()
+        url = f"http://{cluster.ip}:{cluster.port}/get_cluster_working_nodes"
+        worker_fetch_start = time.monotonic()
+        response = requests.get(url, timeout=180)
+        response.raise_for_status()
+        worker_nodes_payload = response.json()
+        worker_fetch_ms = int((time.monotonic() - worker_fetch_start) * 1000)
+        active_nodes = 0
+        idle_nodes = 0
 
-    microgrid_base_load_w = _get_microgrid_base_load_w(
-        cluster,
-        simulated_time_start,
-        simulated_time_end,
-    )
-    cluster_load_w += microgrid_base_load_w
-    load_compute_ms = int((time.monotonic() - load_start) * 1000)
+        worker_nodes = []
+        for _, node_data in enumerate(worker_nodes_payload):
+            try:
+                worker_nodes.append(WorkerNode.model_validate(node_data))
+            except Exception as e:
+                log.warning(
+                    "global_api.cluster_data.worker_node_validation_failed",
+                    cluster_name=cluster.name,
+                    target_url=url,
+                    error=str(e),
+                )
+                raise
 
-    latency_start = time.monotonic()
-    avg_latency_ms = get_avg_latency_for_cluster(cluster.name, latency_window_s)
-    latency_lookup_ms = int((time.monotonic() - latency_start) * 1000)
-    
-    total_runtime_data_ms = int((time.monotonic() - runtime_start) * 1000)
+        for node in worker_nodes:
+            if node.status == WorkerStatus.WORKING:
+                active_nodes += 1
+            elif node.status == WorkerStatus.IDLE:
+                idle_nodes += 1
+        log.info(
+            "global_api.cluster_data.compute_cluster_load",
+            cluster_name=cluster.name,
+            simulated_time_start=simulated_time_start.isoformat(),
+            simulated_time_end=simulated_time_end.isoformat(),
+            retrieved_at_utc=retrieved_at_utc,
+            worker_fetch_ms=worker_fetch_ms,
+            worker_nodes_count=len(worker_nodes),
+            active_nodes=active_nodes,
+            idle_nodes=idle_nodes,
+        )
+        cluster_load_w = compute_cluster_load(active_nodes, idle_nodes, energy)
 
+        microgrid_base_load_w = _get_microgrid_base_load_w(
+            cluster,
+            simulated_time_start,
+            simulated_time_end,
+        )
+        cluster_load_w += microgrid_base_load_w
+        load_compute_ms = int((time.monotonic() - load_start) * 1000)
 
-    log.info(
-        "global_api.cluster.runtime_data_timing",
-        service="global_api",
-        cluster_name=cluster.name,
-        pv_fetch_ms=pv_fetch_ms,
-        carbon_fetch_ms=carbon_fetch_ms,
-        price_fetch_ms=price_fetch_ms,
-        load_compute_ms=load_compute_ms,
-        latency_lookup_ms=latency_lookup_ms,
-        total_runtime_data_ms=total_runtime_data_ms,
-    )
+        latency_start = time.monotonic()
+        avg_latency_ms = get_avg_latency_for_cluster(cluster.name, latency_window_s)
+        latency_lookup_ms = int((time.monotonic() - latency_start) * 1000)
 
-    return ClusterRuntimeData(
-        renewable_output_w=renewable_output_w,
-        cluster_load_w=cluster_load_w,
-        grid_carbon_intensity=grid_carbon_intensity,
-        grid_electricity_price=grid_electricity_price,
-        avg_latency_ms=avg_latency_ms,
-    )
+        total_runtime_data_ms = int((time.monotonic() - runtime_start) * 1000)
+
+        log.info(
+            "global_api.cluster.runtime_data_timing",
+            service="global_api",
+            cluster_name=cluster.name,
+            simulated_time_start=simulated_time_start.isoformat(),
+            simulated_time_end=simulated_time_end.isoformat(),
+            retrieved_at_utc=retrieved_at_utc,
+            pv_fetch_ms=pv_fetch_ms,
+            carbon_fetch_ms=carbon_fetch_ms,
+            price_fetch_ms=price_fetch_ms,
+            worker_fetch_ms=worker_fetch_ms,
+            load_compute_ms=load_compute_ms,
+            active_nodes=active_nodes,
+            idle_nodes=idle_nodes,
+            latency_lookup_ms=latency_lookup_ms,
+            total_runtime_data_ms=total_runtime_data_ms,
+        )
+
+        return ClusterRuntimeData(
+            renewable_output_w=renewable_output_w,
+            cluster_load_w=cluster_load_w,
+            grid_carbon_intensity=grid_carbon_intensity,
+            grid_electricity_price=grid_electricity_price,
+            avg_latency_ms=avg_latency_ms,
+        )
+
+    except Exception as e:
+        log.warning("global_api.cluster_data", cluster_name=cluster.name, error=str(e))
+        raise

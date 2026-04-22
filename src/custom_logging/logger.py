@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import TypeVar, Type
 from .models.log_models import NodeStatusLog, PowerDecisionLog, RequestLog, TerminalDebugLog
-from ..models.basemodels import ClusterConfig, WorkerNode
+from ..models.basemodels import WorkerNode
 from ..db.postgres import (
     read_all_node_status_logs,
     read_all_power_decision_logs,
@@ -130,37 +130,6 @@ def log_request(
         log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="RequestLog")
 
     log.info("custom_logging.request.logged", **row)
-
-
-def log_power_decision(
-    action: str,
-    cluster: ClusterConfig,
-    node: WorkerNode,
-    reason: str,
-    system_avg_latency_ms: float,
-):
-    """Log a power scheduler decision.
-
-    TODO: Add active_nodes_before/after, energy forecast data
-    when the power scheduler is implemented.
-    """
-    entry = PowerDecisionLog(
-        timestamp=datetime.now(timezone.utc),
-        action=action,
-        cluster=cluster.name,
-        node=node.name,
-        reason=reason,
-        system_avg_latency_ms=round(system_avg_latency_ms, 2)
-    )
-
-    row = entry.model_dump(mode="json")
-
-    try:
-        save_model_log(_current_config_id(), entry)
-    except Exception as e:
-        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="PowerDecisionLog")
-
-    log.info("custom_logging.power.decision_logged", **row)
 
 
 def log_node_status_snapshot(cluster_name: str, node: WorkerNode):

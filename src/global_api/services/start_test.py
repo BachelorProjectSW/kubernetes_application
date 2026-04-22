@@ -7,6 +7,7 @@ from .power_scheduler import power_scheduler_loop
 import asyncio
 import threading
 from .ensure_nodes_ready import ensure_nodes_ready
+from datetime import datetime, timezone
 
 
 _power_scheduler_thread: threading.Thread | None = None
@@ -22,10 +23,10 @@ def start_test(config: Config):
     """Start the test and send configs."""
     try:
         global _power_scheduler_thread
+        config.start.start_time_real = datetime.now(timezone.utc).isoformat()
         set_current_config_id(config.id)
         config_store.set(config)
         log.info("global_api.test.start_requested", config_id=config.id, test_name=config.name)
-        # TODO set start_time_real = current time datetime.now().strf()
 
         for cluster in config.clusters:
             cluster_information = ClusterInformation(

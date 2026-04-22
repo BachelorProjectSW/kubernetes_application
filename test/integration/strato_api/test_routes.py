@@ -12,4 +12,3 @@ def test_start_test():
 
     response = requests.post(f"{base_url}/start_test", json=config.model_dump(), timeout=60)
     assert response.status_code == 200
-    # TODO analyse output data!!!!

@@ -8,7 +8,9 @@ class StartConfig(BaseModel):
     """Basic."""
 
     duration_time_s: int
+    # Supports DD/MM/YYYY HH:MM[:SS], DD/MM/YYYY, or ISO-8601.
     start_time_simulated: str
+    # Set by global API when a test starts (ISO-8601 UTC).
     start_time_real: str | None = None
 
 
@@ -50,7 +52,7 @@ class QuestionConfig(BaseModel):
 
     question: str  # TODO make it a list of question and add x new questions
     max_output_tokens: int
-    context_window: int #TODO vi bruger den ikke!
+    context_window: int  # TODO vi bruger den ikke!
 
 
 class WorkerNode(BaseModel):
