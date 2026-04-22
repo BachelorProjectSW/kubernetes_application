@@ -1,6 +1,7 @@
 import requests
 import structlog
 import time
+from ...models.enum import WorkerStatus
 
 log = structlog.get_logger()
 
@@ -38,7 +39,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
             response.raise_for_status()
             worker_nodes = response.json()
 
-            ready = [n for n in worker_nodes if n["status"] == "idle" and n["max_slots"] > 0]
+            ready = [n for n in worker_nodes if n["status"] == WorkerStatus.IDLE and n["max_slots"] > 0]
             log.info(
                 "ensure_nodes_ready.polling",
                 cluster=cluster.name,
