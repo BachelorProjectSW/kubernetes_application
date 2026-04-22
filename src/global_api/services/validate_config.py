@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 from .price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 from .dk_energy import get_dk_hourly
 from .pv_power import get_power
+from ..util.time_utils import SIMULATED_TIME_FORMAT
 
 log = structlog.get_logger()
 
@@ -55,9 +56,9 @@ def validate_config_values(config: Config) -> list[str]:
 
     # start time format
     try:
-        datetime.strptime(config.start.start_time_simulated, "%d/%m/%Y")
+        datetime.strptime(config.start.start_time_simulated, SIMULATED_TIME_FORMAT)
     except ValueError:
-        errors.append("start time invalid format, expected DD/MM/YYYY")
+        errors.append("start time invalid format, expected DD/MM/YYYY HH:MM:SS")
 
     return errors
 
@@ -87,7 +88,9 @@ def validate_electricity_maps(config: Config) -> list[str]:
 
     # Use simulated start time from config
     try:
-        start = datetime.strptime(config.start.start_time_simulated, "%d/%m/%Y").replace(tzinfo=timezone.utc)
+        start = datetime.strptime(config.start.start_time_simulated, SIMULATED_TIME_FORMAT).replace(
+            tzinfo=timezone.utc
+        )
     except ValueError:
         return ["cannot validate APIs: invalid start_time_simulated format"]
 
@@ -118,7 +121,9 @@ def validate_dk_energy(config: Config) -> list[str]:
     errors = []
 
     try:
-        start = datetime.strptime(config.start.start_time_simulated, "%d/%m/%Y").replace(tzinfo=timezone.utc)
+        start = datetime.strptime(config.start.start_time_simulated, SIMULATED_TIME_FORMAT).replace(
+            tzinfo=timezone.utc
+        )
     except ValueError:
         return []
 
@@ -142,7 +147,9 @@ def validate_pv_data(config: Config) -> list[str]:
     errors = []
 
     try:
-        start = datetime.strptime(config.start.start_time_simulated, "%d/%m/%Y").replace(tzinfo=timezone.utc)
+        start = datetime.strptime(config.start.start_time_simulated, SIMULATED_TIME_FORMAT).replace(
+            tzinfo=timezone.utc
+        )
     except ValueError:
         return []
 

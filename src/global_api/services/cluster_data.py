@@ -51,6 +51,7 @@ def get_cluster_runtime_data(
     """
     try:
         simulated_time_end = simulated_time_start + timedelta(hours=1)
+        retrieved_at_utc = datetime.utcnow().isoformat() + "Z"
         runtime_start = time.monotonic()
 
         pv_start = time.monotonic()
@@ -77,9 +78,11 @@ def get_cluster_runtime_data(
 
         load_start = time.monotonic()
         url = f"http://{cluster.ip}:{cluster.port}/get_cluster_working_nodes"
+        worker_fetch_start = time.monotonic()
         response = requests.get(url, timeout=180)
         response.raise_for_status()
         worker_nodes_payload = response.json()
+        worker_fetch_ms = int((time.monotonic() - worker_fetch_start) * 1000)
         active_nodes = 0
         idle_nodes = 0
 
@@ -104,6 +107,11 @@ def get_cluster_runtime_data(
         log.info(
             "global_api.cluster_data.compute_cluster_load",
             cluster_name=cluster.name,
+            simulated_time_start=simulated_time_start.isoformat(),
+            simulated_time_end=simulated_time_end.isoformat(),
+            retrieved_at_utc=retrieved_at_utc,
+            worker_fetch_ms=worker_fetch_ms,
+            worker_nodes_count=len(worker_nodes),
             active_nodes=active_nodes,
             idle_nodes=idle_nodes,
         )
@@ -128,9 +136,13 @@ def get_cluster_runtime_data(
             "global_api.cluster.runtime_data_timing",
             service="global_api",
             cluster_name=cluster.name,
+            simulated_time_start=simulated_time_start.isoformat(),
+            simulated_time_end=simulated_time_end.isoformat(),
+            retrieved_at_utc=retrieved_at_utc,
             pv_fetch_ms=pv_fetch_ms,
             carbon_fetch_ms=carbon_fetch_ms,
             price_fetch_ms=price_fetch_ms,
+            worker_fetch_ms=worker_fetch_ms,
             load_compute_ms=load_compute_ms,
             active_nodes=active_nodes,
             idle_nodes=idle_nodes,

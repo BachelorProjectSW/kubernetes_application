@@ -9,6 +9,7 @@ from ..util.all_configuration import config_store
 from ...custom_logging.util.log_reader import get_avg_latency, get_request_logs
 from datetime import datetime, timezone
 from .cluster_data import get_cluster_runtime_data
+from ..util.time_utils import compute_simulated_now
 
 log = structlog.get_logger()
 
@@ -74,8 +75,14 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     """Turn nodes on."""
     # Sort clusters by score (highest first)
 
-    # TODO: compute actual simulated time from (datetime.now() - start_time_real + start_time_simulated)
-    simulated_time = datetime.now(timezone.utc)
+    try:
+        simulated_time = compute_simulated_now(
+            config.start.start_time_simulated,
+            config.start.start_time_real,
+        )
+    except Exception as e:
+        simulated_time = datetime.now(timezone.utc)
+        log.warning("global_api.power.simulated_time_fallback_to_now", error=str(e))
     scored_clusters = []
     for cluster in clusters:
         runtime_data: ClusterRuntimeData = get_cluster_runtime_data(

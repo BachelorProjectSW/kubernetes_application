@@ -8,7 +8,9 @@ class StartConfig(BaseModel):
     """Basic."""
 
     duration_time_s: int
+    # Supports DD/MM/YYYY HH:MM[:SS], DD/MM/YYYY, or ISO-8601.
     start_time_simulated: str
+    # Set by global API when a test starts (ISO-8601 UTC).
     start_time_real: str | None = None
 
 
