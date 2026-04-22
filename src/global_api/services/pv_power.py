@@ -1,9 +1,13 @@
 import csv
 from datetime import datetime, timezone
 from pathlib import Path
+from datetime import datetime
 
 DATA_PATH = Path(__file__).parent.parent / "data" / "PV_Utility_scale_no_tracking_RGB.csv"
 
+
+def floor_to_hour(dt: datetime) -> datetime:
+    return dt.replace(minute=0, second=0, microsecond=0)
 
 def get_power_factor_by_time(start: datetime, end: datetime, country: str) -> list[tuple[datetime, float]]:
     """Return PT PV capacity factors between start and end (inclusive).
@@ -18,7 +22,8 @@ def get_power_factor_by_time(start: datetime, end: datetime, country: str) -> li
 
     """
     results = []
-
+    start = floor_to_hour(start)
+    end = floor_to_hour(end)
     with DATA_PATH.open() as f:
         reader = csv.DictReader(f)
         for row in reader:
