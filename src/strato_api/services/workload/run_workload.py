@@ -19,6 +19,7 @@ async def execute_workload(
     pattern: str,
     seed: int,
     peakiness: float,
+    stop_check,
 ):
     """Generate and execute scheduled HTTP requests against an endpoint."""
     request_timeout_s = 90
@@ -58,6 +59,9 @@ async def execute_workload(
                     body = await resp.text()
                     log.info("workload.request_done", status=resp.status)
                     return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
+            except asyncio.CancelledError:
+                log.info("workload.request_cancelled")
+                return {"ok": False, "error": "cancelled"}
             except asyncio.TimeoutError:
                 log.warning("workload.request_timeout", timeout_s=request_timeout_s)
                 return {"ok": False, "error": f"request timeout after {request_timeout_s}s"}
@@ -67,8 +71,19 @@ async def execute_workload(
 
         # Schedule all requests
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
-        results = await asyncio.gather(*tasks)
 
+        while not all(t.done() for t in tasks):  # Keep looping while tasks are being schedueled
+            if stop_check():  # If the user decided to stop (this calls the function)
+                log.info("workload.stop_requested — cancelling all tasks")
+                for t in tasks:  # Loop through every task. If it iss still running or waiting, cancel it.
+                    if not t.done():
+                        t.cancel()
+                break
+            await asyncio.sleep(0.5)  # Runs every 0.5 sec
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    results = [r for r in results if isinstance(r, dict)]
     success_count = sum(1 for r in results if r.get("ok"))
     failure_count = len(results) - success_count
     log.info("workload.completed", success=success_count, failure=failure_count)
@@ -84,8 +99,9 @@ def run_workload(
     pattern: str,
     seed: int,
     peakiness: float,
+    stop_check
 ):
     """Run workload executor."""
     return asyncio.run(
-        execute_workload(host, endpoint, question, duration_s, rpm, pattern, seed, peakiness)
+        execute_workload(host, endpoint, question, duration_s, rpm, pattern, seed, peakiness, stop_check)
     )
