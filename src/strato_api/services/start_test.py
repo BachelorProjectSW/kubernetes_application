@@ -1,6 +1,7 @@
 import threading
 
 import requests
+import uuid
 from ...models.basemodels import Config
 from ...db.postgres import save_config
 from ...custom_logging.logger import set_current_config_id
@@ -22,6 +23,8 @@ def start_test(config: Config):
     global test_running, stop_requested, current_config
 
     try:
+        config.id = str(uuid.uuid4())
+
         # Sanity checks of the config entries
         ip = config.global_scheduler.ip
         port = config.global_scheduler.port
@@ -62,9 +65,10 @@ def run_test(config: Config):
 
         ip = config.global_scheduler.ip
         port = config.global_scheduler.port
+        url = f"http://{ip}:{port}/start_test"
 
-        log.info("test.forward_to_global", url=f"http://{ip}:{port}/start_test")
-        response = requests.post(f"http://{ip}:{port}/start_test", json=config.model_dump(), timeout=180)
+        log.info("test.forward_to_global", url=url)
+        response = requests.post(url, json=config.model_dump(), timeout=180)
         response.raise_for_status()
         log.info("test.global_started", status_code=response.status_code)
 

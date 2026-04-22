@@ -36,7 +36,12 @@ class ConfigStore:
             labels = node.metadata.labels or {}
             # skip control plane nodes
             if labels.get("node-role.kubernetes.io/control-plane") == "true":
-                log.debug("node.skipped", name=node.metadata.name, reason="control-plane")
+                log.debug(
+                    "cluster_api.config.control_plane_node_skipped",
+                    cluster_name=self.config.cluster_config.name,
+                    worker_node=node.metadata.name,
+                    reason="control-plane",
+                )
                 continue
 
             name = node.metadata.name
@@ -85,7 +90,12 @@ class ConfigStore:
 
         for node, gpio in zip(self.config.worker_nodes, gpios):
             node.gpio = gpio
-            log.debug("node.gpio_assigned", node=node)
+            log.debug(
+                "cluster_api.config.worker_gpio_assigned",
+                cluster_name=self.config.cluster_config.name,
+                worker_node=node.name,
+                gpio=node.gpio,
+            )
 
     def get_worker_nodes_dict(self):
         """Return worker nodes only, as list of dicts."""
@@ -105,8 +115,9 @@ class ConfigStore:
         for index, worker in enumerate(workers):
             worker.forwarded_port = base_port + index
             log.debug(
-                "cluster.worker_forwarded_port_assigned",
-                worker_name=worker.name,
+                "cluster_api.config.worker_forwarded_port_assigned",
+                cluster_name=self.config.cluster_config.name,
+                worker_node=worker.name,
                 worker_ip=worker.ip,
                 forwarded_port=worker.forwarded_port,
             )
@@ -149,7 +160,9 @@ class ConfigStore:
 
         if not found_ports:
             log.warning(
-                "cluster.hostport_not_found",
+                "cluster_api.config.llama_hostport_not_found",
+                cluster_name=self.config.cluster_config.name,
+                worker_node=None,
                 reason="no_running_ready_llama_pod_with_hostport",
                 fallback_llama_hostport=self.config.cluster_config.llama_hostport,
             )
@@ -161,7 +174,9 @@ class ConfigStore:
         self.config.cluster_config.llama_hostport = found_ports.pop()  # Returns the removed value
 
         log.debug(
-            "cluster.hostport_discovered",
+            "cluster_api.config.llama_hostport_discovered",
+            cluster_name=self.config.cluster_config.name,
+            worker_node=None,
             llama_hostport=self.config.cluster_config.llama_hostport,
         )
 
@@ -188,8 +203,9 @@ class ConfigStore:
                     url = f"http://{worker.ip}:{self.config.cluster_config.llama_hostport}/props"
 
                 log.debug(
-                    "cluster.worker_props_request",
-                    worker_name=worker.name,
+                    "cluster_api.config.worker_props_request_started",
+                    cluster_name=self.config.cluster_config.name,
+                    worker_node=worker.name,
                     worker_ip=worker.ip,
                     url=url,
                 )
@@ -200,8 +216,9 @@ class ConfigStore:
                 props = response.json()
 
                 log.debug(
-                    "cluster.worker_props_response",
-                    worker_name=worker.name,
+                    "cluster_api.config.worker_props_request_succeeded",
+                    cluster_name=self.config.cluster_config.name,
+                    worker_node=worker.name,
                     worker_ip=worker.ip,
                     props=props,
                 )
@@ -211,8 +228,9 @@ class ConfigStore:
 
             except Exception as e:
                 log.debug(
-                    "cluster.worker_populate_capacity_failed",
-                    worker_name=worker.name,
+                    "cluster_api.config.worker_capacity_probe_failed",
+                    cluster_name=self.config.cluster_config.name,
+                    worker_node=worker.name,
                     worker_ip=worker.ip,
                     error=str(e),
                 )

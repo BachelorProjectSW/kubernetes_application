@@ -1,5 +1,4 @@
-from fastapi import APIRouter
-
+from fastapi import APIRouter,Request
 from ..services.cancel_all_llama_pods import cancel_all_llama_pods
 from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
 from ..services.llm import handle_llm
@@ -36,16 +35,17 @@ def turn_off_idle_nodes_endpoint(idle_time: int):
 @router.post("/set_config")
 def set_config(cluster_information: ClusterInformation):
     """Set the config in util."""
-    set_current_config_id(cluster_information.config_id or cluster_information.cluster_config.name)
+    set_current_config_id(cluster_information.config_id)
     config_store.set(cluster_information)
     config_store.build_worker_nodes()
     return config_store.get()
 
 
 @router.post("/handle_llm_request")
-def handle_llm_request_endpoint(question: QuestionConfig):
+def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
     """Handle llm request."""
-    return handle_llm(question)
+    trace_id = request.headers.get("X-Trace-Id")
+    return handle_llm(question, trace_id=trace_id)
 
 
 @router.get("/get_cluster_information")

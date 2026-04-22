@@ -24,7 +24,7 @@ def start_test(config: Config):
         global _power_scheduler_thread
         set_current_config_id(config.id)
         config_store.set(config)
-        log.info("global.start_test.begin", config_id=config.id, test_name=config.name)
+        log.info("global_api.test.start_requested", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
 
         for cluster in config.clusters:
@@ -38,12 +38,16 @@ def start_test(config: Config):
             port = cluster.port
             url = f"http://{ip}:{port}/set_config"
 
-            log.info("global.start_test.set_config.start", cluster=cluster.name, url=url)
+            log.info(
+                "global_api.test.cluster_config_push_started",
+                cluster_name=cluster.name,
+                target_url=url,
+            )
             response = requests.post(url, json=cluster_information.model_dump(), timeout=30)
             response.raise_for_status()
             log.info(
-                "global.start_test.set_config.done",
-                cluster=cluster.name,
+                "global_api.test.cluster_config_push_succeeded",
+                cluster_name=cluster.name,
                 status_code=response.status_code,
             )
             # ensure that all nodes + pods are on and ready to recieve requests
@@ -61,12 +65,12 @@ def start_test(config: Config):
                     name="global-power-scheduler",
                 )
                 _power_scheduler_thread.start()
-                log.info("global.start_test.power_scheduler.started")
+                log.info("global_api.test.power_scheduler_started")
         name = config.name
-        log.info("global.start_test.done", config_id=config.id, test_name=name)
+        log.info("global_api.test.start_completed", config_id=config.id, test_name=name)
         return f"{name} test are running succesfully"
     except Exception as e:
-        log.exception("global.start_test.failed", error=str(e))
+        log.exception("global_api.test.start_failed", error=str(e))
         raise Exception(f"test failed: {e}")
 
 

@@ -190,8 +190,8 @@ def choose_cluster(
         )
 
         log.debug(
-            "cluster.scored",
-            cluster=cluster.name,
+            "global_api.cluster.scored",
+            cluster_name=cluster.name,
             score=cluster_score,
             renewable_output_w=cluster_energy_data.renewable_output_w,
             grid_electricity_price=cluster_energy_data.grid_electricity_price,
@@ -203,8 +203,8 @@ def choose_cluster(
             best_cluster_energy_data = cluster_energy_data
 
     log.info(
-        "cluster.selected",
-        cluster=best_cluster.name,
+        "global_api.cluster.selected",
+        cluster_name=best_cluster.name,
         score=best_score,
     )
 

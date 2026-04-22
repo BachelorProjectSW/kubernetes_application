@@ -41,7 +41,7 @@ class WorkloadConfig(BaseModel):
     request_per_minute: int
     pattern: Literal["steady", "peaks"]
     seed: int
-    peakiness: int
+    peakiness: float
 
 
 # --- Advanced user input
@@ -50,7 +50,7 @@ class QuestionConfig(BaseModel):
 
     question: str  # TODO make it a list of question and add x new questions
     max_output_tokens: int
-    context_window: int
+    context_window: int #TODO vi bruger den ikke!
 
 
 class WorkerNode(BaseModel):
@@ -148,7 +148,7 @@ class EnergyConfig(BaseModel):
 class Config(BaseModel):
     """Config."""
 
-    id: str
+    id: str | None = None
     name: str
     start: StartConfig
     weights: WeightsConfig

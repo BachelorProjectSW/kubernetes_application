@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from ..services.validate_config import validate_config
 from ..services.get_all_worker_nodes import get_all_worker_nodes
@@ -15,9 +15,10 @@ def nodes():
 
 
 @router.post("/handle_llm_question")
-def handle_llm_question(question: QuestionConfig):
+def handle_llm_question(question: QuestionConfig, request: Request):
     """Handle llm question."""
-    return handle_llm_request(question)
+    trace_id = request.headers.get("X-Trace-Id")
+    return handle_llm_request(question, trace_id=trace_id)
 
 
 @router.post("/start_test")

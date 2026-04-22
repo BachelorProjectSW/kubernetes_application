@@ -30,16 +30,31 @@ def turn_on_node(worker_node: WorkerNode, cluster_name: str):
     """Turn on the node via GPIO."""
     try:
         gpio = worker_node.gpio
-        log.debug("gpio to turn on", gpio=gpio)
+        log.debug(
+            "cluster_api.power.turn_on_gpio_pulse_started",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            gpio=gpio,
+        )
         run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
         time.sleep(0.5)
         run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
-        log.debug("turning node on", node=worker_node.name)
+        log.debug(
+            "cluster_api.power.turn_on_gpio_pulse_completed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            gpio=gpio,
+        )
         worker_node.status = WorkerStatus.TURNING_ON
         log_node_status_snapshot(cluster_name, worker_node)
         return True
     except Exception as e:
-        log.debug(f"failed to turn on node: {e}")
+        log.warning(
+            "cluster_api.power.turn_on_failed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            error=str(e),
+        )
         return False
 
 
@@ -68,8 +83,18 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         out = stdout.read().decode()
         err = stderr.read().decode()
 
-        log.debug("power.turn.off", STDOUT=out)
-        log.debug("power.turn.off", STDERR=err)
+        log.debug(
+            "cluster_api.power.turn_off_shutdown_stdout",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            stdout=out,
+        )
+        log.debug(
+            "cluster_api.power.turn_off_shutdown_stderr",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            stderr=err,
+        )
 
         client.close()
 
@@ -77,11 +102,21 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         log_node_status_snapshot(cluster_name, worker_node)
         return True
     except Exception as e:
-        log.debug("power.error", error=e)
+        log.warning(
+            "cluster_api.power.turn_off_failed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            error=str(e),
+        )
         return False
 
 
-def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: str = "default") -> bool:
+def check_if_llama_pod_is_ready(
+    worker_node: WorkerNode,
+    api_client,
+    cluster_name: str,
+    namespace: str = "default"
+    ) -> bool:
     """Return True when a llama pod on this node is Running and Ready."""
     try:
         pods = api_client.list_namespaced_pod(
@@ -106,7 +141,12 @@ def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: 
         return False
 
     except Exception as e:
-        log.debug("power.pod_readiness_check_failed", node=worker_node.name, error=str(e))
+        log.warning(
+            "cluster_api.power.pod_readiness_check_failed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            error=str(e),
+        )
         return False
 
 
@@ -121,7 +161,10 @@ def wait_for_nodes_to_be_ready(
     api_client = get_api_client()
 
     while time.time() < deadline:
-        ready_nodes = [node for node in worker_nodes if check_if_llama_pod_is_ready(node, api_client)]
+        ready_nodes = [
+            node for node in worker_nodes
+            if check_if_llama_pod_is_ready(node, api_client, cluster_name)
+        ]
 
         for node in ready_nodes:
             node.status = WorkerStatus.IDLE
@@ -152,7 +195,12 @@ def change_node_status(number_of_nodes: int, status: str):
 
         all_ready = wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
         if not all_ready:
-            log.warning("power.nodes_not_ready_before_timeout", nodes=[node.name for node in nodes_to_change])
+            log.warning(
+                "cluster_api.power.nodes_not_ready_before_timeout",
+                cluster_name=cluster_name,
+                worker_node=None,
+                nodes=[node.name for node in nodes_to_change],
+            )
 
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, nodes)
@@ -224,6 +272,7 @@ def turn_off_idle_nodes(idle_time: int):
     """
     config = config_store.get()
     cluster_name = config.cluster_config.name
+    #TODO ONLY GET THE RECENT x latency window logs.
     request_logs = get_request_logs()
     nodes = config.worker_nodes
 
