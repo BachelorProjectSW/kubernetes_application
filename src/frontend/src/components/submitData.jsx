@@ -90,7 +90,7 @@ export const handleSubmit = async (e, inputs) => {
         "weights": {
             "gco2": inputs.gco2,
             "cost": inputs.cost,
-            "latency": inputs.weight_latency
+            "latency": inputs.latency
         } || "",
         "power_scheduler": {
             "start": true,
