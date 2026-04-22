@@ -65,11 +65,12 @@ def run_test(config: Config):
 
         ip = config.global_scheduler.ip
         port = config.global_scheduler.port
+        url = f"http://{ip}:{port}/start_test"
 
-    log.info("test.forward_to_global", url=url)
-    response = requests.post(url, json=config.model_dump(), timeout=60)
-    response.raise_for_status()
-    log.info("test.global_started", status_code=response.status_code)
+        log.info("test.forward_to_global", url=url)
+        response = requests.post(url, json=config.model_dump(), timeout=60)
+        response.raise_for_status()
+        log.info("test.global_started", status_code=response.status_code)
 
         results = run_workload(
             f"http://{ip}:{port}",
