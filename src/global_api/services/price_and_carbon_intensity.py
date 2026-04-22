@@ -45,6 +45,19 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
     """
     log.info("global_api.market.price_fetch_started", zone=zone, start=str(start), end=str(end))
     try:
+        entries={
+  "zone": "ES",
+  "datetime": "2026-04-21T13:00:00.000Z",
+  "createdAt": "2026-04-20T11:11:36.730Z",
+  "updatedAt": "2026-04-20T11:11:36.730Z",
+  "value": -0.13,
+  "unit": "EUR/MWh",
+  "source": "entsoe.eu",
+  "temporalGranularity": "hourly",
+  "_disclaimer": "SANDBOX MODE: intentionally inaccurate data for integration testing. For live data, head over to https://app.electricitymaps.com/developer-hub/playground?trial=true and request access."
+}
+        return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]
+               
         response = requests.get(
             f"{BASE_URL}/price-day-ahead/past-range",
             headers=_get_headers(),
@@ -70,7 +83,7 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
 
     return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]
 
-
+import time
 def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tuple[datetime, int]]:
     """Fetch hourly direct carbon intensity from the Electricity Maps API.
 
@@ -89,6 +102,20 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
     """
     log.info("global_api.market.carbon_fetch_started", zone=zone, start=str(start), end=str(end))
     try:
+        time.sleep(9)
+        entries = {
+  "zone": "ES",
+  "carbonIntensity": 91,
+  "datetime": "2026-04-21T13:00:00.000Z",
+  "updatedAt": "2026-04-21T16:11:24.306Z",
+  "createdAt": "2026-04-20T22:39:06.876Z",
+  "emissionFactorType": "lifecycle",
+  "isEstimated": True,
+  "estimationMethod": "SANDBOX_MODE_DATA",
+  "temporalGranularity": "hourly",
+  "_disclaimer": "SANDBOX MODE: intentionally inaccurate data for integration testing. For live data, head over to https://app.electricitymaps.com/developer-hub/playground?trial=true and request access."
+}
+        return [(datetime.fromisoformat(e["datetime"]), e["carbonIntensity"]) for e in entries]
         response = requests.get(
             f"{BASE_URL}/carbon-intensity/past-range",
             headers=_get_headers(),
