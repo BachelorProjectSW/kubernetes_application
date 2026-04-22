@@ -1,6 +1,6 @@
 import structlog
 
-from cluster_api.services.power_scheduler import run_cmd
+from .power_scheduler import run_cmd
 
 log = structlog.get_logger()
 
