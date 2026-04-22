@@ -125,14 +125,19 @@ def stop_test():
 
 def cancel_cluster_pods(cluster):
     try:
-        requests.post(
+        response = requests.post(
             f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
             timeout=5,
         )
-        log.info("global.stop_test.pods_delete_requested", cluster=cluster.name)
+        response.raise_for_status()
+        log.info(
+            "global.stop_test.cluster_cancel_requested",
+            cluster=cluster.name,
+            status_code=response.status_code,
+        )
     except Exception as e:
         log.warning(
-            "global.stop_test.pods_delete_failed",
+            "global.stop_test.cluster_cancel_failed",
             cluster=cluster.name,
             error=str(e),
         )
