@@ -38,11 +38,11 @@ spec:
           env:
             - name: LLAMA_ARG_MODEL
               value: /models/model.gguf
-            - name: LLAMA_ARG_CTX_SIZE
-              valueFrom:
-                configMapKeyRef:
-                  name: llama-settings
-                  key: CTX_SIZE
+            # - name: LLAMA_ARG_CTX_SIZE
+            #   valueFrom:
+            #     configMapKeyRef:
+            #       name: llama-settings
+            #       key: CTX_SIZE
             - name: LLAMA_ARG_HOST
               value: "0.0.0.0" #listen on all available IP addresses/interfaces
             - name: LLAMA_ARG_PORT
