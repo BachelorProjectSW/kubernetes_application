@@ -25,7 +25,7 @@ def get_current_active_nodes(clusters: list[ClusterInformation]):
     return active_nodes_counter
 
 
-def get_current_rps(time_interval_s: int) -> float:
+def get_current_rps(time_interval_s: int, config_id: str | None) -> float:
     """Return requests per second (RPS) in the last time_interval_s seconds.
 
     Args:
@@ -35,9 +35,12 @@ def get_current_rps(time_interval_s: int) -> float:
         Requests per second as a float. Returns 0.0 if no requests.
 
     """
+    if not config_id:
+        return 0.0
+
     now = datetime.now(timezone.utc)
     count = 0
-    all_request = get_request_logs()
+    all_request = get_request_logs(config_id)
     for request_log in all_request:
         age_s = (now - request_log.timestamp).total_seconds()
         if age_s <= time_interval_s:
@@ -103,7 +106,7 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     avg_latency_ms = get_avg_latency(config.power_scheduler.timeout_s)
     max_latency_ms = config.latency.max_ms
     current_active_nodes = get_current_active_nodes(clusters)
-    current_rps = get_current_rps(config.power_scheduler.timeout_s)
+    current_rps = get_current_rps(config.power_scheduler.timeout_s, config.id)
 
     nodes_to_add = estimate_nodes_to_add(
         avg_latency_ms,

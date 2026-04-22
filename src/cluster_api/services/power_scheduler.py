@@ -272,8 +272,15 @@ def turn_off_idle_nodes(idle_time: int):
     """
     config = config_store.get()
     cluster_name = config.cluster_config.name
-    # TODO ONLY GET THE RECENT x latency window logs.
-    request_logs = get_request_logs()
+    config_id = config.config_id
+    if not config_id:
+        log.warning(
+            "cluster_api.power.turn_off_idle_skipped_missing_config_id",
+            cluster_name=cluster_name,
+            worker_node=None,
+        )
+        return
+    request_logs = get_request_logs(config_id)
     nodes = config.worker_nodes
 
     for node in nodes:
