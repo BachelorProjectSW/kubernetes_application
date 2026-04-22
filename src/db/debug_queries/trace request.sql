@@ -13,7 +13,7 @@ FROM app_logs g
 JOIN app_logs c
   ON g.payload_json->>'trace_id' = c.payload_json->>'trace_id'
   AND g.config_id = c.config_id
-WHERE g.config_id = 'rantzau12'
+WHERE g.config_id = '2e4168b2-bb0e-4bf3-b8f0-c70c70d6898c'
   AND g.payload_json->>'event' = 'global_api.llm.request_completed'
   AND g.payload_json->>'service' = 'global_api'
   AND c.payload_json->>'event' = 'cluster_api.llm.request_succeeded'

@@ -9,7 +9,7 @@ SELECT
   PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY (payload_json->>'cluster_llama_inference_ms')::int) AS p50_inference_ms,
   PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY (payload_json->>'cluster_llama_inference_ms')::int) AS p95_inference_ms
 FROM app_logs
-WHERE config_id = 'rantzau12'
+WHERE config_id = '2e4168b2-bb0e-4bf3-b8f0-c70c70d6898c'
   AND payload_json->>'event' = 'cluster_api.llm.request_succeeded'
   AND payload_json->>'service' = 'cluster_api'
 GROUP BY cluster, node
