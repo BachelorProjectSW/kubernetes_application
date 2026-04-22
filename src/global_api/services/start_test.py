@@ -1,3 +1,7 @@
+import time
+
+from cluster_api.services.power_scheduler import run_cmd
+
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import set_current_config_id
@@ -91,5 +95,13 @@ def stop_test():
                 log.info("global.stop_test.pods_deleted", cluster=cluster.name)
             except Exception as e:
                 log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
+    
+    threading.Thread(target=stop_global_pod, daemon=True).start()
     log.info("global.stop_test.done")
     return {"message": "Test stopped"}
+
+
+def stop_global_pod():
+    time.sleep(1)
+    run_cmd("sudo kubectl delete pods -l app=global-api")
+

@@ -1,4 +1,5 @@
 import threading
+import time
 
 import requests
 import uuid
@@ -20,25 +21,32 @@ current_config = None
 
 def start_test(config: Config):
     """Start test in a background thread and return immediately."""
+
     global test_running, stop_requested, current_config
+    config.id = str(uuid.uuid4())
+    for attempt in range(5):
+        try:
 
-    try:
-        config.id = str(uuid.uuid4())
-
-        # Sanity checks of the config entries
-        ip = config.global_scheduler.ip
-        port = config.global_scheduler.port
-        response = requests.post(
-            f"http://{ip}:{port}/validate_config",
-            json=config.model_dump(),
-            timeout=60
-        )
-        response.raise_for_status()
-        validation = response.json()
-        if not validation["valid"]:
-            raise RuntimeError(f"Invalid config: {validation['errors']}")
-    except Exception as e:
-        raise RuntimeError(f"Validation failed: {str(e)}")
+            # Sanity checks of the config entries
+            ip = config.global_scheduler.ip
+            port = config.global_scheduler.port
+            response = requests.post(
+                f"http://{ip}:{port}/validate_config",
+                json=config.model_dump(),
+                timeout=60
+            )
+            response.raise_for_status()
+            validation = response.json()
+            if not validation["valid"]:
+                raise RuntimeError(f"Invalid config: {validation['errors']}")
+            break
+        except RuntimeError:
+            raise
+        except Exception as e:
+            if attempt == 4:
+                raise RuntimeError(f"Could not reach global cluster: {str(e)}")
+            log.info("test.validate_config.retrying", attempt=attempt)
+            time.sleep(3)
 
     # Only run one test at a time
     with test_state_lock:
@@ -127,7 +135,7 @@ def stop_test():
 def stop_global_power_scheduler(ip, port):
     """Tell global API to stop the power scheduler."""
     try:
-        requests.post(f"http://{ip}:{port}/stop_test", timeout=300)
+        requests.post(f"http://{ip}:{port}/stop_test", timeout=10)
         log.info("test.global_stop_requested")
     except Exception as e:
         log.warning("test.global_stop_failed", error=str(e))
