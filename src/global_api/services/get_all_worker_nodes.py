@@ -18,7 +18,7 @@ def get_all_worker_nodes():
     for cluster in clusters:
         url = f"http://{cluster.ip}:{cluster.port}/get_cluster_working_nodes"
         try:
-            response = requests.get(url, timeout=5)
+            response = requests.get(url, timeout=180)
             response.raise_for_status()
             payload = response.json()
             if isinstance(payload, list):

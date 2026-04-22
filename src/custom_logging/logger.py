@@ -132,37 +132,6 @@ def log_request(
     log.info("custom_logging.request.logged", **row)
 
 
-def log_power_decision(
-    action: str,
-    cluster: ClusterConfig,
-    node: WorkerNode,
-    reason: str,
-    system_avg_latency_ms: float,
-):
-    """Log a power scheduler decision.
-
-    TODO: Add active_nodes_before/after, energy forecast data
-    when the power scheduler is implemented.
-    """
-    entry = PowerDecisionLog(
-        timestamp=datetime.now(timezone.utc),
-        action=action,
-        cluster=cluster.name,
-        node=node.name,
-        reason=reason,
-        system_avg_latency_ms=round(system_avg_latency_ms, 2)
-    )
-
-    row = entry.model_dump(mode="json")
-
-    try:
-        save_model_log(_current_config_id(), entry)
-    except Exception as e:
-        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="PowerDecisionLog")
-
-    log.info("custom_logging.power.decision_logged", **row)
-
-
 def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
     """Log a snapshot of all node statuses for a cluster."""
     timestamp = datetime.now(timezone.utc)
