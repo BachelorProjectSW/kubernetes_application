@@ -78,30 +78,78 @@ def start_test(config: Config):
         raise Exception(f"test failed: {e}")
 
 
+# def stop_test():
+#     """Stop the test."""
+#     config = config_store.get()
+#     config_store.stop_power_scheduler()
+#     if config:
+#         for cluster in config.clusters:
+#             try:
+#                 # All pods are deleted (recreated automatically).
+#                 # Because when the test is stopped --> possibility of inflight-requests
+#                 # These needs to be deleted, such that the next test can run deterministcally
+#                 requests.post(
+#                     f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
+#                     timeout=60
+#                 )
+#                 log.info("global.stop_test.pods_deleted", cluster=cluster.name)
+#             except Exception as e:
+#                 log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
+    
+#     threading.Thread(target=stop_global_pod, daemon=True).start()
+#     log.info("global.stop_test.done")
+#     return {"message": "Test stopped"}
+
 def stop_test():
     """Stop the test."""
     config = config_store.get()
     config_store.stop_power_scheduler()
+
     if config:
         for cluster in config.clusters:
-            try:
-                # All pods are deleted (recreated automatically).
-                # Because when the test is stopped --> possibility of inflight-requests
-                # These needs to be deleted, such that the next test can run deterministcally
-                requests.post(
-                    f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-                    timeout=60
-                )
-                log.info("global.stop_test.pods_deleted", cluster=cluster.name)
-            except Exception as e:
-                log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
-    
-    threading.Thread(target=stop_global_pod, daemon=True).start()
-    log.info("global.stop_test.done")
-    return {"message": "Test stopped"}
+            threading.Thread(
+                target=cancel_cluster_pods,
+                args=(cluster,),
+                daemon=False,
+                name=f"cancel-cluster-{cluster.name}",
+            ).start()
 
+    threading.Thread(
+        target=stop_global_pod,
+        daemon=False,
+        name="delete-global-api-pod",
+    ).start()
+
+    log.info("global.stop_test.done")
+    return {"message": "Stop requested"}
+
+def cancel_cluster_pods(cluster):
+    try:
+        requests.post(
+            f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
+            timeout=5,
+        )
+        log.info("global.stop_test.pods_delete_requested", cluster=cluster.name)
+    except Exception as e:
+        log.warning(
+            "global.stop_test.pods_delete_failed",
+            cluster=cluster.name,
+            error=str(e),
+        )
 
 def stop_global_pod():
-    time.sleep(1)
-    run_cmd("sudo kubectl delete pods -l app=global-api")
+    time.sleep(0.5)
+    try:
+        run_cmd(
+            "sudo -n kubectl delete pods -l app=global-api "
+            "--wait=false --grace-period=0 --force"
+        )
+        log.info("global.stop_test.global_pod_delete_requested")
+    except Exception as e:
+        log.exception("global.stop_test.global_pod_delete_failed", error=str(e))
+
+
+# def stop_global_pod():
+#     time.sleep(1)
+#     run_cmd("sudo kubectl delete pods -l app=global-api")
 
