@@ -13,7 +13,7 @@ const earlierExpIds = [
         timeout_s: 300,
         turn_off_s: 600,
         latency_window_s:60,
-        max_ms: 100,
+        max_latency: 100,
         request_pr_min: 10,
         pattern: "steady",
         seed: 123,
@@ -58,7 +58,7 @@ const earlierExpIds = [
         timeout_s: 30,
         turn_off_s: 60,
         latency_window_s:9,
-        max_ms: 20,
+        max_latency: 20,
         request_pr_min: 500,
         pattern: "bursty",
         seed: 999,
@@ -95,7 +95,7 @@ const earlierExpIds = [
         timeout_s: 1200,
         turn_off_s: 3600,
         latency_window_s:39,
-        max_ms: 5000, // Willing to wait longer for green energy
+        max_latency: 5000, // Willing to wait longer for green energy
         request_pr_min: 1,
         pattern: "sinusoidal",
         seed: 42,
