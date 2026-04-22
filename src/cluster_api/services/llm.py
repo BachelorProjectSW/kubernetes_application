@@ -140,35 +140,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
                 free_slots_after=free_slots_after,
             )
 
-        if config.cluster_config.k3d:
-            url = f"http://localhost:{worker_node.forwarded_port}/completion"
-        else:
-            url = f"http://{worker_node.ip}:{config.cluster_config.llama_hostport}/completion"
-
-        payload = {
-            "prompt": f"<s>[INST] {question.question} [/INST]",
-            "n_predict": question.max_output_tokens,
-            "temperature": 0.7,
-        }
-
-        llama_call_start = time.monotonic()
-        logger.info(
-            "cluster_api.llm.llama_inference_started",
-            service="cluster_api",
-            cluster_name=cluster_name,
-            worker_node=worker_node.name,
-            trace_id=trace_id,
-            target_url=url,
-        )
-
-        response = requests.post(
-            url,
-            json=payload,
-            timeout=120,
-        )
-        response.raise_for_status()
-
-        cluster_llama_inference_ms = int((time.monotonic() - llama_call_start) * 1000)
+        time.sleep(5)
 
         duration_ms = int((time.monotonic() - start_time) * 1000)
         logger.info(
@@ -178,13 +150,13 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             worker_node=worker_node.name,
             trace_id=trace_id,
             worker_ip=worker_node.ip,
-            target_url=url,
-            cluster_llama_inference_ms=cluster_llama_inference_ms,
+            target_url="gg.com",
+            cluster_llama_inference_ms=5000,
             cluster_total_time_ms=duration_ms,
-            status_code=response.status_code,
+            status_code=200,
             max_output_tokens=question.max_output_tokens,
         )
-        result = response.json()
+        result = {'index': 0, 'content': ' What is the name of the robot [NAME] who was in the video [VIDEO] What is the name of the video [VIDEO] What is the title of the video [VIDEO] What is the title of the video [VIDEO] What is the name of the robot [NAME] who was in the video [VIDEO] What is the name of the robot [NAME] who was in the video [VIDEO] What is the name of the video [VIDEO] Who is the person in the video [VIDEO] What is the name of the robot [NAME] who was in the video [VIDEO] Who is the person in the video [VIDEO] What is the name of the robot [NAME] who was in the video [VIDEO] Who is the person in the video [VIDEO] What is the name of the robot [NAME] who was in the video [', 'tokens': [], 'id_slot': 1, 'stop': True, 'model': 'model.gguf', 'tokens_predicted': 200, 'tokens_evaluated': 14, 'generation_settings': {'seed': 4294967295, 'temperature': 0.699999988079071, 'dynatemp_range': 0.0, 'dynatemp_exponent': 1.0, 'top_k': 40, 'top_p': 0.949999988079071, 'min_p': 0.05000000074505806, 'top_n_sigma': -1.0, 'xtc_probability': 0.0, 'xtc_threshold': 0.10000000149011612, 'typical_p': 1.0, 'repeat_last_n': 64, 'repeat_penalty': 1.0, 'presence_penalty': 0.0, 'frequency_penalty': 0.0, 'dry_multiplier': 0.0, 'dry_base': 1.75, 'dry_allowed_length': 2, 'dry_penalty_last_n': 2048, 'dry_sequence_breakers': ['\n', ':', '"', '*'], 'mirostat': 0, 'mirostat_tau': 5.0, 'mirostat_eta': 0.10000000149011612, 'stop': [], 'max_tokens': 200, 'n_predict': 200, 'n_keep': 0, 'n_discard': 0, 'ignore_eos': False, 'stream': False, 'logit_bias': [], 'n_probs': 0, 'min_keep': 0, 'grammar': '', 'grammar_lazy': False, 'grammar_triggers': [], 'preserved_tokens': [], 'chat_format': 'Content-only', 'reasoning_format': 'deepseek', 'reasoning_in_content': False, 'thinking_forced_open': False, 'samplers': ['penalties', 'dry', 'top_n_sigma', 'top_k', 'typ_p', 'top_p', 'min_p', 'xtc', 'temperature'], 'speculative.n_max': 16, 'speculative.n_min': 0, 'speculative.p_min': 0.75, 'speculative.type': 'none', 'speculative.ngram_size_n': 1024, 'speculative.ngram_size_m': 1024, 'speculative.ngram_m_hits': 1024, 'timings_per_token': False, 'post_sampling_probs': False, 'backend_sampling': False, 'lora': []}, 'prompt': '<s><s> [INST] What is Kuberenetes [/INST]', 'has_new_line': False, 'truncated': False, 'stop_type': 'limit', 'stopping_word': '', 'tokens_cached': 213, 'timings': {'cache_n': 13, 'prompt_n': 1, 'prompt_ms': 396.557, 'prompt_per_token_ms': 396.557, 'prompt_per_second': 2.521705580786621, 'predicted_n': 200, 'predicted_ms': 64050.275, 'predicted_per_token_ms': 320.251375, 'predicted_per_second': 3.122547092889141}}
 
         return LLMResponse(
             llm_content=result,
