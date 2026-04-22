@@ -80,6 +80,7 @@ def get_cluster_runtime_data(
         response = requests.get(url, timeout=180)
         response.raise_for_status()
         worker_nodes = response.json()
+        log.debug("global_api.cluster_data", worker_nodes=worker_nodes)
         active_nodes = 0
         idle_nodes = 0
         if not isinstance(worker_nodes, list):
