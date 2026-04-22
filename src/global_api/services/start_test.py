@@ -6,6 +6,7 @@ import structlog
 from .power_scheduler import power_scheduler_loop
 import asyncio
 import threading
+from .ensure_nodes_ready import ensure_nodes_ready
 
 
 _power_scheduler_thread: threading.Thread | None = None
@@ -25,8 +26,8 @@ def start_test(config: Config):
         config_store.set(config)
         log.info("global_api.test.start_requested", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
-        for cluster in config.clusters:
 
+        for cluster in config.clusters:
             cluster_information = ClusterInformation(
                 config_id=config.id,
                 cluster_config=cluster,
@@ -49,6 +50,8 @@ def start_test(config: Config):
                 cluster_name=cluster.name,
                 status_code=response.status_code,
             )
+            # ensure that all nodes + pods are on and ready to recieve requests
+            ensure_nodes_ready(cluster, timeout_s=400)
 
         if config.power_scheduler.start:
             thread_running = (
@@ -73,7 +76,20 @@ def start_test(config: Config):
 
 def stop_test():
     """Stop the test."""
+    config = config_store.get()
     config_store.stop_power_scheduler()
-    # TODO code for shutdown on worker_nodes and return logs
-    logs = "logs"
-    return logs
+    if config:
+        for cluster in config.clusters:
+            try:
+                # All pods are deleted (recreated automatically).
+                # Because when the test is stopped --> possibility of inflight-requests
+                # These needs to be deleted, such that the next test can run deterministcally
+                requests.post(
+                    f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
+                    timeout=60
+                )
+                log.info("global.stop_test.pods_deleted", cluster=cluster.name)
+            except Exception as e:
+                log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
+    log.info("global.stop_test.done")
+    return {"message": "Test stopped"}

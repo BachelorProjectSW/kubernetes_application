@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter,Request
+from ..services.cancel_all_llama_pods import cancel_all_llama_pods
 from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
 from ..services.llm import handle_llm
 from ...models.basemodels import ClusterInformation, QuestionConfig
@@ -51,3 +52,10 @@ def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
 def get_cluster_information_endpoint():
     """Return cluster information."""
     return config_store.get()
+
+
+@router.post("/cancel_all_llama_pods")
+def cancel_all_llama_pods_endpoint():
+    """Delete all llama pods."""
+    cancel_all_llama_pods()
+    return {"message": "Llama pods deleted, restarting"}

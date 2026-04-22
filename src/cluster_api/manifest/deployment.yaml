@@ -28,36 +28,10 @@ spec:
 
       containers:
         - name: cluster-api
-          image: ghcr.io/bachelorprojectsw/cluster-api:f8b705444a694cbda2e6b91132bc95dea7b21670
+          image: ghcr.io/bachelorprojectsw/cluster-api:e5a238cdea508e5462be34e1c9904960226805c5
 
           imagePullPolicy: IfNotPresent
-
-        - name: tailscale
-          image: tailscale/tailscale:v1.94.2
-          imagePullPolicy: Always
-
-          env:
-          #Auth key to join the tailnet
-            - name: TS_AUTHKEY
-              valueFrom:
-                secretKeyRef:
-                  name: tailscale-auth
-                  key: TS_AUTHKEY
-
-          #Serve config
-            - name: TS_SERVE_CONFIG
-              value: /config/serve.json
-    
-            - name: TS_HOSTNAME
-              value: cluster-api
-
-          #Where the storage is at in the container
-          volumeMounts:
-            - name: tailscale-config
-              mountPath: /config
-
-    #What storage/config sources the pod have available
-      volumes:
-        - name: tailscale-config
-          configMap:
-            name: cluster-api-tailscale-config
+          ports:
+            - containerPort: 8040
+              hostPort: 8040
+              protocol: TCP
