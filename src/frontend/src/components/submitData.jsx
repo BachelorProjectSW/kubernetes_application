@@ -99,7 +99,7 @@ export const handleSubmit = async (e, inputs) => {
         } || "",
        "latency":{
             "latency_window_s": inputs.window || "", //opdater andre steder
-            "max_ms":inputs.max_latency || "",
+            "max_ms":inputs.max_latency || ""
         },
         "workload": {
             "request_per_minute": 10,
