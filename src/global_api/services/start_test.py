@@ -1,6 +1,6 @@
 import time
 
-from cluster_api.services.power_scheduler import run_cmd
+from ...cluster_api.services.power_scheduler import run_cmd
 
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
