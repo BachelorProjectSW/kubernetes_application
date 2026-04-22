@@ -17,7 +17,7 @@ log = structlog.get_logger()
 def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     """Send the question to the local cluster request scheduler llama-service."""
     request_id = str(uuid.uuid4())
-    trace_id = trace_id or request_id
+    trace_id = trace_id
     config = config_store.get()
     total_start = time.monotonic()
 
@@ -137,16 +137,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     answer = None
 
     if isinstance(llm_content, dict):
-        answer = (
-            llm_content.get("content")
-            or llm_content.get("response")
-            or llm_content.get("text")
-            or llm_content.get("completion")
-        )
-        if answer is not None:
-            answer = str(answer)
-    else:
-        answer = str(llm_content)
+        answer = llm_content.get("content") or None
 
     log.info(
         "global_api.llm.request_completed",

@@ -85,7 +85,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         config = None
         cluster_name = None
         worker_node = None
-        trace_id = trace_id or str(uuid.uuid4())
+        trace_id = trace_id
         start_time = time.monotonic()
 
         config = config_store.get()

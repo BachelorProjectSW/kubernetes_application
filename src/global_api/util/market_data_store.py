@@ -31,8 +31,9 @@ class MarketDataStore:
         self._price_by_zone: dict[str, _PriceCacheEntry] = {}
         self._pv_by_zone_and_capacity: dict[tuple[str, float], _PvCacheEntry] = {}
         self._ttl = timedelta(hours=1)
-
+    # Time to live (TTL)
     def _is_stale(self, last_updated: datetime, now: datetime) -> bool:
+        """Check if the data is cached more than the accepted hour."""
         return now - last_updated >= self._ttl
 
     def get_carbon(self, start: datetime, end: datetime, zone: str) -> list[tuple[datetime, int]]:
