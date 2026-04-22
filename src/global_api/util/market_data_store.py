@@ -27,10 +27,12 @@ class MarketDataStore:
     """In-memory store for hourly market data."""
 
     def __init__(self):
+        """Init."""
         self._carbon_by_zone: dict[str, _CarbonCacheEntry] = {}
         self._price_by_zone: dict[str, _PriceCacheEntry] = {}
         self._pv_by_zone_and_capacity: dict[tuple[str, float], _PvCacheEntry] = {}
         self._ttl = timedelta(hours=1)
+
     # Time to live (TTL)
     def _is_stale(self, last_updated: datetime, now: datetime) -> bool:
         """Check if the data is cached more than the accepted hour."""

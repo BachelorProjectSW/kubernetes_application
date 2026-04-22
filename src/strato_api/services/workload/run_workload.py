@@ -56,7 +56,7 @@ async def execute_workload(
                 request_start = time.perf_counter()
                 payload_json = json.dumps(question.model_dump())
                 headers = {
-                    "Content-Type": "application/json", 
+                    "Content-Type": "application/json",
                     "X-Trace-Id": trace_id,
                 }
 

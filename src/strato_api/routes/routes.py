@@ -3,9 +3,10 @@ from ..services.start_test import start_test, start_test_test, stop_test, get_te
 from ...models.basemodels import Config
 router = APIRouter()
 
-#TODO Lav experiments tests med test om at det er "noglelunde deterministisk."
-#TODO Sørg for at alle logs gir mening og ikke bare spam. 
-#TODO LAV DOCSTRINGS TIL ALLE FUNKTIONER!!!
+
+# TODO Lav experiments tests med test om at det er "noglelunde deterministisk."
+# TODO Sørg for at alle logs gir mening og ikke bare spam.
+# TODO LAV DOCSTRINGS TIL ALLE FUNKTIONER!!!
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
     """Start the test."""

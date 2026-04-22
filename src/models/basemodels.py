@@ -52,7 +52,7 @@ class QuestionConfig(BaseModel):
 
     question: str  # TODO make it a list of question and add x new questions
     max_output_tokens: int
-    context_window: int #TODO vi bruger den ikke!
+    context_window: int  # TODO vi bruger den ikke!
 
 
 class WorkerNode(BaseModel):

@@ -31,6 +31,7 @@ def get_current_rps(time_interval_s: int, config_id: str | None) -> float:
 
     Args:
         time_interval_s: How far back to look, in seconds.
+        config_id: Config id.
 
     Returns:
         Requests per second as a float. Returns 0.0 if no requests.

@@ -128,9 +128,8 @@ def get_cluster_runtime_data(
         latency_start = time.monotonic()
         avg_latency_ms = get_avg_latency_for_cluster(cluster.name, latency_window_s)
         latency_lookup_ms = int((time.monotonic() - latency_start) * 1000)
-        
-        total_runtime_data_ms = int((time.monotonic() - runtime_start) * 1000)
 
+        total_runtime_data_ms = int((time.monotonic() - runtime_start) * 1000)
 
         log.info(
             "global_api.cluster.runtime_data_timing",

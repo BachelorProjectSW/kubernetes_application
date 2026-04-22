@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import TypeVar, Type
 from .models.log_models import NodeStatusLog, PowerDecisionLog, RequestLog, TerminalDebugLog
-from ..models.basemodels import ClusterConfig, WorkerNode
+from ..models.basemodels import WorkerNode
 from ..db.postgres import (
     read_all_node_status_logs,
     read_all_power_decision_logs,
