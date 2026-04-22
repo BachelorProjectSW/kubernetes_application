@@ -25,7 +25,7 @@ async def execute_workload(
     """Generate and execute scheduled HTTP requests against an endpoint."""
     request_timeout_s = 1000
     # TODO setup logging matching for our output. Logs should be appended to a global log file.
-    #TODO make a end test "button" so it stop sending request when wanted. 
+    # TODO make a end test "button" so it stop sending request when wanted.
     start_time = time.perf_counter()
 
     timestamps = generate_workload(
@@ -58,7 +58,7 @@ async def execute_workload(
                 request_start = time.perf_counter()
                 payload_json = json.dumps(question.model_dump())
                 headers = {
-                    "Content-Type": "application/json", 
+                    "Content-Type": "application/json",
                     "X-Trace-Id": trace_id,
                 }
 
