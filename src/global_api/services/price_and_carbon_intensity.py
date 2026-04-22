@@ -45,7 +45,8 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
     """
     log.info("global_api.market.price_fetch_started", zone=zone, start=str(start), end=str(end))
     try:
-        entries={
+        time.sleep(9)
+        entries=[{
   "zone": "ES",
   "datetime": "2026-04-21T13:00:00.000Z",
   "createdAt": "2026-04-20T11:11:36.730Z",
@@ -55,7 +56,7 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
   "source": "entsoe.eu",
   "temporalGranularity": "hourly",
   "_disclaimer": "SANDBOX MODE: intentionally inaccurate data for integration testing. For live data, head over to https://app.electricitymaps.com/developer-hub/playground?trial=true and request access."
-}
+}]
         return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]
                
         response = requests.get(
@@ -103,7 +104,7 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
     log.info("global_api.market.carbon_fetch_started", zone=zone, start=str(start), end=str(end))
     try:
         time.sleep(9)
-        entries = {
+        entries = [{
   "zone": "ES",
   "carbonIntensity": 91,
   "datetime": "2026-04-21T13:00:00.000Z",
@@ -114,7 +115,7 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
   "estimationMethod": "SANDBOX_MODE_DATA",
   "temporalGranularity": "hourly",
   "_disclaimer": "SANDBOX MODE: intentionally inaccurate data for integration testing. For live data, head over to https://app.electricitymaps.com/developer-hub/playground?trial=true and request access."
-}
+}]
         return [(datetime.fromisoformat(e["datetime"]), e["carbonIntensity"]) for e in entries]
         response = requests.get(
             f"{BASE_URL}/carbon-intensity/past-range",
