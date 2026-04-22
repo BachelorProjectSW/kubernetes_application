@@ -3,7 +3,7 @@ import time
 import requests
 import structlog
 
-from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig
+from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig, WorkerNode
 from ...models.enum import WorkerStatus
 from .dk_energy import get_dk_hourly
 from .scoring import compute_cluster_load
@@ -79,18 +79,34 @@ def get_cluster_runtime_data(
         url = f"http://{cluster.ip}:{cluster.port}/get_cluster_working_nodes"
         response = requests.get(url, timeout=180)
         response.raise_for_status()
-        worker_nodes = response.json()
-        log.debug("global_api.cluster_data", worker_nodes=worker_nodes)
+        worker_nodes_payload = response.json()
         active_nodes = 0
         idle_nodes = 0
-        if not isinstance(worker_nodes, list):
-            raise Exception("Worker nodes not found.")
+
+        worker_nodes = []
+        for _, node_data in enumerate(worker_nodes_payload):
+            try:
+                worker_nodes.append(WorkerNode.model_validate(node_data))
+            except Exception as e:
+                log.warning(
+                    "global_api.cluster_data.worker_node_validation_failed",
+                    cluster_name=cluster.name,
+                    target_url=url,
+                    error=str(e),
+                )
+                raise
+
         for node in worker_nodes:
             if node.status == WorkerStatus.WORKING:
                 active_nodes += 1
             elif node.status == WorkerStatus.IDLE:
                 idle_nodes += 1
-        log.info("global_api.cluster_data.compute_cluster_load", active_nodes=active_nodes, idle_nodes=idle_nodes)
+        log.info(
+            "global_api.cluster_data.compute_cluster_load",
+            cluster_name=cluster.name,
+            active_nodes=active_nodes,
+            idle_nodes=idle_nodes,
+        )
         cluster_load_w = compute_cluster_load(active_nodes, idle_nodes, energy)
 
         microgrid_base_load_w = _get_microgrid_base_load_w(
@@ -131,4 +147,5 @@ def get_cluster_runtime_data(
         )
 
     except Exception as e:
-        log.warning("global_api.cluster_data", error=e)
+        log.warning("global_api.cluster_data", cluster_name=cluster.name, error=str(e))
+        raise
