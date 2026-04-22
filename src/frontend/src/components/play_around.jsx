@@ -15,6 +15,7 @@ import Workload from './workloadbalance';
 import ClusterMangening from './cluster';
 import GlobalScheduler from './global_schedular';
 import StratoConfigs from './strato_config';
+import Latency from './latency';
 
 function AllConfigs({ onSubmit }) {
     const [inputs, setInputs] = useState({});
@@ -71,14 +72,10 @@ function AllConfigs({ onSubmit }) {
             <br />
 
             <div>
-                <label> max latency in ms:
-                    <input
-                        type="number"
-                        name="max_latency"
-                        value={inputs.max_latency || ""}
-                        onChange={handleChange}
+                <Latency
+                    inputs={inputs}
+                    handleChange={handleChange}
                     />
-                </label>
             </div>
 
             <div>

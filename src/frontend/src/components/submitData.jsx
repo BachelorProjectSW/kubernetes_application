@@ -93,13 +93,13 @@ export const handleSubmit = async (e, inputs) => {
             "latency": inputs.weight_latency
         } || "",
         "power_scheduler": {
-            "idle_time_for_turn_off_s":inputs.turn_off_s,
             "start": true,
-            "timeout_s": inputs.timeout_s
+            "timeout_s": inputs.timeout_s,
+            "idle_time_for_turn_off_s":inputs.turn_off_s
         } || "",
-        "latency": {
-            "latency_window_s": 60,
-            "max_ms": 12000
+       " latency":{
+            "latency_windows_s": inputs.window || "", //opdater andre steder
+            "max_ms":inputs.max_latency || "",
         },
         "workload": {
             "request_per_minute": 10,
