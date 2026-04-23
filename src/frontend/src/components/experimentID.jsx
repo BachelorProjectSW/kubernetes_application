@@ -25,7 +25,7 @@ function Ids({ inputs, setInputs, handleChange }) {
                 cost: historicalData.cost,
                 latency: historicalData.latency,
                 timeout_s: historicalData.timeout_s,
-                idle_time_for_turn_off_s:historicalData.turn_off_s,
+                turn_off_s:historicalData.turn_off_s,
                 max_latency: historicalData.max_latency,
                 request_pr_min: historicalData.request_pr_min,
                 pattern: historicalData.pattern,
