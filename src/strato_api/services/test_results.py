@@ -4,7 +4,6 @@ from fastapi import HTTPException
 
 from ...custom_logging.models.log_models import NodeStatusLog, RequestLog
 from ...db.postgres import read_all_node_status_logs, read_all_request_logs, read_config_by_id
-from ...models.enum import WorkerStatus
 
 
 def _request_energy_kwh(request: RequestLog) -> float:
@@ -12,18 +11,7 @@ def _request_energy_kwh(request: RequestLog) -> float:
     return (request.cluster_load_w / 1000.0) * (request.latency_ms / 3_600_000.0)
 
 
-def _status_counts(statuses: list[str]) -> dict[str, int]:
-    """Count node status values for one cluster snapshot."""
-    counts = Counter(statuses)
-    return {
-        "working": counts.get(WorkerStatus.WORKING.value, 0),
-        "idle": counts.get(WorkerStatus.IDLE.value, 0),
-        "off": counts.get(WorkerStatus.OFF.value, 0),
-        "turning_on": counts.get(WorkerStatus.TURNING_ON.value, 0),
-    }
-
-
-def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> tuple[list[dict]]:
+def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> list[dict]:
     """Build raw node status events and aggregate active-node snapshots."""
     sorted_logs = sorted(node_logs, key=lambda entry: (entry.timestamp, entry.cluster, entry.node))
     latest_status_by_cluster: dict[str, dict[str, str]] = defaultdict(dict)
@@ -65,9 +53,8 @@ def get_test_results(config_id: str) -> dict:
             "total_gco2_g": 0.0,
             "total_cost_eur": 0.0,
             "gco2_over_time": [],
-            "latency_over_time": [],
             "cost_over_time": [],
-            "request_send_over_time": [],
+            "request_over_time": [],
             "service_timeout_over_time": [],
             "cluster_usage_over_time": [],
             "node_status_over_time": [],
@@ -81,9 +68,8 @@ def get_test_results(config_id: str) -> dict:
     avg_latency_ms = round(sum(entry.latency_ms for entry in sorted_requests) / total_requests, 2) if total_requests else 0.0
 
     gco2_over_time: list[dict] = []
-    latency_over_time: list[dict] = []
+    request_over_time: list[dict] = []
     cost_over_time: list[dict] = []
-    request_send_over_time: list[dict] = []
     service_timeout_over_time: list[dict] = []
     cluster_usage_over_time: list[dict] = []
     cluster_distribution = Counter()
@@ -115,12 +101,6 @@ def get_test_results(config_id: str) -> dict:
                 "cumulative_gco2_g": round(cumulative_gco2_g, 6),
             }
         )
-        latency_over_time.append(
-            {
-                **point,
-                "latency_ms": round(entry.latency_ms, 2),
-            }
-        )
         cost_over_time.append(
             {
                 **point,
@@ -128,9 +108,10 @@ def get_test_results(config_id: str) -> dict:
                 "cumulative_cost_eur": round(cumulative_cost_eur, 8),
             }
         )
-        request_send_over_time.append(
+        request_over_time.append(
             {
                 **point,
+                "latency_ms": round(entry.latency_ms, 2),
                 "ok": entry.success,
                 "response_status_code": entry.response_status_code,
                 "answer": entry.answer,
@@ -181,9 +162,8 @@ def get_test_results(config_id: str) -> dict:
         "avg_renewable_pct": avg_renewable_pct,
         "cluster_distribution": dict(cluster_distribution),
         "gco2_over_time": gco2_over_time,
-        "latency_over_time": latency_over_time,
         "cost_over_time": cost_over_time,
-        "request_send_over_time": request_send_over_time,
+        "request_over_time": request_over_time,
         "service_timeout_over_time": service_timeout_over_time,
         "cluster_usage_over_time": cluster_usage_over_time,
         "node_status_over_time": node_status_over_time,
