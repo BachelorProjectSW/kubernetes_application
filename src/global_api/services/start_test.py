@@ -95,6 +95,11 @@ def start_test(config: Config):
         raise HTTPException(status_code=500, detail=f"test failed: {e}")
 
 
+def stop_and_cancel_cluster(cluster):
+    stop_cluster(cluster)
+    cancel_cluster_pods(cluster)
+
+
 def stop_test():
     config = config_store.get()
     test_state.mark_stopping()
@@ -106,16 +111,16 @@ def stop_test():
         return {"message": "Stop requested"}
 
     for cluster in config.clusters:
-        stop_cluster(cluster)
-
-    threads = [threading.Thread(target=cancel_cluster_pods, args=(c,), daemon=True) for c in config.clusters]
-    for t in threads: t.start()
-    for t in threads: t.join(timeout=10)
+        threading.Thread(
+            target=stop_and_cancel_cluster,
+            args=(cluster,),
+            daemon=True,
+            name=f"stop-and-cancel-{cluster.name}",
+        ).start()
 
     test_state.reset()
     log.info("global.stop_test.done", had_config=True)
     return {"message": "Stop requested"}
-
 
 def cancel_cluster_pods(cluster) -> bool:
     try:
@@ -135,7 +140,7 @@ def cancel_cluster_pods(cluster) -> bool:
             "global.stop_test.cluster_cancel_failed",
             cluster=cluster.name,
             error=str(e),
-        )
+        )   
         return False
     
 def stop_cluster(cluster):
