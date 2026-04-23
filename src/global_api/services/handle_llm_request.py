@@ -14,7 +14,8 @@ from ..util.time_utils import compute_simulated_now
 
 log = structlog.get_logger()
 
-
+#TODO jeg tror ikke den tager højde for at den ikke sender request ud til at cluster med kun slukkede worker nodes. 
+#TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
 def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     """Send the question to the local cluster request scheduler llama-service."""
     request_id = str(uuid.uuid4())
