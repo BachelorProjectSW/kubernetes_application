@@ -2,11 +2,10 @@ import structlog
 import uuid
 from datetime import datetime, timezone
 from typing import TypeVar, Type
-from .models.log_models import NodeStatusLog, PowerDecisionLog, RequestLog, TerminalDebugLog
+from .models.log_models import NodeStatusLog, RequestLog, TerminalDebugLog
 from ..models.basemodels import WorkerNode
 from ..db.postgres import (
     read_all_node_status_logs,
-    read_all_power_decision_logs,
     read_all_request_logs,
     read_terminal_debug_logs,
     read_model_logs,
@@ -62,8 +61,6 @@ def get_logs(log_class: Type[T]) -> list[T]:
         config_id = _current_config_id()
         if log_class is RequestLog:
             return read_all_request_logs(config_id)  # type: ignore[return-value]
-        if log_class is PowerDecisionLog:
-            return read_all_power_decision_logs(config_id)  # type: ignore[return-value]
         if log_class is NodeStatusLog:
             return read_all_node_status_logs(config_id)  # type: ignore[return-value]
         return read_model_logs(log_class, _current_config_id())

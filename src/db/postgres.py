@@ -14,7 +14,6 @@ from sqlmodel import Field, SQLModel, Session, select
 
 from ..custom_logging.models.log_models import (
     NodeStatusLog,
-    PowerDecisionLog,
     RequestLog,
     TerminalDebugLog,
 )

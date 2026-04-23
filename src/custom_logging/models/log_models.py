@@ -29,16 +29,6 @@ class RequestLog(BaseModel):
     cluster_llama_inference_ms: int | None = None
 
 
-class PowerDecisionLog(BaseModel):
-    """Model for a single power decision log entry."""
-
-    timestamp: datetime
-    action: str
-    cluster: str
-    node: str
-    reason: str
-    system_avg_latency_ms: float
-
 
 class NodeStatusLog(BaseModel):
     """Status of a single node's status at a given timestamp."""
