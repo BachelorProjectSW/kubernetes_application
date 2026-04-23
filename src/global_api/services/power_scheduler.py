@@ -112,10 +112,10 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         for _, cluster in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
     ]
 
-    avg_latency_ms = get_avg_latency(config.power_scheduler.timeout_s)
+    avg_latency_ms = get_avg_latency(config.latency.latency_window_s)
     max_latency_ms = config.latency.max_ms
     current_active_nodes = get_current_active_nodes(clusters)
-    current_rps = get_current_rps(config.power_scheduler.timeout_s, config.id)
+    current_rps = get_current_rps(config.latency.latency_window_s, config.id)
 
     nodes_to_add = estimate_nodes_to_add(
         avg_latency_ms,
