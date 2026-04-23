@@ -2,8 +2,8 @@ from collections import Counter, defaultdict
 
 from fastapi import HTTPException
 
-from ...custom_logging.models.log_models import NodeStatusLog, PowerDecisionLog, RequestLog
-from ...db.postgres import read_all_node_status_logs, read_all_power_decision_logs, read_all_request_logs, read_config_by_id
+from ...custom_logging.models.log_models import NodeStatusLog, RequestLog
+from ...db.postgres import read_all_node_status_logs, read_all_request_logs, read_config_by_id
 from ...models.enum import WorkerStatus
 
 
@@ -28,7 +28,6 @@ def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> tuple[list[di
     sorted_logs = sorted(node_logs, key=lambda entry: (entry.timestamp, entry.cluster, entry.node))
     latest_status_by_cluster: dict[str, dict[str, str]] = defaultdict(dict)
     raw_events: list[dict] = []
-    active_nodes_over_time: list[dict] = []
 
     for entry in sorted_logs:
         latest_status_by_cluster[entry.cluster][entry.node] = entry.status
@@ -49,17 +48,8 @@ def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> tuple[list[di
                 "status": entry.status,
             }
         )
-        active_nodes_over_time.append(
-            {
-                "timestamp": entry.timestamp.isoformat(),
-                "cluster": entry.cluster,
-                "active_nodes": cluster_counts["working"] + cluster_counts["idle"],
-                "status_counts": cluster_counts,
-                "overall_active_nodes": overall_active_nodes,
-            }
-        )
 
-    return raw_events, active_nodes_over_time
+    return raw_events
 
 
 def get_test_results(config_id: str) -> dict:
@@ -70,9 +60,8 @@ def get_test_results(config_id: str) -> dict:
 
     request_logs = read_all_request_logs(config_id)
     node_logs = read_all_node_status_logs(config_id)
-    power_decisions = read_all_power_decision_logs(config_id)
 
-    if not request_logs and not node_logs and not power_decisions:
+    if not request_logs and not node_logs:
         return {
             "config_id": config_id,
             "test_name": config.name,
@@ -85,10 +74,7 @@ def get_test_results(config_id: str) -> dict:
             "total_cost_eur": 0.0,
             "gco2_over_time": [],
             "latency_over_time": [],
-            "cluster_usage_over_time": [],
-            "active_nodes_over_time": [],
             "node_status_over_time": [],
-            "power_decisions": [],
             "cluster_distribution": {},
         }
 
@@ -101,7 +87,6 @@ def get_test_results(config_id: str) -> dict:
     gco2_over_time: list[dict] = []
     latency_over_time: list[dict] = []
     cost_over_time: list[dict] = []
-    cluster_usage_over_time: list[dict] = []
     cluster_distribution = Counter()
     total_gco2_g = 0.0
     total_cost_eur = 0.0
@@ -144,32 +129,14 @@ def get_test_results(config_id: str) -> dict:
                 "cumulative_cost_eur": round(cumulative_cost_eur, 8),
             }
         )
-        cluster_usage_over_time.append(
-            {
-                **point,
-                "success": entry.success,
-                "latency_ms": round(entry.latency_ms, 2),
-                "renewable_fraction": round(entry.renewable_fraction, 4),
-            }
-        )
+
 
     avg_renewable_pct = round(
         (sum(entry.renewable_fraction for entry in sorted_requests) / total_requests) * 100,
         1,
     ) if total_requests else 0.0
 
-    node_status_over_time, active_nodes_over_time = _build_node_status_timeline(node_logs)
-    power_decision_payload = [
-        {
-            "timestamp": entry.timestamp.isoformat(),
-            "action": entry.action,
-            "cluster": entry.cluster,
-            "node": entry.node,
-            "reason": entry.reason,
-            "system_avg_latency_ms": entry.system_avg_latency_ms,
-        }
-        for entry in sorted(power_decisions, key=lambda item: (item.timestamp, item.cluster, item.node))
-    ]
+    node_status_over_time = _build_node_status_timeline(node_logs)
 
     started_at = min((entry.timestamp for entry in sorted_requests), default=None)
     ended_at = max((entry.timestamp for entry in sorted_requests), default=None)
@@ -190,8 +157,5 @@ def get_test_results(config_id: str) -> dict:
         "cluster_distribution": dict(cluster_distribution),
         "gco2_over_time": gco2_over_time,
         "latency_over_time": latency_over_time,
-        "cluster_usage_over_time": cluster_usage_over_time,
-        "active_nodes_over_time": active_nodes_over_time,
         "node_status_over_time": node_status_over_time,
-        "power_decisions": power_decision_payload,
     }

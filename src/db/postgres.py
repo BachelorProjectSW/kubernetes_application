@@ -231,11 +231,6 @@ def read_config_by_id(config_id: str) -> Config | None:
     return Config.model_validate(row.config_json)
 
 
-def read_all_power_decision_logs(config_id: str | None = None) -> list[PowerDecisionLog]:
-    """Read power decision logs for a config as PowerDecisionLog models."""
-    return read_model_logs(PowerDecisionLog, config_id)
-
-
 def read_all_node_status_logs(config_id: str | None = None) -> list[NodeStatusLog]:
     """Read node status logs for a config as NodeStatusLog models."""
     return read_model_logs(NodeStatusLog, config_id)

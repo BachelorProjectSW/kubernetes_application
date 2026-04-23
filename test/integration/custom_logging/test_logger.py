@@ -139,50 +139,6 @@ def test_log_request_has_timestamp():
     assert isinstance(result[0].timestamp, datetime)
 
 
-# --- log_power_decision ---
-
-@pytest.mark.integration
-def test_log_power_decision_writes_shutdown():
-    """Test that log_power_decision writes a shutdown action to the database."""
-    log_power_decision(
-        action="shutdown",
-        cluster=_make_cluster("denmark"),
-        node=_make_node("nano2"),
-        reason="idle_poor_energy",
-        system_avg_latency_ms=2100.0,
-    )
-
-    from src.custom_logging.logger import get_logs
-    from src.custom_logging.models.log_models import PowerDecisionLog
-    result = get_logs(PowerDecisionLog)
-
-    assert len(result) == 1
-    assert result[0].action == "shutdown"
-    assert result[0].cluster == "denmark"
-    assert result[0].node == "nano2"
-    assert result[0].reason == "idle_poor_energy"
-
-
-@pytest.mark.integration
-def test_log_power_decision_writes_startup():
-    """Test that log_power_decision writes a startup action to the database."""
-    log_power_decision(
-        action="startup",
-        cluster=_make_cluster("portugal"),
-        node=_make_node("nano5"),
-        reason="latency_high",
-        system_avg_latency_ms=5800.0,
-    )
-
-    from src.custom_logging.logger import get_logs
-    from src.custom_logging.models.log_models import PowerDecisionLog
-    result = get_logs(PowerDecisionLog)
-
-    assert len(result) == 1
-    assert result[0].action == "startup"
-    assert result[0].reason == "latency_high"
-
-
 # --- log_node_status_snapshot ---
 
 @pytest.mark.integration

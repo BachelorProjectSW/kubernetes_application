@@ -4,7 +4,6 @@ import structlog
 import asyncio
 from ...models.basemodels import Config, ClusterInformation, ClusterRuntimeData
 from ...models.enum import WorkerStatus
-from ...custom_logging.models.log_models import PowerDecisionLog
 from ...db.postgres import save_model_log
 from .scoring import score_cluster
 from ..util.all_configuration import config_store
@@ -145,26 +144,6 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             continue
 
         try:
-            save_model_log(
-                config.id,
-                PowerDecisionLog(
-                    timestamp=datetime.now(timezone.utc),
-                    action="turn_on",
-                    cluster=cluster.cluster_config.name,
-                    node="cluster",
-                    reason=f"nodes_to_add={nodes_to_add}; powered_off_nodes={powered_off_nodes}; requested_amount={amount}",
-                    system_avg_latency_ms=avg_latency_ms,
-                ),
-            )
-        except Exception as e:
-            log.warning(
-                "global_api.power.decision_log_failed",
-                cluster_name=cluster.cluster_config.name,
-                action="turn_on",
-                error=str(e),
-            )
-
-        try:
             url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_on_nodes/"
             response = requests.post(url, params={"number_of_nodes": amount}, timeout=10)
             response.raise_for_status()
@@ -189,17 +168,6 @@ def turn_off_idle_nodes(config: Config):
             idle_time = config.power_scheduler.idle_time_for_turn_off_s
             response = requests.post(url, params={"idle_time": idle_time}, timeout=20)
             response.raise_for_status()
-            save_model_log(
-                config.id,
-                PowerDecisionLog(
-                    timestamp=datetime.now(timezone.utc),
-                    action="turn_off_idle",
-                    cluster=cluster.name,
-                    node="cluster",
-                    reason=f"idle_time={idle_time}; scheduler_check_window_s={config.power_scheduler.timeout_s}",
-                    system_avg_latency_ms=avg_latency_ms,
-                ),
-            )
         except Exception as e:
             log.error(
                 "global_api.power.turn_off_idle_request_failed",
