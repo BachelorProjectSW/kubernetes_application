@@ -50,8 +50,6 @@ def start_test(config: Config):
             )
             ip = cluster.ip
             port = cluster.port
-            # ensure that all nodes + pods are on and ready to recieve requests
-            ensure_nodes_ready(cluster, timeout_s=400)
             url = f"http://{ip}:{port}/set_config"
 
             log.info(
@@ -66,6 +64,8 @@ def start_test(config: Config):
                 cluster_name=cluster.name,
                 status_code=response.status_code,
             )
+            # ensure that all nodes + pods are on and ready to recieve requests
+            ensure_nodes_ready(cluster, timeout_s=400)
 
         if config.power_scheduler.start:
             thread_running = (

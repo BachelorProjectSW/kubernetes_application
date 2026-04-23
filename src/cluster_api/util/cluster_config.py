@@ -73,7 +73,6 @@ class ConfigStore:
             self.assign_forwarded_ports()
         else:
             self.populate_host_port()
-        self.populate_worker_capacities()
         return self.config.worker_nodes
 
     def assign_gpios(self):
