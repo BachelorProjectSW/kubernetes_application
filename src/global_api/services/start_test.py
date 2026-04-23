@@ -14,6 +14,7 @@ import asyncio
 import threading
 from .ensure_nodes_ready import ensure_nodes_ready
 from ..services.test_state import test_state
+from ...models.enum import WorkerStatus
 
 
 _power_scheduler_thread: threading.Thread | None = None
@@ -27,9 +28,6 @@ def _run_power_scheduler_loop():
 
 def start_test(config: Config):
     """Start the test and send configs."""
-    if test_state.is_stopping():
-        raise HTTPException(status_code=409, detail="Previous test is still stopping/recovering")
-
     if test_state.is_running():
         raise HTTPException(status_code=409, detail="A test is already running")
     started = False
@@ -95,9 +93,13 @@ def start_test(config: Config):
         raise HTTPException(status_code=500, detail=f"test failed: {e}")
 
 
-def stop_and_cancel_cluster(cluster):
-    stop_cluster(cluster)
-    cancel_cluster_pods(cluster)
+def stop_cancel_recover_cluster(cluster, errors: list[tuple[str, Exception]]):
+    try:
+        stop_cluster(cluster)
+        cancel_cluster_pods(cluster)
+        recover_cluster_after_stop(cluster, timeout_s=400)
+    except Exception as e:
+        errors.append((cluster.name, e))
 
 
 def stop_test():
@@ -106,27 +108,47 @@ def stop_test():
 
     if not test_state.is_running():
         return {"message": "No test running"}
+
     config = config_store.get()
     test_state.mark_stopping()
     config_store.stop_power_scheduler()
 
     if not config:
         test_state.reset()
-        log.info("global.stop_test.done", had_config=False)
-        return {"message": "Stop requested"}
+        return {"message": "Stop completed"}
+
+    errors = []
+    threads = []
 
     for cluster in config.clusters:
-        threading.Thread(
-            target=stop_and_cancel_cluster,
-            args=(cluster,),
-            daemon=True,
-            name=f"stop-and-cancel-{cluster.name}",
-        ).start()
+        thread = threading.Thread(
+            target=stop_cancel_recover_cluster,
+            args=(cluster, errors),
+            name=f"stop-cancel-recover-{cluster.name}",
+        )
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
+
+    if errors:
+        for cluster_name, error in errors:
+            log.error(
+                "global.stop_test.cluster_recovery_failed",
+                cluster=cluster_name,
+                error=str(error),
+            )
+
+        # Important: do NOT reset to idle if recovery failed.
+        raise HTTPException(
+            status_code=500,
+            detail=f"Stop recovery failed for clusters: {[name for name, _ in errors]}",
+        )
 
     test_state.reset()
-    log.info("global.stop_test.done", had_config=True)
-    return {"message": "Stop requested"}
-
+    log.info("global.stop_test.done", had_config=True, recovered=True)
+    return {"message": "Stop completed"}
 def cancel_cluster_pods(cluster) -> bool:
     try:
         response = requests.post(
@@ -166,3 +188,115 @@ def stop_cluster(cluster):
             cluster=cluster.name,
             error=str(e),
         )
+
+def recover_cluster_after_stop(
+    cluster,
+    timeout_s: int = 400,
+    poll_interval_s: int = 5,
+):
+    base = f"http://{cluster.ip}:{cluster.port}"
+    deadline = time.time() + timeout_s
+
+    expected_total = None
+
+    while time.time() < deadline:
+        try:
+            info = requests.get(
+                f"{base}/get_cluster_information",
+                timeout=10,
+            ).json()
+
+            nodes = info.get("worker_nodes", [])
+            expected_total = len(nodes)
+
+            pods_response = requests.get(
+                f"{base}/llama_pods_status",
+                timeout=10,
+            )
+            pods_response.raise_for_status()
+            pods = pods_response.json()
+
+            live_ready_pods = [
+                pod for pod in pods
+                if pod["phase"] == "Running"
+                and pod["ready"] is True
+                and pod["deletion_timestamp"] is None
+            ]
+
+            terminating_or_unknown_pods = [
+                pod for pod in pods
+                if pod["deletion_timestamp"] is not None
+                or pod["phase"] in {"Failed", "Unknown"}
+            ]
+
+            if len(live_ready_pods) != expected_total:
+                log.info(
+                    "recover_cluster_after_stop.waiting_for_ready_pods",
+                    cluster=cluster.name,
+                    live_ready_pods=len(live_ready_pods),
+                    expected_total=expected_total,
+                    bad_pods=len(terminating_or_unknown_pods),
+                )
+                time.sleep(poll_interval_s)
+                continue
+
+            if terminating_or_unknown_pods:
+                log.info(
+                    "recover_cluster_after_stop.waiting_for_old_pods_to_disappear",
+                    cluster=cluster.name,
+                    bad_pods=[pod["name"] for pod in terminating_or_unknown_pods],
+                )
+                time.sleep(poll_interval_s)
+                continue
+
+            refresh_response = requests.post(
+                f"{base}/refresh_worker_capacities",
+                timeout=30,
+            )
+            refresh_response.raise_for_status()
+
+            working_response = requests.get(
+                f"{base}/get_cluster_working_nodes",
+                timeout=10,
+            )
+            working_response.raise_for_status()
+            worker_nodes = working_response.json()
+
+            ready_workers = [
+                node for node in worker_nodes
+                if node.get("status") == WorkerStatus.IDLE
+                and int(node.get("max_slots", 0) or 0) > 0
+                and int(node.get("inflight_requests", 0) or 0) == 0
+            ]
+
+            if len(ready_workers) != expected_total:
+                log.info(
+                    "recover_cluster_after_stop.waiting_for_worker_state",
+                    cluster=cluster.name,
+                    ready_workers=len(ready_workers),
+                    expected_total=expected_total,
+                )
+                time.sleep(poll_interval_s)
+                continue
+
+            log.info(
+                "recover_cluster_after_stop.done",
+                cluster=cluster.name,
+                ready_pods=len(live_ready_pods),
+                ready_workers=len(ready_workers),
+                expected_total=expected_total,
+            )
+            return
+
+        except Exception as e:
+            log.warning(
+                "recover_cluster_after_stop.poll_failed",
+                cluster=cluster.name,
+                error=str(e),
+            )
+
+        time.sleep(poll_interval_s)
+
+    raise TimeoutError(
+        f"{cluster.name} did not recover after stop within {timeout_s}s"
+    )

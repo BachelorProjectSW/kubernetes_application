@@ -1,5 +1,7 @@
 from fastapi import APIRouter,Request
 
+from ..services.get_llama_pods_status import get_llama_pods_status
+
 from ..services.test_state import test_state
 from ..services.cancel_all_llama_pods import cancel_all_llama_pods
 from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
@@ -51,6 +53,8 @@ def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
     return handle_llm(question, trace_id=trace_id)
 
 
+
+
 @router.get("/get_cluster_information")
 def get_cluster_information_endpoint():
     """Return cluster information."""
@@ -72,3 +76,8 @@ def stop_test_endpoint():
 def refresh_worker_capacities():
     config_store.populate_worker_capacities()
     return {"message": "refreshed"}
+
+@router.get("/llama_pods_status")
+def get_llama_status():
+    """Return llama pod status."""
+    return get_llama_pods_status()
