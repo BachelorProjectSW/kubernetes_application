@@ -108,22 +108,27 @@ def stop_test():
     config = config_store.get()
     test_state.mark_stopping()
     config_store.stop_power_scheduler()
+    try:
+        if config:
+            for cluster in config.clusters:
+                stop_cluster(cluster)
 
-    if config:
-        for cluster in config.clusters:
-            stop_cluster(cluster)
+            for cluster in config.clusters:
+                cancel_cluster_pods(cluster)
 
-        for cluster in config.clusters:
-            cancel_cluster_pods(cluster)
+            for cluster in config.clusters:
+                ensure_nodes_ready(cluster, timeout_s=400)
 
-    log.info("global.stop_test.done")
-    return {"message": "Stop requested"}
+        log.info("global.stop_test.done")
+        return {"message": "Stop completed"}
+    finally:
+        test_state.reset()
 
 def cancel_cluster_pods(cluster):
     try:
         response = requests.post(
             f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-            timeout=5,
+            timeout=30,
         )
         response.raise_for_status()
         log.info(
