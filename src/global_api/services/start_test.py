@@ -32,6 +32,7 @@ def start_test(config: Config):
 
     if test_state.is_running():
         raise HTTPException(status_code=409, detail="A test is already running")
+    started = False
     try:
         global _power_scheduler_thread
         set_current_config_id(config.id)
@@ -81,14 +82,15 @@ def start_test(config: Config):
                 log.info("global_api.test.power_scheduler_started")
         name = config.name
         test_state.start()
+        started = True
         log.info("global_api.test.start_completed", config_id=config.id, test_name=name)
         return f"{name} test are running succesfully"
     except HTTPException:
-        test_state.reset()
-        log.exception("global_api.test.start_failed")
+        log.warning("global_api.test.start_rejected")
         raise
     except Exception as e:
-        test_state.reset()
+        if not started:
+            test_state.reset()
         log.exception("global_api.test.start_failed", error=str(e))
         raise HTTPException(status_code=500, detail=f"test failed: {e}")
 
