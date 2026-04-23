@@ -104,16 +104,22 @@ def start_test(config: Config):
 #     return {"message": "Test stopped"}
 
 def _recover_clusters_after_stop(clusters):
+    all_ok = True
+
     for cluster in clusters:
         try:
             ensure_nodes_ready(cluster, timeout_s=400)
             log.info("global.stop_test.cluster_ready_again", cluster=cluster.name)
         except Exception as e:
+            all_ok = False
             log.warning(
                 "global.stop_test.cluster_recovery_failed",
                 cluster=cluster.name,
                 error=str(e),
             )
+
+    test_state.reset()
+    log.info("global.stop_test.recovery_finished", success=all_ok)
 
 
 def stop_test():
@@ -127,8 +133,6 @@ def stop_test():
 
         for cluster in config.clusters:
             cancel_cluster_pods(cluster)
-
-        test_state.reset()
 
         threading.Thread(
             target=_recover_clusters_after_stop,

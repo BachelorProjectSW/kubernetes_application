@@ -15,7 +15,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
         info = requests.get(f"{base}/get_cluster_information", timeout=10).json()
     except Exception as e:
         log.warning("ensure_nodes_ready.info_failed", cluster=cluster.name, error=str(e))
-        return
+        raise
 
     nodes = info.get("worker_nodes", [])
     total = len(nodes)
@@ -77,3 +77,4 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
         time.sleep(poll_interval_s)
 
     log.warning("ensure_nodes_ready.timeout", cluster=cluster.name, timeout_s=timeout_s)
+    raise TimeoutError(f"{cluster.name} was not ready within {timeout_s}s")
