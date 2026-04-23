@@ -1,4 +1,6 @@
 from fastapi import APIRouter,Request
+
+from ..services.test_state import test_state
 from ..services.cancel_all_llama_pods import cancel_all_llama_pods
 from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
 from ..services.llm import handle_llm
@@ -37,6 +39,7 @@ def set_config(cluster_information: ClusterInformation):
     """Set the config in util."""
     set_current_config_id(cluster_information.config_id)
     config_store.set(cluster_information)
+    test_state.start()
     config_store.build_worker_nodes()
     return config_store.get()
 
@@ -59,3 +62,8 @@ def cancel_all_llama_pods_endpoint():
     """Delete all llama pods."""
     cancel_all_llama_pods()
     return {"message": "Llama pods deleted, restarting"}
+
+@router.post("/stop_test")
+def stop_test_endpoint():
+    test_state.mark_stopping()
+    return {"message": "Cluster stopping"}

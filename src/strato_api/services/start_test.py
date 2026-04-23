@@ -15,8 +15,8 @@ log = structlog.get_logger()
 
 test_state_lock = threading.Lock()
 test_running = False
-stop_requested = False
 current_config = None
+stop_event = threading.Event()
 
 
 def start_test(config: Config):
@@ -53,8 +53,8 @@ def start_test(config: Config):
         if test_running:
             raise RuntimeError("A test is already running. Stop the current test before starting a new one.")
         test_running = True
-        stop_requested = False
         current_config = config
+        stop_event.clear()
 
     # run the test in a background thread, such the main thread is still open
     thread = threading.Thread(target=run_test, args=(config,), daemon=True, name="test-runner")
@@ -103,14 +103,13 @@ def run_test(config: Config):
         # regardless we return them to default values, such that we are ready for new test
         with test_state_lock:
             test_running = False
-            stop_requested = False
             current_config = None
+            stop_event.clear()
 
 
 def should_stop_test() -> bool:
     """Return True if the running test should stop."""
-    with test_state_lock:
-        return stop_requested
+    return stop_event.is_set()
 
 
 def stop_test():
@@ -124,8 +123,8 @@ def stop_test():
     with test_state_lock:
         if not test_running:
             raise RuntimeError("No test is currently running.")
-        stop_requested = True
         config = current_config
+        stop_event.set()
 
     log.info("test.stop_requested")
     stop_global_power_scheduler(config.global_scheduler.ip, config.global_scheduler.port)
@@ -151,6 +150,6 @@ def get_test_status() -> dict:
     with test_state_lock:
         if not test_running:
             return {"status": "idle"}
-        if stop_requested:
+        if stop_event.is_set():
             return {"status": "stopping"}
         return {"status": "running"}

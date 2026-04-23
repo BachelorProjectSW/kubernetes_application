@@ -4,6 +4,8 @@ import requests
 from datetime import datetime, timezone
 import structlog
 from fastapi import HTTPException
+
+from ..services.test_state import test_state
 from ...models.basemodels import QuestionConfig, LLMResponse
 from .cluster_data import get_cluster_runtime_data
 from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
@@ -19,6 +21,17 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     request_id = str(uuid.uuid4())
     trace_id = trace_id
     config = config_store.get()
+
+    if test_state.is_stopping():
+        log.info(
+            "global_api.llm.rejected_stopping",
+            service="global_api",
+            trace_id=trace_id,
+            request_id=request_id,
+        )
+        raise HTTPException(status_code=409, detail="Test is stopping")
+
+
     total_start = time.monotonic()
 
     log.info(
@@ -81,6 +94,15 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         global_market_data_fetch_ms=global_market_data_fetch_ms,
         global_cluster_scoring_ms=global_cluster_scoring_ms,
     )
+    if test_state.is_stopping():
+        log.info(
+            "global_api.llm.rejected_before_cluster_forward",
+            service="global_api",
+            trace_id=trace_id,
+            request_id=request_id,
+            cluster_name=cluster.name,
+        )
+        raise HTTPException(status_code=409, detail="Test is stopping")
 
     response = requests.post(
         url,

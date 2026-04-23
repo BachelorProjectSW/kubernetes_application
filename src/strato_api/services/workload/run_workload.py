@@ -52,6 +52,11 @@ async def execute_workload(
             delay = ts - (time.perf_counter() - start_time)
             if delay > 0:
                 await asyncio.sleep(delay)
+            
+            #DEBUGGGGINGG
+            if stop_check():
+                log.info("strato.workload.request_skipped_due_to_stop")
+                return {"ok": False, "error": "stopped_before_send"}
 
             try:
                 trace_id = str(uuid.uuid4())

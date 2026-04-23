@@ -1,8 +1,10 @@
 import time
+from fastapi import HTTPException
 import requests
 import structlog
 import uuid
 
+from ..services.test_state import test_state
 from src.models.enum import WorkerStatus
 from ...models.basemodels import QuestionConfig, WorkerNode, LLMResponse
 from ..util.cluster_config import config_store
@@ -81,6 +83,14 @@ def sync_worker_status(worker: WorkerNode) -> None:
 
 def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     """Send the request to the correct working node and log."""
+
+    if test_state.is_stopping():
+       logger.info(
+                "cluster_api.llm.rejected_stopping",
+                service="cluster_api",
+                trace_id=trace_id,)
+       raise HTTPException(status_code=409, detail="Cluster is stopping")
+    
     try:
         config = None
         cluster_name = None
@@ -147,6 +157,15 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             "n_predict": question.max_output_tokens,
             "temperature": 0.7,
         }
+        if test_state.is_stopping():
+            logger.info(
+                "cluster_api.llm.rejected_before_worker_forward",
+                service="cluster_api",
+                cluster_name=cluster_name,
+                worker_node=worker_node.name,
+                trace_id=trace_id,
+            )
+            raise HTTPException(status_code=409, detail="Cluster is stopping")
 
         llama_call_start = time.monotonic()
         logger.info(
@@ -158,6 +177,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             target_url=url,
         )
         timeout=(queued_at_selection*60)+120
+
 
         response = requests.post(
             url,

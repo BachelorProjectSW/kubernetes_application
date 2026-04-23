@@ -11,6 +11,7 @@ from .power_scheduler import power_scheduler_loop
 import asyncio
 import threading
 from .ensure_nodes_ready import ensure_nodes_ready
+from ..services.test_state import test_state
 
 
 _power_scheduler_thread: threading.Thread | None = None
@@ -28,6 +29,7 @@ def start_test(config: Config):
         global _power_scheduler_thread
         set_current_config_id(config.id)
         config_store.set(config)
+        test_state.start()
         log.info("global_api.test.start_requested", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
 
@@ -74,6 +76,7 @@ def start_test(config: Config):
         log.info("global_api.test.start_completed", config_id=config.id, test_name=name)
         return f"{name} test are running succesfully"
     except Exception as e:
+        test_state.reset()
         log.exception("global_api.test.start_failed", error=str(e))
         raise Exception(f"test failed: {e}")
 
@@ -103,22 +106,15 @@ def start_test(config: Config):
 def stop_test():
     """Stop the test."""
     config = config_store.get()
+    test_state.mark_stopping()
     config_store.stop_power_scheduler()
 
     if config:
         for cluster in config.clusters:
-            threading.Thread(
-                target=cancel_cluster_pods,
-                args=(cluster,),
-                daemon=False,
-                name=f"cancel-cluster-{cluster.name}",
-            ).start()
+            stop_cluster(cluster)
 
-    threading.Thread(
-        target=stop_global_pod,
-        daemon=False,
-        name="delete-global-api-pod",
-    ).start()
+        for cluster in config.clusters:
+            cancel_cluster_pods(cluster)
 
     log.info("global.stop_test.done")
     return {"message": "Stop requested"}
@@ -142,19 +138,21 @@ def cancel_cluster_pods(cluster):
             error=str(e),
         )
 
-def stop_global_pod():
-    time.sleep(0.5)
+def stop_cluster(cluster):
     try:
-        run_cmd(
-            "sudo -n kubectl delete pods -l app=global-api "
-            "--wait=false --grace-period=0 --force"
+        response = requests.post(
+            f"http://{cluster.ip}:{cluster.port}/stop_test",
+            timeout=5,
         )
-        log.info("global.stop_test.global_pod_delete_requested")
+        response.raise_for_status()
+        log.info(
+            "global.stop_test.cluster_stop_requested",
+            cluster=cluster.name,
+            status_code=response.status_code,
+        )
     except Exception as e:
-        log.exception("global.stop_test.global_pod_delete_failed", error=str(e))
-
-
-# def stop_global_pod():
-#     time.sleep(1)
-#     run_cmd("sudo kubectl delete pods -l app=global-api")
-
+        log.warning(
+            "global.stop_test.cluster_stop_failed",
+            cluster=cluster.name,
+            error=str(e),
+        )
