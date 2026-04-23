@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from ..services.start_test import start_test, start_test_test, stop_test, get_test_status
+from ..services.test_results import get_test_results
 from ...models.basemodels import Config
 router = APIRouter()
 
@@ -40,3 +41,14 @@ def stop_test_endpoint():
 def test_status_endpoint():
     """Return current test status: idle, running, or stopping."""
     return get_test_status()
+
+
+@router.get("/test_results")
+def test_results_endpoint(config_id: str):
+    """Return stored test results and graph-ready summary data for one config id."""
+    try:
+        return get_test_results(config_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

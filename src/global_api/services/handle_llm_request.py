@@ -20,6 +20,11 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     request_id = str(uuid.uuid4())
     trace_id = trace_id
     config = config_store.get()
+    if config is None:
+        raise HTTPException(status_code=409, detail="No active config. Start a test before sending questions.")
+    if not config.clusters:
+        raise HTTPException(status_code=409, detail="No clusters configured in active config.")
+
     total_start = time.monotonic()
 
     log.info(
@@ -94,14 +99,35 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         global_cluster_scoring_ms=global_cluster_scoring_ms,
     )
 
-    response = requests.post(
-        url,
-        json=question.model_dump(),
-        headers={"X-Trace-Id": trace_id},
-    )
+    headers = {}
+    if trace_id:
+        headers["X-Trace-Id"] = trace_id
+
+    try:
+        response = requests.post(
+            url,
+            json=question.model_dump(),
+            headers=headers,
+            timeout=180,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.HTTPError as e:
+        global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
+        global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+        detail = f"Cluster API returned {e.response.status_code if e.response else 'error'}"
+        raise HTTPException(status_code=502, detail=detail) from e
+    except requests.RequestException as e:
+        global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
+        global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+        raise HTTPException(status_code=502, detail=f"Cluster API request failed: {str(e)}") from e
+    except ValueError as e:
+        global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
+        global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+        raise HTTPException(status_code=502, detail=f"Invalid JSON from cluster API: {str(e)}") from e
+
     global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
     global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-    data = response.json()
 
     if not isinstance(data, dict):
         log.warning(
@@ -133,7 +159,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             global_cluster_api_call_ms=global_cluster_api_call_ms,
             global_total_time_ms=global_total_time_ms,
         )
-        return HTTPException(status_code=500, detail=str(data))
+        raise HTTPException(status_code=502, detail="Invalid cluster response payload")
 
     result = LLMResponse(
         llm_content=data["llm_content"],

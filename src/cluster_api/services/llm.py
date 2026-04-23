@@ -1,6 +1,7 @@
 import time
 import requests
 import structlog
+from fastapi import HTTPException
 
 from src.models.enum import WorkerStatus
 from ...models.basemodels import QuestionConfig, WorkerNode, LLMResponse
@@ -111,7 +112,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
                     worker_node=None,
                     worker_count=len(config.worker_nodes),
                 )
-                return "failed: no available worker"
+                raise HTTPException(status_code=503, detail="No available worker")
 
             worker_node.inflight_requests += 1
             sync_worker_status(worker_node)
@@ -208,7 +209,9 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             cluster_total_time_ms=duration_ms,
             error=str(e),
         )
-        return f"failed: {e}"
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=502, detail=f"LLM request failed: {str(e)}") from e
 
     finally:
         # No matter whether it failed or succeded, we still need to free the slot
