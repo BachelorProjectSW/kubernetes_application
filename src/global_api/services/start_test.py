@@ -101,6 +101,11 @@ def stop_and_cancel_cluster(cluster):
 
 
 def stop_test():
+    if test_state.is_stopping():
+        return {"message": "Stop already in progress"}
+
+    if not test_state.is_running():
+        return {"message": "No test running"}
     config = config_store.get()
     test_state.mark_stopping()
     config_store.stop_power_scheduler()
