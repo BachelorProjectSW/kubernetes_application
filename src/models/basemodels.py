@@ -173,3 +173,6 @@ class LLMResponse(BaseModel):
     active_requests_at_selection: int
     queued_requests_at_selection: int
     max_slots: int
+    cluster_queue_time_ms: int | None = None
+    cluster_llama_inference_ms: int | None = None
+    llama_response_status_code: int | None = None

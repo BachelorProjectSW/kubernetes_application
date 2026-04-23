@@ -152,6 +152,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             "temperature": 0.7,
         }
 
+        cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()
         logger.info(
             "cluster_api.llm.llama_inference_started",
@@ -194,6 +195,9 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             active_requests_at_selection=active_at_selection,
             queued_requests_at_selection=queued_at_selection,
             max_slots=max_slots_at_selection,
+            cluster_queue_time_ms=cluster_queue_time_ms,
+            cluster_llama_inference_ms=cluster_llama_inference_ms,
+            llama_response_status_code=response.status_code,
         )
 
     except Exception as e:

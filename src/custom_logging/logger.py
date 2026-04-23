@@ -92,6 +92,7 @@ def log_request(
     blended_cost_eur_per_kwh: float,
     question: str | None = None,
     answer: str | None = None,
+    response_status_code: int | None = None,
     all_content: dict | list | str | None = None,
     success: bool = True,
     trace_id: str | None = None,
@@ -99,6 +100,8 @@ def log_request(
     global_cluster_scoring_ms: int | None = None,
     global_cluster_api_call_ms: int | None = None,
     global_total_time_ms: int | None = None,
+    cluster_queue_time_ms: int | None = None,
+    cluster_llama_inference_ms: int | None = None,
 ):
     """Log a completed request to the CSV and console."""
     entry = RequestLog(
@@ -115,11 +118,14 @@ def log_request(
         blended_cost_eur_per_kwh=round(blended_cost_eur_per_kwh, 6),
         question=question,
         answer=answer,
+        response_status_code=response_status_code,
         all_content=all_content,
         global_market_data_fetch_ms=global_market_data_fetch_ms,
         global_cluster_scoring_ms=global_cluster_scoring_ms,
         global_cluster_api_call_ms=global_cluster_api_call_ms,
         global_total_time_ms=global_total_time_ms,
+        cluster_queue_time_ms=cluster_queue_time_ms,
+        cluster_llama_inference_ms=cluster_llama_inference_ms,
     )
 
     row = entry.model_dump(mode="json")

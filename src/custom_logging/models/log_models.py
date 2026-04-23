@@ -19,11 +19,14 @@ class RequestLog(BaseModel):
     blended_cost_eur_per_kwh: float
     question: str | None = None
     answer: str | None = None
+    response_status_code: int | None = None
     all_content: Any | None = None
     global_market_data_fetch_ms: int | None = None
     global_cluster_scoring_ms: int | None = None
     global_cluster_api_call_ms: int | None = None
     global_total_time_ms: int | None = None
+    cluster_queue_time_ms: int | None = None
+    cluster_llama_inference_ms: int | None = None
 
 
 class PowerDecisionLog(BaseModel):

@@ -115,15 +115,76 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     except requests.HTTPError as e:
         global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+        response_status_code = e.response.status_code if e.response else 502
+        log_request(
+            request_id=request_id,
+            cluster_name=cluster.name,
+            worker_node_name="unknown",
+            success=False,
+            latency_ms=global_cluster_api_call_ms,
+            cluster_load_w=cluster_energy_data.cluster_load_w,
+            renewable_fraction=renewable_fraction,
+            blended_carbon_gco2_per_kwh=blended_carbon,
+            blended_cost_eur_per_kwh=blended_cost,
+            question=question.question,
+            answer=None,
+            response_status_code=response_status_code,
+            all_content=e.response.text if e.response is not None else str(e),
+            trace_id=trace_id,
+            global_market_data_fetch_ms=global_market_data_fetch_ms,
+            global_cluster_scoring_ms=global_cluster_scoring_ms,
+            global_cluster_api_call_ms=global_cluster_api_call_ms,
+            global_total_time_ms=global_total_time_ms,
+        )
         detail = f"Cluster API returned {e.response.status_code if e.response else 'error'}"
         raise HTTPException(status_code=502, detail=detail) from e
     except requests.RequestException as e:
         global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+        log_request(
+            request_id=request_id,
+            cluster_name=cluster.name,
+            worker_node_name="unknown",
+            success=False,
+            latency_ms=global_cluster_api_call_ms,
+            cluster_load_w=cluster_energy_data.cluster_load_w,
+            renewable_fraction=renewable_fraction,
+            blended_carbon_gco2_per_kwh=blended_carbon,
+            blended_cost_eur_per_kwh=blended_cost,
+            question=question.question,
+            answer=None,
+            response_status_code=502,
+            all_content=str(e),
+            trace_id=trace_id,
+            global_market_data_fetch_ms=global_market_data_fetch_ms,
+            global_cluster_scoring_ms=global_cluster_scoring_ms,
+            global_cluster_api_call_ms=global_cluster_api_call_ms,
+            global_total_time_ms=global_total_time_ms,
+        )
         raise HTTPException(status_code=502, detail=f"Cluster API request failed: {str(e)}") from e
     except ValueError as e:
         global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+        log_request(
+            request_id=request_id,
+            cluster_name=cluster.name,
+            worker_node_name="unknown",
+            success=False,
+            latency_ms=global_cluster_api_call_ms,
+            cluster_load_w=cluster_energy_data.cluster_load_w,
+            renewable_fraction=renewable_fraction,
+            blended_carbon_gco2_per_kwh=blended_carbon,
+            blended_cost_eur_per_kwh=blended_cost,
+            question=question.question,
+            answer=None,
+            response_status_code=502,
+            all_content=str(e),
+            trace_id=trace_id,
+            global_market_data_fetch_ms=global_market_data_fetch_ms,
+            global_cluster_scoring_ms=global_cluster_scoring_ms,
+            global_cluster_api_call_ms=global_cluster_api_call_ms,
+            global_total_time_ms=global_total_time_ms,
+        )
         raise HTTPException(status_code=502, detail=f"Invalid JSON from cluster API: {str(e)}") from e
 
     global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
@@ -152,6 +213,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             blended_cost_eur_per_kwh=blended_cost,
             question=question.question,
             answer=None,
+            response_status_code=502,
             all_content=data,
             trace_id=trace_id,
             global_market_data_fetch_ms=global_market_data_fetch_ms,
@@ -168,6 +230,9 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         active_requests_at_selection=data["active_requests_at_selection"],
         queued_requests_at_selection=data["queued_requests_at_selection"],
         max_slots=data["max_slots"],
+        cluster_queue_time_ms=data.get("cluster_queue_time_ms"),
+        cluster_llama_inference_ms=data.get("cluster_llama_inference_ms"),
+        llama_response_status_code=data.get("llama_response_status_code"),
     )
     worker_node = result.worker_node
     llm_content = result.llm_content
@@ -202,12 +267,15 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         blended_cost_eur_per_kwh=blended_cost,
         question=question.question,
         answer=answer,
+        response_status_code=result.llama_response_status_code,
         all_content=llm_content,
         trace_id=trace_id,
         global_market_data_fetch_ms=global_market_data_fetch_ms,
         global_cluster_scoring_ms=global_cluster_scoring_ms,
         global_cluster_api_call_ms=global_cluster_api_call_ms,
         global_total_time_ms=global_total_time_ms,
+        cluster_queue_time_ms=result.cluster_queue_time_ms,
+        cluster_llama_inference_ms=result.cluster_llama_inference_ms,
     )
 
     return result
