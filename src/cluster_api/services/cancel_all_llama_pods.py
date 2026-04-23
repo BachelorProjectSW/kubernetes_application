@@ -10,7 +10,7 @@ def _cancel_all_llama_pods_background():
     """Restart llama pods in the background."""
     try:
         stdout = run_cmd(
-            "sudo kubectl delete pod -l app=llama-server-arm64 --grace-period=0 --force")
+            "sudo kubectl delete pod -l app=llama-server --grace-period=0 --force")
         log.info("cluster.llama_pods_deleted", stdout=stdout.strip())
     except Exception as e:
         log.exception("cluster.llama_pods_delete_failed", error=str(e))
