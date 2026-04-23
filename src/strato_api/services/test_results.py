@@ -23,24 +23,14 @@ def _status_counts(statuses: list[str]) -> dict[str, int]:
     }
 
 
-def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> tuple[list[dict], list[dict]]:
+def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> tuple[list[dict]]:
     """Build raw node status events and aggregate active-node snapshots."""
     sorted_logs = sorted(node_logs, key=lambda entry: (entry.timestamp, entry.cluster, entry.node))
     latest_status_by_cluster: dict[str, dict[str, str]] = defaultdict(dict)
     raw_events: list[dict] = []
-    active_nodes_over_time: list[dict] = []
 
     for entry in sorted_logs:
         latest_status_by_cluster[entry.cluster][entry.node] = entry.status
-        current_cluster_statuses = latest_status_by_cluster[entry.cluster]
-        cluster_counts = _status_counts(list(current_cluster_statuses.values()))
-        overall_active_nodes = sum(
-            1
-            for cluster_statuses in latest_status_by_cluster.values()
-            for status in cluster_statuses.values()
-            if status in {WorkerStatus.IDLE.value, WorkerStatus.WORKING.value}
-        )
-
         raw_events.append(
             {
                 "timestamp": entry.timestamp.isoformat(),
@@ -49,17 +39,9 @@ def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> tuple[list[di
                 "status": entry.status,
             }
         )
-        active_nodes_over_time.append(
-            {
-                "timestamp": entry.timestamp.isoformat(),
-                "cluster": entry.cluster,
-                "active_nodes": cluster_counts["working"] + cluster_counts["idle"],
-                "overall_active_nodes": overall_active_nodes,
-                "status_counts": cluster_counts,
-            }
-        )
 
-    return raw_events, active_nodes_over_time
+
+    return raw_events
 
 
 def get_test_results(config_id: str) -> dict:
@@ -88,7 +70,6 @@ def get_test_results(config_id: str) -> dict:
             "request_send_over_time": [],
             "service_timeout_over_time": [],
             "cluster_usage_over_time": [],
-            "active_nodes_over_time": [],
             "node_status_over_time": [],
             "cluster_distribution": {},
         }
@@ -180,7 +161,7 @@ def get_test_results(config_id: str) -> dict:
         1,
     ) if total_requests else 0.0
 
-    node_status_over_time, active_nodes_over_time = _build_node_status_timeline(node_logs)
+    node_status_over_time = _build_node_status_timeline(node_logs)
 
     started_at = min((entry.timestamp for entry in sorted_requests), default=None)
     ended_at = max((entry.timestamp for entry in sorted_requests), default=None)
@@ -205,6 +186,5 @@ def get_test_results(config_id: str) -> dict:
         "request_send_over_time": request_send_over_time,
         "service_timeout_over_time": service_timeout_over_time,
         "cluster_usage_over_time": cluster_usage_over_time,
-        "active_nodes_over_time": active_nodes_over_time,
         "node_status_over_time": node_status_over_time,
     }
