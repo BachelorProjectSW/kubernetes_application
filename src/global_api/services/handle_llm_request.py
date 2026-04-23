@@ -111,7 +111,12 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     )
     global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
     global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+    if response.status_code == 409:
+        raise HTTPException(status_code=409, detail="Cluster is stopping")
+
     data = response.json()
+
+    
 
     if not isinstance(data, dict):
         log.warning(
