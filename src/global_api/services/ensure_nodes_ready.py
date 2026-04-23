@@ -35,6 +35,8 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         try:
+            requests.post(f"{base}/refresh_worker_capacities", timeout=10)
+            
             response = requests.get(f"{base}/get_cluster_working_nodes", timeout=10)
             response.raise_for_status()
             worker_nodes = response.json()

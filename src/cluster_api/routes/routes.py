@@ -67,3 +67,8 @@ def cancel_all_llama_pods_endpoint():
 def stop_test_endpoint():
     test_state.mark_stopping()
     return {"message": "Cluster stopping"}
+
+@router.post("/refresh_worker_capacities")
+def refresh_worker_capacities():
+    config_store.populate_worker_capacities()
+    return {"message": "refreshed"}

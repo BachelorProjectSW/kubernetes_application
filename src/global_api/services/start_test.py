@@ -95,55 +95,6 @@ def start_test(config: Config):
         raise HTTPException(status_code=500, detail=f"test failed: {e}")
 
 
-# def stop_test():
-#     """Stop the test."""
-#     config = config_store.get()
-#     config_store.stop_power_scheduler()
-#     if config:
-#         for cluster in config.clusters:
-#             try:
-#                 # All pods are deleted (recreated automatically).
-#                 # Because when the test is stopped --> possibility of inflight-requests
-#                 # These needs to be deleted, such that the next test can run deterministcally
-#                 requests.post(
-#                     f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-#                     timeout=60
-#                 )
-#                 log.info("global.stop_test.pods_deleted", cluster=cluster.name)
-#             except Exception as e:
-#                 log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
-    
-#     threading.Thread(target=stop_global_pod, daemon=True).start()
-#     log.info("global.stop_test.done")
-#     return {"message": "Test stopped"}
-
-def _cancel_and_recover_after_stop(clusters):
-    success = True
-    threads = []
-
-    for cluster in clusters:
-        t = threading.Thread(target=cancel_cluster_pods, args=(cluster,), daemon=True)
-        t.start()
-        threads.append(t)
-
-    for t in threads:
-        t.join(timeout=10)
-
-    for cluster in clusters:
-        try:
-            ensure_nodes_ready(cluster, timeout_s=400)
-            log.info("global.stop_test.cluster_ready_again", cluster=cluster.name)
-        except Exception as e:
-            success = False
-            log.warning(
-                "global.stop_test.cluster_recovery_failed",
-                cluster=cluster.name,
-                error=str(e),
-            )
-
-    test_state.reset()
-    log.info("global.stop_test.recovery_finished", success=success)
-
 def stop_test():
     config = config_store.get()
     test_state.mark_stopping()
@@ -154,17 +105,14 @@ def stop_test():
         log.info("global.stop_test.done", had_config=False)
         return {"message": "Stop requested"}
 
-    # Stop cluster APIs hurtigt, så nye requests bliver afvist med 409
     for cluster in config.clusters:
         stop_cluster(cluster)
 
-    # Kør resten i baggrunden, så /stop_test svarer hurtigt
-    threading.Thread(
-        target=_cancel_and_recover_after_stop,
-        args=(config.clusters,),
-        daemon=True,
-    ).start()
+    threads = [threading.Thread(target=cancel_cluster_pods, args=(c,), daemon=True) for c in config.clusters]
+    for t in threads: t.start()
+    for t in threads: t.join(timeout=10)
 
+    test_state.reset()
     log.info("global.stop_test.done", had_config=True)
     return {"message": "Stop requested"}
 
@@ -189,6 +137,7 @@ def cancel_cluster_pods(cluster) -> bool:
             error=str(e),
         )
         return False
+    
 def stop_cluster(cluster):
     try:
         response = requests.post(
