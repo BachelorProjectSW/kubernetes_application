@@ -74,8 +74,17 @@ def start_test(config: Config):
         url = f"http://{ip}:{port}/start_test"
 
         log.info("test.forward_to_global", url=url)
-        response = requests.post(url, json=config.model_dump(), timeout=180)
-        response.raise_for_status()
+        for attempt in range(20):
+            response = requests.post(url, json=config.model_dump(), timeout=180)
+            if response.status_code == 409:
+                log.info("test.global_still_recovering", attempt=attempt)
+                time.sleep(5)
+                continue
+            response.raise_for_status()
+            break
+        else:
+            raise RuntimeError("Global API still recovering after max retries")
+        
         log.info("test.global_started", status_code=response.status_code)
         save_config(config)
 
@@ -169,10 +178,23 @@ def start_test_test():
 
 
 def get_test_status() -> dict:
-    """Return current test status."""
     with test_state_lock:
-        if not test_running:
-            return {"status": "idle"}
-        if stop_event.is_set():
-            return {"status": "stopping"}
-        return {"status": "running"}
+        config = current_config
+    
+    if config is None:
+        return {"status": "idle"}
+    
+    try:
+        r = requests.get(
+            f"http://{config.global_scheduler.ip}:{config.global_scheduler.port}/test_status",
+            timeout=5,
+        )
+        return r.json()
+    except Exception:
+        # fall back to local state if global unreachable
+        with test_state_lock:
+            if stop_event.is_set():
+                return {"status": "stopping"}
+            if test_running:
+                return {"status": "running"}
+        return {"status": "idle"}

@@ -5,6 +5,7 @@ from ..services.get_all_worker_nodes import get_all_worker_nodes
 from ..services.handle_llm_request import handle_llm_request
 from ..services.start_test import start_test, stop_test
 from ...models.basemodels import Config, QuestionConfig
+from ..services.test_state import test_state
 router = APIRouter()
 
 
@@ -40,3 +41,11 @@ def stop_test_endpoint():
 def validate_config_endpoint(config: Config):
     """Validate config before starting test."""
     return validate_config(config)
+
+@router.get("/test_status")
+def test_status_endpoint():
+    if test_state.is_stopping():
+        return {"status": "stopping"}
+    if test_state.is_running():
+        return {"status": "running"}
+    return {"status": "idle"}
