@@ -1,5 +1,7 @@
 import time
 
+from fastapi import HTTPException
+
 from ...cluster_api.services.power_scheduler import run_cmd
 
 from ...models.basemodels import Config, ClusterInformation
@@ -25,11 +27,16 @@ def _run_power_scheduler_loop():
 
 def start_test(config: Config):
     """Start the test and send configs."""
+    if test_state.is_stopping():
+        raise HTTPException(status_code=409, detail="Previous test is still stopping/recovering")
+
+    if test_state.is_running():
+        raise HTTPException(status_code=409, detail="A test is already running")
     try:
         global _power_scheduler_thread
         set_current_config_id(config.id)
         config_store.set(config)
-        test_state.start()
+        
         log.info("global_api.test.start_requested", config_id=config.id, test_name=config.name)
         # TODO set start_time_real = current time datetime.now().strf()
 
@@ -73,12 +80,17 @@ def start_test(config: Config):
                 _power_scheduler_thread.start()
                 log.info("global_api.test.power_scheduler_started")
         name = config.name
+        test_state.start()
         log.info("global_api.test.start_completed", config_id=config.id, test_name=name)
         return f"{name} test are running succesfully"
+    except HTTPException:
+        test_state.reset()
+        log.exception("global_api.test.start_failed")
+        raise
     except Exception as e:
         test_state.reset()
         log.exception("global_api.test.start_failed", error=str(e))
-        raise Exception(f"test failed: {e}")
+        raise HTTPException(status_code=500, detail=f"test failed: {e}")
 
 
 # def stop_test():
@@ -103,15 +115,24 @@ def start_test(config: Config):
 #     log.info("global.stop_test.done")
 #     return {"message": "Test stopped"}
 
-def _recover_clusters_after_stop(clusters):
-    all_ok = True
+def _cancel_and_recover_after_stop(clusters):
+    success = True
+    threads = []
+
+    for cluster in clusters:
+        t = threading.Thread(target=cancel_cluster_pods, args=(cluster,), daemon=True)
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join(timeout=10)
 
     for cluster in clusters:
         try:
             ensure_nodes_ready(cluster, timeout_s=400)
             log.info("global.stop_test.cluster_ready_again", cluster=cluster.name)
         except Exception as e:
-            all_ok = False
+            success = False
             log.warning(
                 "global.stop_test.cluster_recovery_failed",
                 cluster=cluster.name,
@@ -119,35 +140,38 @@ def _recover_clusters_after_stop(clusters):
             )
 
     test_state.reset()
-    log.info("global.stop_test.recovery_finished", success=all_ok)
-
+    log.info("global.stop_test.recovery_finished", success=success)
 
 def stop_test():
     config = config_store.get()
     test_state.mark_stopping()
     config_store.stop_power_scheduler()
 
-    if config:
-        for cluster in config.clusters:
-            stop_cluster(cluster)
+    if not config:
+        test_state.reset()
+        log.info("global.stop_test.done", had_config=False)
+        return {"message": "Stop requested"}
 
-        for cluster in config.clusters:
-            cancel_cluster_pods(cluster)
+    # Stop cluster APIs hurtigt, så nye requests bliver afvist med 409
+    for cluster in config.clusters:
+        stop_cluster(cluster)
 
-        threading.Thread(
-            target=_recover_clusters_after_stop,
-            args=(config.clusters,),
-            daemon=True,
-        ).start()
+    # Kør resten i baggrunden, så /stop_test svarer hurtigt
+    threading.Thread(
+        target=_cancel_and_recover_after_stop,
+        args=(config.clusters,),
+        daemon=True,
+    ).start()
 
-    log.info("global.stop_test.done")
+    log.info("global.stop_test.done", had_config=True)
     return {"message": "Stop requested"}
 
-def cancel_cluster_pods(cluster):
+
+def cancel_cluster_pods(cluster) -> bool:
     try:
         response = requests.post(
             f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-            timeout=30,
+            timeout=5,
         )
         response.raise_for_status()
         log.info(
@@ -155,13 +179,14 @@ def cancel_cluster_pods(cluster):
             cluster=cluster.name,
             status_code=response.status_code,
         )
+        return True
     except Exception as e:
         log.warning(
             "global.stop_test.cluster_cancel_failed",
             cluster=cluster.name,
             error=str(e),
         )
-
+        return False
 def stop_cluster(cluster):
     try:
         response = requests.post(
