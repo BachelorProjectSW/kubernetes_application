@@ -20,7 +20,6 @@ def _status_counts(statuses: list[str]) -> dict[str, int]:
         "idle": counts.get(WorkerStatus.IDLE.value, 0),
         "off": counts.get(WorkerStatus.OFF.value, 0),
         "turning_on": counts.get(WorkerStatus.TURNING_ON.value, 0),
-        "turning_off": counts.get(WorkerStatus.TURNING_OFF.value, 0),
     }
 
 
