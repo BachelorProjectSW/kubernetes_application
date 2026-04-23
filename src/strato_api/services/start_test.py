@@ -135,7 +135,7 @@ def stop_test():
 def stop_global_power_scheduler(ip, port):
     """Tell global API to stop the power scheduler."""
     try:
-        requests.post(f"http://{ip}:{port}/stop_test", timeout=10)
+        requests.post(f"http://{ip}:{port}/stop_test", timeout=60)
         log.info("test.global_stop_requested")
     except Exception as e:
         log.warning("test.global_stop_failed", error=str(e))
