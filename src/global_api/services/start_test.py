@@ -264,9 +264,7 @@ def recover_cluster_after_stop(
 
             ready_workers = [
                 node for node in worker_nodes
-                if node.get("status") == WorkerStatus.IDLE
-                and int(node.get("max_slots", 0) or 0) > 0
-                and int(node.get("inflight_requests", 0) or 0) == 0
+               if node.get("status") == WorkerStatus.IDLE
             ]
 
             if len(ready_workers) != expected_total:
