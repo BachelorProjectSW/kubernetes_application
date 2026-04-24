@@ -28,7 +28,6 @@ def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> list[dict]:
             }
         )
 
-
     return raw_events
 
 
@@ -65,7 +64,10 @@ def get_test_results(config_id: str) -> dict:
     total_requests = len(sorted_requests)
     successful_requests = sum(1 for entry in sorted_requests if entry.success)
     failed_requests = total_requests - successful_requests
-    avg_latency_ms = round(sum(entry.latency_ms for entry in sorted_requests) / total_requests, 2) if total_requests else 0.0
+    avg_latency_ms = round(
+        sum(entry.latency_ms for entry in sorted_requests)
+        / total_requests, 2
+        ) if total_requests else 0.0
 
     gco2_over_time: list[dict] = []
     request_over_time: list[dict] = []
@@ -135,7 +137,6 @@ def get_test_results(config_id: str) -> dict:
                 "latency_ms": round(entry.latency_ms, 2),
             }
         )
-
 
     avg_renewable_pct = round(
         (sum(entry.renewable_fraction for entry in sorted_requests) / total_requests) * 100,

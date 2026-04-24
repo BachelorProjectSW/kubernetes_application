@@ -4,7 +4,6 @@ import structlog
 import asyncio
 from ...models.basemodels import Config, ClusterInformation, ClusterRuntimeData
 from ...models.enum import WorkerStatus
-from ...db.postgres import save_model_log
 from .scoring import score_cluster
 from ..util.all_configuration import config_store
 from ...custom_logging.util.log_reader import get_avg_latency, get_request_logs
@@ -161,7 +160,6 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
 
 def turn_off_idle_nodes(config: Config):
     """Turn nodes off."""
-    avg_latency_ms = get_avg_latency(config.power_scheduler.timeout_s)
     for cluster in config.clusters:
         try:
             url = f"http://{cluster.ip}:{cluster.port}/turn_off_idle_nodes/"

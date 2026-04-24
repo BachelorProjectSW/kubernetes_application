@@ -14,17 +14,21 @@ from ..util.time_utils import compute_simulated_now
 
 log = structlog.get_logger()
 
-#TODO jeg tror ikke den tager højde for at den ikke sender request ud til at cluster med kun slukkede worker nodes. 
-#TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
+
+# TODO jeg tror ikke den tager højde for at den ikke
+# sender request ud til at cluster med kun slukkede worker nodes.
+# TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
 def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     """Send the question to the local cluster request scheduler llama-service."""
     request_id = str(uuid.uuid4())
     trace_id = trace_id
     config = config_store.get()
     if config is None:
-        raise HTTPException(status_code=409, detail="No active config. Start a test before sending questions.")
+        raise HTTPException(status_code=409,
+                            detail="No active config. Start a test before sending questions.")
     if not config.clusters:
-        raise HTTPException(status_code=409, detail="No clusters configured in active config.")
+        raise HTTPException(status_code=409,
+                            detail="No clusters configured in active config.")
 
     total_start = time.monotonic()
 

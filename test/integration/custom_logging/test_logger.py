@@ -4,7 +4,6 @@ from src.custom_logging.models.log_models import RequestLog
 from src.custom_logging.util.log_reader import get_request_logs, get_avg_latency
 from src.custom_logging.logger import (
     log_request,
-    log_power_decision,
     log_node_status_snapshot,
     generate_summary,
     save_summary,

@@ -29,7 +29,6 @@ class RequestLog(BaseModel):
     cluster_llama_inference_ms: int | None = None
 
 
-
 class NodeStatusLog(BaseModel):
     """Status of a single node's status at a given timestamp."""
 

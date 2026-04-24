@@ -52,7 +52,7 @@ def start_test(config: Config):
                 status_code=response.status_code,
             )
             # ensure that all nodes + pods are on and ready to recieve requests
-            #TODO VIRKER IKKE NÅR WORKER NODES ER SLUKKET TIL AT STARTE MED:D pga timeout
+            # TODO VIRKER IKKE NÅR WORKER NODES ER SLUKKET TIL AT STARTE MED:D pga timeout
             ensure_nodes_ready(cluster, timeout_s=400)
 
         if config.power_scheduler.start:
@@ -75,7 +75,8 @@ def start_test(config: Config):
         log.exception("global_api.test.start_failed", error=str(e))
         raise Exception(f"test failed: {e}")
 
-#TODO stop test is not called when the workload scheduler is done. 
+
+# TODO stop test is not called when the workload scheduler is done.
 def stop_test():
     """Stop the test."""
     config = config_store.get()
