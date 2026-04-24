@@ -230,6 +230,16 @@ def read_config_by_id(config_id: str) -> Config | None:
     return Config.model_validate(row.config_json)
 
 
+def read_all_configs() -> list[Config]:
+    """Read all persisted config snapshots."""
+    query = select(ConfigRecord).order_by(ConfigRecord.created_at)
+
+    with Session(_engine()) as session:
+        rows = session.exec(query).all()
+
+    return [Config.model_validate(row.config_json) for row in rows]
+
+
 def read_all_node_status_logs(config_id: str | None = None) -> list[NodeStatusLog]:
     """Read node status logs for a config as NodeStatusLog models."""
     return read_model_logs(NodeStatusLog, config_id)
