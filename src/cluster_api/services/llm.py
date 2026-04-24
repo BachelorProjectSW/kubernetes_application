@@ -176,7 +176,10 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             trace_id=trace_id,
             target_url=url,
         )
-        timeout=(queued_at_selection*60)+120
+        #How many requests must finish before ours completes
+        requests_ahead = inflight_at_selection
+        per_request_s = 120
+        timeout = max(120, requests_ahead * per_request_s)
 
 
         response = requests.post(

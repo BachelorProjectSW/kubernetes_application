@@ -148,7 +148,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             global_cluster_api_call_ms=global_cluster_api_call_ms,
             global_total_time_ms=global_total_time_ms,
         )
-        return HTTPException(status_code=500, detail=str(data))
+        raise HTTPException(status_code=500, detail=str(data))
 
     result = LLMResponse(
         llm_content=data["llm_content"],

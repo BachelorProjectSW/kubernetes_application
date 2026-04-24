@@ -101,7 +101,7 @@ def start_test(config: Config):
         return {"message": f"{config.name} test started successfully"}
 
     except Exception:
-        # Global did not accept start, so release local state again
+        #Global did not accept start, so release state again
         with test_state_lock:
             test_running = False
             current_config = None
@@ -191,7 +191,7 @@ def get_test_status() -> dict:
         )
         return r.json()
     except Exception:
-        # fall back to local state if global unreachable
+        #fall back to local state if global unreachable
         with test_state_lock:
             if stop_event.is_set():
                 return {"status": "stopping"}
