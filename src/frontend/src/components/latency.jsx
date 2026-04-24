@@ -8,8 +8,8 @@ function Latency({inputs, handleChange}) {
                 <label> latency window</label>
                     <input 
                         type="number"
-                        name="window"
-                        value={inputs.window}
+                        name="latency_window"
+                        value={inputs.latency_window}
                         onChange={handleChange} />
                 
             </div>
