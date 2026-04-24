@@ -81,23 +81,25 @@ def sync_worker_status(worker: WorkerNode) -> None:
     log_node_status_snapshot(cluster_name, worker)
 
 
-def handle_llm(question: QuestionConfig, trace_id: str | None = None):
+import aiohttp
+
+async def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     """Send the request to the correct working node and log."""
 
     if test_state.is_stopping():
-       logger.info(
-                "cluster_api.llm.rejected_stopping",
-                service="cluster_api",
-                trace_id=trace_id,)
-       raise HTTPException(status_code=409, detail="Cluster is stopping")
-    
-    try:
-        config = None
-        cluster_name = None
-        worker_node = None
-        trace_id = trace_id
-        start_time = time.monotonic()
+        logger.info(
+            "cluster_api.llm.rejected_stopping",
+            service="cluster_api",
+            trace_id=trace_id,
+        )
+        raise HTTPException(status_code=409, detail="Cluster is stopping")
 
+    config = None
+    cluster_name = None
+    worker_node = None
+    start_time = time.monotonic()
+
+    try:
         config = config_store.get()
         cluster_name = config.cluster_config.name
 
@@ -157,6 +159,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             "n_predict": question.max_output_tokens,
             "temperature": 0.7,
         }
+
         if test_state.is_stopping():
             logger.info(
                 "cluster_api.llm.rejected_before_worker_forward",
@@ -176,22 +179,15 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             trace_id=trace_id,
             target_url=url,
         )
-        #How many requests must finish before ours completes
-        requests_ahead = inflight_at_selection
-        per_request_s = 120
-        timeout = max(120, requests_ahead * per_request_s)
 
-
-        response = requests.post(
-            url,
-            json=payload,
-            timeout=timeout,
-        )
-        response.raise_for_status()
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=None)) as session:
+            async with session.post(url, json=payload) as response:
+                response.raise_for_status()
+                result = await response.json()
 
         cluster_llama_inference_ms = int((time.monotonic() - llama_call_start) * 1000)
-
         duration_ms = int((time.monotonic() - start_time) * 1000)
+
         logger.info(
             "cluster_api.llm.request_succeeded",
             service="cluster_api",
@@ -202,10 +198,9 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             target_url=url,
             cluster_llama_inference_ms=cluster_llama_inference_ms,
             cluster_total_time_ms=duration_ms,
-            status_code=response.status_code,
+            status_code=response.status,
             max_output_tokens=question.max_output_tokens,
         )
-        result = response.json()
 
         return LLMResponse(
             llm_content=result,
@@ -232,10 +227,8 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         return f"failed: {e}"
 
     finally:
-        # No matter whether it failed or succeded, we still need to free the slot
         if worker_node is not None:
             with worker_lock:
-
                 worker_node.inflight_requests = max(0, worker_node.inflight_requests - 1)
                 sync_worker_status(worker_node)
 

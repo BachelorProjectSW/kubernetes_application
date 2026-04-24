@@ -45,10 +45,9 @@ def set_config(cluster_information: ClusterInformation):
 
 
 @router.post("/handle_llm_request")
-def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
-    """Handle llm request."""
+async def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
     trace_id = request.headers.get("X-Trace-Id")
-    return handle_llm(question, trace_id=trace_id)
+    return await handle_llm(question, trace_id=trace_id)
 
 
 
@@ -59,16 +58,14 @@ def get_cluster_information_endpoint():
     return config_store.get()
 
 
-@router.post("/cancel_all_llama_pods")
-def cancel_all_llama_pods_endpoint():
-    """Delete all llama pods."""
-    cancel_all_llama_pods()
-    return {"message": "Llama pods deleted, restarting"}
-
 @router.post("/stop_test")
-def stop_test_endpoint():
+async def stop_test_endpoint():
     test_state.mark_stopping()
     return {"message": "Cluster stopping"}
+
+@router.post("/cancel_all_llama_pods")
+async def cancel_pods_endpoint():
+    return cancel_all_llama_pods() 
 
 @router.post("/refresh_worker_capacities")
 def refresh_worker_capacities():

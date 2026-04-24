@@ -19,12 +19,9 @@ def _cancel_all_llama_pods_background():
 
 def cancel_all_llama_pods():
     """Request llama pod restart and return immediately."""
-    if test_state.is_stopping():
-        return {"message": "Cancel already in progress"}
     threading.Thread(
         target=_cancel_all_llama_pods_background,
         daemon=True,
         name="cancel-all-llama-pods",
     ).start()
-
     return {"message": "Llama pod restart requested"}
