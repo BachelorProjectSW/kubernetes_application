@@ -141,7 +141,7 @@ const handleSelectHistory = (e) => {
                     </select>
                 ) : (
                     <input
-                        type="text"
+                        type="number"
                         name="expID"
                         value={inputs.expID || ""}
                         onChange={handleChange}
