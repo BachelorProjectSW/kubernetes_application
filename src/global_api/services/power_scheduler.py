@@ -111,10 +111,10 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         for _, cluster in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
     ]
 
-    avg_latency_ms = get_avg_latency(config.power_scheduler.timeout_s)
+    avg_latency_ms = get_avg_latency(config.latency.latency_window_s)
     max_latency_ms = config.latency.max_ms
     current_active_nodes = get_current_active_nodes(clusters)
-    current_rps = get_current_rps(config.power_scheduler.timeout_s, config.id)
+    current_rps = get_current_rps(config.latency.latency_window_s, config.id)
 
     nodes_to_add = estimate_nodes_to_add(
         avg_latency_ms,
@@ -145,7 +145,9 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         try:
             url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_on_nodes/"
             response = requests.post(url, params={"number_of_nodes": amount}, timeout=10)
-            turned_on = response.json().get("turned_on", amount)
+            response.raise_for_status()
+            payload = response.json() if response.content else {}
+            turned_on = payload.get("node_changed", amount)
             nodes_to_add -= turned_on
         except Exception as e:
             log.error(
@@ -176,14 +178,19 @@ def turn_off_idle_nodes(config: Config):
 async def power_scheduler_loop():
     """Check every x seconds whether more working nodes should be turn on or off."""
     log.info("global_api.power.scheduler_started")
-    config = config_store.get()
-    timeout = config.power_scheduler.timeout_s
     while True:
+        config = config_store.get()
+        if config is None:
+            log.warning("global_api.power.scheduler_missing_config")
+            break
+
+        timeout = config.power_scheduler.timeout_s
         log.info("global_api.power.scheduler_iteration_started", timeout_s=timeout)
         await asyncio.sleep(timeout)
-        if not config_store.get().power_scheduler.start:
+        latest_config = config_store.get()
+        if latest_config is None or not latest_config.power_scheduler.start:
             break
         all_clusters = config_store.get_cluster_information()
-        turn_nodes_on(config, all_clusters)
-        turn_off_idle_nodes(config)
+        turn_nodes_on(latest_config, all_clusters)
+        turn_off_idle_nodes(latest_config)
     log.info("global_api.power.scheduler_ended")

@@ -1,6 +1,7 @@
 import time
 import requests
 import structlog
+from fastapi import HTTPException
 
 from src.models.enum import WorkerStatus
 from ...models.basemodels import QuestionConfig, WorkerNode, LLMResponse
@@ -14,7 +15,7 @@ logger = structlog.get_logger()
 
 rr_index = 0
 
-
+#TODO måske lige prøve at teste en ny model sådan man får nogleunde svar tilbage igen. 
 def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
     """Pick a worker in round-robin order."""
     global rr_index
@@ -111,7 +112,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
                     worker_node=None,
                     worker_count=len(config.worker_nodes),
                 )
-                return "failed: no available worker"
+                raise HTTPException(status_code=503, detail="No available worker")
 
             worker_node.inflight_requests += 1
             sync_worker_status(worker_node)
@@ -151,6 +152,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             "temperature": 0.7,
         }
 
+        cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()
         logger.info(
             "cluster_api.llm.llama_inference_started",
@@ -193,6 +195,9 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             active_requests_at_selection=active_at_selection,
             queued_requests_at_selection=queued_at_selection,
             max_slots=max_slots_at_selection,
+            cluster_queue_time_ms=cluster_queue_time_ms,
+            cluster_llama_inference_ms=cluster_llama_inference_ms,
+            llama_response_status_code=response.status_code,
         )
 
     except Exception as e:
@@ -208,7 +213,9 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             cluster_total_time_ms=duration_ms,
             error=str(e),
         )
-        return f"failed: {e}"
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=502, detail=f"LLM request failed: {str(e)}") from e
 
     finally:
         # No matter whether it failed or succeded, we still need to free the slot

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from ..services.start_test import start_test, start_test_test, stop_test, get_test_status
+from ..services.test_results import get_test_results
 from ...models.basemodels import Config
 router = APIRouter()
 
@@ -7,6 +8,9 @@ router = APIRouter()
 # TODO Lav experiments tests med test om at det er "noglelunde deterministisk."
 # TODO Sørg for at alle logs gir mening og ikke bare spam.
 # TODO LAV DOCSTRINGS TIL ALLE FUNKTIONER!!!
+#TODO Sikre sig at CROM Data virker
+#TODO få harddrive data. 
+#TODO lav endpoint til at hente alle configs med id og navn. 
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
     """Start the test."""
@@ -40,3 +44,14 @@ def stop_test_endpoint():
 def test_status_endpoint():
     """Return current test status: idle, running, or stopping."""
     return get_test_status()
+
+
+@router.get("/test_results")
+def test_results_endpoint(config_id: str):
+    """Return stored test results and graph-ready summary data for one config id."""
+    try:
+        return get_test_results(config_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

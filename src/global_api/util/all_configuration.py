@@ -28,6 +28,8 @@ class ConfigStore:
     def get_clusters(self):
         """Return clusters."""
         with self._lock:
+            if self._config is None:
+                return []
             return self._config.clusters
 
     def get_cluster_information(self):
@@ -35,6 +37,8 @@ class ConfigStore:
         all_clusters = []
 
         with self._lock:
+            if self._config is None:
+                return all_clusters
             clusters = list(self._config.clusters)
 
         for cluster_cfg in clusters:
@@ -54,6 +58,8 @@ class ConfigStore:
     def stop_power_scheduler(self):
         """Stop power scheduler."""
         with self._lock:
+            if self._config is None:
+                return
             self._config.power_scheduler.start = False
 
 

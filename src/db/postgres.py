@@ -14,7 +14,6 @@ from sqlmodel import Field, SQLModel, Session, select
 
 from ..custom_logging.models.log_models import (
     NodeStatusLog,
-    PowerDecisionLog,
     RequestLog,
     TerminalDebugLog,
 )
@@ -218,9 +217,17 @@ def read_all_request_logs(config_id: str | None = None) -> list[RequestLog]:
     return read_model_logs(RequestLog, config_id)
 
 
-def read_all_power_decision_logs(config_id: str | None = None) -> list[PowerDecisionLog]:
-    """Read power decision logs for a config as PowerDecisionLog models."""
-    return read_model_logs(PowerDecisionLog, config_id)
+def read_config_by_id(config_id: str) -> Config | None:
+    """Read a persisted config snapshot by config id."""
+    query = select(ConfigRecord).where(ConfigRecord.config_id == config_id)
+
+    with Session(_engine()) as session:
+        row = session.exec(query).first()
+
+    if row is None:
+        return None
+
+    return Config.model_validate(row.config_json)
 
 
 def read_all_node_status_logs(config_id: str | None = None) -> list[NodeStatusLog]:

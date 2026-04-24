@@ -15,6 +15,9 @@ from ...custom_logging.logger import log_node_status_snapshot
 log = structlog.get_logger()
 
 
+# TODO tjek hvad der sker hvis alle nodes bliver slukket pga idle time?
+# TODO når en node er slukket modtager de stadigvæk request.
+# TODO noglegange bliver status ikke opdateret når de er slukket.
 def run_cmd(cmd):
     """Run bash command."""
     result = subprocess.run(
@@ -284,7 +287,7 @@ def turn_off_idle_nodes(idle_time: int):
     nodes = config.worker_nodes
 
     for node in nodes:
-        if node.status != WorkerStatus.IDLE:
+        if node.status == WorkerStatus.OFF:
             continue
         last_request = get_idle_time(request_logs, node.name, cluster_name)
         if last_request > idle_time:
