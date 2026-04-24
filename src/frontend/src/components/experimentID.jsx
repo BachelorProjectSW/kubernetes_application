@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import earlierExpIds from './staticData';
 
 function Ids({ inputs, setInputs, handleChange }) {
