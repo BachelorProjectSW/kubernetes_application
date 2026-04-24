@@ -28,7 +28,7 @@ function Ids({ inputs, setInputs, handleChange }) {
 
     const toggleMode = () => setIsExisting(!isExisting);
 
-    const handleSelectHistory = (e) => {
+   /* const handleSelectHistory = (e) => {
         const selectedId = e.target.value;
         if (!selectedId) return;
 
@@ -63,7 +63,62 @@ function Ids({ inputs, setInputs, handleChange }) {
         }
     };
 
+*/
+const handleSelectHistory = (e) => {
+    const selectedId = e.target.value;
+    if (!selectedId) return;
 
+    // Find the selected experiment from the fetched list
+    const entry = earlierExpIds.find(exp => exp.id == selectedId);
+
+    if (entry && entry.config_json) {
+        const config = entry.config_json;
+
+        // Convert total duration seconds back into days, hours, and minutes for the UI
+        const totalSeconds = config.start?.duration_time_s || 0;
+        const d = Math.floor(totalSeconds / 86400);
+        const h = Math.floor((totalSeconds % 86400) / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+
+        setInputs({
+            // Identification
+            expID: entry.id, // Using the database ID
+            name: entry.config_name || config.name,
+            
+            // Start & Duration
+            startdate: config.start?.start_time_simulated || "",
+            dur_days: d,
+            dur_hours: h,
+            dur_minutes: m,
+
+            // Weights
+            gco2: config.weights?.gco2 || "",
+            cost: config.weights?.cost || "",
+            latency: config.weights?.latency || "",
+
+            // Power Scheduler
+            timeout_s: config.power_scheduler?.timeout_s || "",
+            turn_off_s: config.power_scheduler?.idle_time_for_turn_off_s || "",
+
+            // Latency - Mapping 'latency_window_s' to the UI state 'window'
+            window: config.latency?.latency_window_s || "", 
+            max_latency: config.latency?.max_ms || "",
+
+            // Workload
+            request_pr_min: config.workload?.request_per_minute || "",
+            pattern: config.workload?.pattern || "",
+            seed: config.workload?.seed || "",
+            peakiness: config.workload?.peakiness || "",
+
+            // Cluster & Infrastructure
+            clusters: config.clusters || [],
+            ip_global: config.global_scheduler?.ip || "",
+            port_global: config.global_scheduler?.port || "",
+            ip_strato: config.strato?.ip || "",
+            port_strato: config.strato?.port || ""
+        });
+    }
+};
     return (
         <>
             <label> ExpId:
