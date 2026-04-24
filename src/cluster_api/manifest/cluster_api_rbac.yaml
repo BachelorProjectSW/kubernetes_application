@@ -1,7 +1,9 @@
-subjects:
-  - kind: ServiceAccount
-    name: cluster-api-sa
-    namespace: default
+#Identity (so we can give it permissions)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cluster-api-sa
+  namespace: default
 ---
 #Kubernetes permission
 apiVersion: rbac.authorization.k8s.io/v1
