@@ -157,13 +157,15 @@ def log_power_decision(
     )
 
     row = entry.model_dump(mode="json")
-
-    try:
-        save_model_log(_current_config_id(), entry)
-    except Exception as e:
-        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="PowerDecisionLog")
+    threading.Thread(
+        target=_save_model_log_bg,
+        args=(_current_config_id(), entry, "PowerDecisionLog"),
+        daemon=True,
+    ).start()
 
     log.info("custom_logging.power.decision_logged", **row)
+
+    
 
 
 def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
