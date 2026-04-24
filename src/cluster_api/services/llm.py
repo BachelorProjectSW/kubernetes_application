@@ -162,11 +162,12 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             trace_id=trace_id,
             target_url=url,
         )
+        timeout = 180 + (queued_at_selection * 90)
 
         response = requests.post(
             url,
             json=payload,
-            timeout=120,
+            timeout=timeout,
         )
         response.raise_for_status()
 

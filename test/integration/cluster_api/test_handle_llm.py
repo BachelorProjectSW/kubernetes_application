@@ -14,7 +14,6 @@ def test_handle_llm_request_dk_one_worker():
     payload = {
         "question": "Describe the color violet in one short sentence.",
         "max_output_tokens": 32,
-        "context_window": 256,
     }
 
     response = requests.post(
@@ -39,7 +38,6 @@ def test_handle_llm_request_dk_uses_both_workers_when_requests_overlap():
     payload = {
         "question": "Write a medium-length response about the use of kubernetes.",
         "max_output_tokens": 64,
-        "context_window": 256,
     }
 
     def send_request():
@@ -70,7 +68,6 @@ def test_handle_llm_request_dk_enters_queueing_when_requests_exceed_total_slots(
     payload = {
         "question": "Write a medium-length response about the use of kubernetes.",
         "max_output_tokens": 128,
-        "context_window": 256,
     }
 
     def send_request():

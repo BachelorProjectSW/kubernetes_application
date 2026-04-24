@@ -113,7 +113,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             url,
             json=question.model_dump(),
             headers=headers,
-            timeout=180,
+            timeout=1000,
         )
         response.raise_for_status()
         data = response.json()
