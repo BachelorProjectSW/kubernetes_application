@@ -147,10 +147,11 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             url = f"http://{worker_node.ip}:{config.cluster_config.llama_hostport}/completion"
 
         payload = {
-            "prompt": f"<s>[INST] {question.question} [/INST]",
+            "prompt": f"Question: {question.question} Answer:",
             "n_predict": question.max_output_tokens,
-            "temperature": 0.7,
+            "temperature": 0.2, 
         }
+
 
         cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()
