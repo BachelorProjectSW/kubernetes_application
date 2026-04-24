@@ -235,9 +235,7 @@ def read_all_configs() -> list[Config]:
     query = select(ConfigRecord).order_by(ConfigRecord.created_at)
 
     with Session(_engine()) as session:
-        rows = session.exec(query).all()
-
-    return [Config.model_validate(row.config_json) for row in rows]
+        return session.exec(query).all()
 
 
 def read_all_node_status_logs(config_id: str | None = None) -> list[NodeStatusLog]:
