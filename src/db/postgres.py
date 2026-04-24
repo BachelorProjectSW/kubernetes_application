@@ -230,7 +230,7 @@ def read_config_by_id(config_id: str) -> Config | None:
     return Config.model_validate(row.config_json)
 
 
-def read_all_configs() -> list[Config]:
+def qread_all_configs() -> list[Config]:
     """Read all persisted config snapshots."""
     query = select(ConfigRecord).order_by(ConfigRecord.created_at)
 

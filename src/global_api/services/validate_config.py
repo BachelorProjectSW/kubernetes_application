@@ -9,7 +9,7 @@ from ..util.time_utils import SIMULATED_TIME_FORMAT
 
 log = structlog.get_logger()
 
-
+#TODO tjek at config navn og id er unikt:D
 def validate_config_values(config: Config) -> list[str]:
     """Validate the values in the config file."""
     errors = []
