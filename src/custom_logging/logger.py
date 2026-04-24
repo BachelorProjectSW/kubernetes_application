@@ -1,3 +1,5 @@
+import threading
+
 import structlog
 import uuid
 from datetime import datetime, timezone
@@ -124,10 +126,11 @@ def log_request(
 
     row = entry.model_dump(mode="json")
 
-    try:
-        save_model_log(_current_config_id(), entry)
-    except Exception as e:
-        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="RequestLog")
+    threading.Thread(
+        target=_save_model_log_bg,
+        args=(_current_config_id(), entry, "RequestLog"),
+        daemon=True,
+    ).start()
 
     log.info("custom_logging.request.logged", **row)
 
@@ -171,12 +174,14 @@ def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
         timestamp=timestamp,
         cluster=cluster_name,
         node=node.name,
-        status=node.status
+        status=node.status,
     )
-    try:
-        save_model_log(_current_config_id(), entry)
-    except Exception as e:
-        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
+    # Fire-and-forget: DB write happens in background
+    threading.Thread(
+        target=_save_model_log_bg,
+        args=(_current_config_id(), entry, "NodeStatusLog"),
+        daemon=True,
+    ).start()
 
 
 def generate_summary() -> dict:
@@ -238,3 +243,10 @@ def save_summary(summary: dict):
         save_payload_log(_current_config_id(), "summary", summary)
     except Exception as e:
         log.warning("custom_logging.db.save_summary_failed", error=str(e))
+
+def _save_model_log_bg(config_id, entry, log_type):
+    """Background DB write — runs in a separate thread."""
+    try:
+        save_model_log(config_id, entry)
+    except Exception as e:
+        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type=log_type)
