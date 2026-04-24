@@ -11,12 +11,13 @@ from .cluster_data import get_cluster_runtime_data
 from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import log_request
+import aiohttp
 
 
 log = structlog.get_logger()
 
 
-def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
+async def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     """Send the question to the local cluster request scheduler llama-service."""
     request_id = str(uuid.uuid4())
     trace_id = trace_id
@@ -104,17 +105,20 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         )
         raise HTTPException(status_code=409, detail="Test is stopping")
 
-    response = requests.post(
-        url,
-        json=question.model_dump(),
-        headers={"X-Trace-Id": trace_id},
-    )
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=None)) as session:
+        async with session.post(
+            url,
+            json=question.model_dump(),
+            headers={"X-Trace-Id": trace_id},
+        ) as response:
+            status_code = response.status
+            data = await response.json()
+
     global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
     global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-    if response.status_code == 409:
-        raise HTTPException(status_code=409, detail="Cluster is stopping")
 
-    data = response.json()
+    if status_code == 409:
+        raise HTTPException(status_code=409, detail="Cluster is stopping")
 
     
 

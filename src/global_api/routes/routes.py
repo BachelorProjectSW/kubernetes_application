@@ -16,10 +16,10 @@ def nodes():
 
 
 @router.post("/handle_llm_question")
-def handle_llm_question(question: QuestionConfig, request: Request):
+async def handle_llm_question(question: QuestionConfig, request: Request):
     """Handle llm question."""
     trace_id = request.headers.get("X-Trace-Id")
-    return handle_llm_request(question, trace_id=trace_id)
+    return await handle_llm_request(question, trace_id=trace_id)
 
 
 @router.post("/start_test")
