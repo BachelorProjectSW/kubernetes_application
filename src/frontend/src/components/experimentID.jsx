@@ -3,7 +3,29 @@ import earlierExpIds from './staticData';
 
 function Ids({ inputs, setInputs, handleChange }) {
 
+    // 1. Create state to hold the fetched configurations
+    const [earlierExpIds, setEarlierExpIds] = useState([]);
     const [isExisting, setIsExisting] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchConfigs = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch('http://100.109.95.2:8095/get_configs'); // Your backend IP
+                if (!response.ok) throw new Error("Failed to fetch configs");
+                const data = await response.json();
+                setEarlierExpIds(data);
+            } catch (err) {
+                console.error("Error fetching historical data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchConfigs();
+    }, []);
+
     const toggleMode = () => setIsExisting(!isExisting);
 
     const handleSelectHistory = (e) => {
