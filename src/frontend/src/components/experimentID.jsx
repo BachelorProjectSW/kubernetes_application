@@ -82,7 +82,7 @@ const handleSelectHistory = (e) => {
 
         setInputs({
             // Identification
-            expID: entry.id, // Using the database ID
+            expID: entry.config_id, // Using the database ID
             name: entry.config_name || config.name,
             
             // Start & Duration
