@@ -45,8 +45,6 @@ def validate_config_values(config: Config) -> list[str]:
         errors.append("question cannot be empty")
     if config.question.max_output_tokens <= 0:
         errors.append("max_output_tokens must be > 0")
-    if config.question.context_window <= 0:
-        errors.append("context_window must be > 0")
 
     # latency
     if config.latency.max_ms <= 0:

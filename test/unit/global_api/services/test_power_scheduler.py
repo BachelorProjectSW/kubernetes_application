@@ -29,7 +29,6 @@ def _make_cluster_info(name: str, worker_nodes: list[WorkerNode]) -> ClusterInfo
         question_config=QuestionConfig(
             question="question",
             max_output_tokens=10,
-            context_window=20,
         ),
         worker_nodes=worker_nodes,
     )

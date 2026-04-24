@@ -45,7 +45,6 @@ def get_test_config():
         question=QuestionConfig(
             question="hey",
             max_output_tokens=200,
-            context_window=200
         ),
         clusters=[
             ClusterConfig(
