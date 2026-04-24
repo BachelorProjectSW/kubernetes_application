@@ -10,6 +10,7 @@ router = APIRouter()
 # TODO LAV DOCSTRINGS TIL ALLE FUNKTIONER!!!
 #TODO Sikre sig at CROM Data virker
 #TODO få harddrive data. 
+#TODO lav endpoint til at hente alle configs med id og navn. 
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
     """Start the test."""
