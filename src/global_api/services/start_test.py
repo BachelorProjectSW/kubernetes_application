@@ -27,7 +27,7 @@ def start_test(config: Config):
     if test_state.is_running():
         raise HTTPException(status_code=409, detail="A test is already running")
     try:
-        test_state.mark_running()
+        test_state.is_running()
         global _power_scheduler_thread
         config.start.start_time_real = datetime.now(timezone.utc).isoformat()
         set_current_config_id(config.id)
