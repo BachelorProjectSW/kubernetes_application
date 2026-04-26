@@ -164,14 +164,14 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         }
 
         if test_state.is_stopping():
-        logger.info(
-            "cluster_api.llm.rejected_before_worker_forward",
-            service="cluster_api",
-            cluster_name=cluster_name,
-            worker_node=worker_node.name,
-            trace_id=trace_id,
-        )
-        raise HTTPException(status_code=409, detail="Cluster is stopping")
+            logger.info(
+                "cluster_api.llm.rejected_before_worker_forward",
+                service="cluster_api",
+                cluster_name=cluster_name,
+                worker_node=worker_node.name,
+                trace_id=trace_id,
+            )
+            raise HTTPException(status_code=409, detail="Cluster is stopping")
 
 
 
