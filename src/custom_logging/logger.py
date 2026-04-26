@@ -10,6 +10,7 @@ from ..db.postgres import (
     read_terminal_debug_logs,
     read_model_logs,
     save_payload_log,
+    save_model_log,
 )
 from .log_queue import enqueue_model_log, enqueue_terminal_log
 
