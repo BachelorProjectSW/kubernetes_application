@@ -204,7 +204,7 @@ async def get_cluster_runtime_data_async(
         url = f"http://{cluster.ip}:{cluster.port}/get_cluster_working_nodes"
         worker_fetch_start = time.monotonic()
 
-        timeout = aiohttp.ClientTimeout(total=5)
+        timeout = aiohttp.ClientTimeout(total=180)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(url) as response:
                 response.raise_for_status()
