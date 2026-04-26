@@ -10,6 +10,7 @@ import threading
 from .ensure_nodes_ready import ensure_nodes_ready
 from datetime import datetime, timezone
 from ...models.test_state import test_state
+from .llm_task_registry import cancel_active_llm_tasks
 
 
 _power_scheduler_thread: threading.Thread | None = None
@@ -88,26 +89,73 @@ async def stop_test():
 
     if not test_state.is_running():
         return {"message": "No test running"}
-    
+
     config = config_store.get()
-    config_store.stop_power_scheduler()
+
+    # 1. Block new incoming LLM requests immediately.
     test_state.mark_stopping()
-    
+
+    # 2. Stop anything that creates/schedules more work.
+    config_store.stop_power_scheduler()
+
+    # 3. Cancel global API tasks currently waiting on LLM/cluster responses.
+    cancelled_global_tasks = cancel_active_llm_tasks()
+
+    # 4. Tell clusters to cancel/delete their running work.
+    cluster_results = []
+
     if config:
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            for cluster in config.clusters:
-                try:
-                    # All pods are deleted (recreated automatically).
-                    # Because when the test is stopped --> possibility of inflight-requests
-                    # These needs to be deleted, such that the next test can run deterministcally
-                    async with session.post(
-                        f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-                    ) as response:
-                        response.raise_for_status()
-                    log.info("global.stop_test.pods_deleted", cluster=cluster.name)
-                except Exception as e:
-                    log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
+            results = await asyncio.gather(
+                *[
+                    cancel_cluster_pods(session, cluster)
+                    for cluster in config.clusters
+                ],
+                return_exceptions=True,
+            )
+
+            cluster_results = results
+
+    # Be careful with this.
+    # If reset() clears is_stopping, new requests may be accepted again immediately.
     test_state.reset()
-    log.info("global.stop_test.done")
-    return {"message": "Test stopped"}
+
+    log.info(
+        "global.stop_test.done",
+        cancelled_global_tasks=cancelled_global_tasks,
+        cluster_results=cluster_results,
+    )
+
+    return {
+        "message": "Test stopped",
+        "cancelled_global_tasks": cancelled_global_tasks,
+        "cluster_results": cluster_results,
+    }
+
+async def cancel_cluster_pods(session: aiohttp.ClientSession, cluster):
+    try:
+        async with session.post(
+            f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
+        ) as response:
+            response.raise_for_status()
+
+        log.info("global.stop_test.pods_deleted", cluster=cluster.name)
+
+        return {
+            "cluster": cluster.name,
+            "success": True,
+        }
+
+    except Exception as e:
+        log.warning(
+            "global.stop_test.pods_delete_failed",
+            cluster=cluster.name,
+            error=str(e),
+        )
+
+        return {
+            "cluster": cluster.name,
+            "success": False,
+            "error": str(e),
+        }

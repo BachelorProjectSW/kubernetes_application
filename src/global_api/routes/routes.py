@@ -6,8 +6,10 @@ from ..services.handle_llm_request import handle_llm_request
 from ..services.start_test import start_test, stop_test
 from ...models.basemodels import Config, QuestionConfig
 from ...models.test_state import test_state
-
-
+from ..services.llm_task_registry import register_current_task, unregister_task
+import asyncio
+import structlog
+log = structlog.get_logger()
 
 router = APIRouter()
 
@@ -20,9 +22,24 @@ def nodes():
 
 @router.post("/handle_llm_question")
 async def handle_llm_question(question: QuestionConfig, request: Request):
-    """Handle llm question."""
+    if test_state.is_stopping():
+        raise HTTPException(status_code=503, detail="Test is stopping")
+
     trace_id = request.headers.get("X-Trace-Id")
-    return await handle_llm_request(question, trace_id=trace_id)
+    task = register_current_task()
+
+    try:
+        return await handle_llm_request(question, trace_id=trace_id)
+
+    except asyncio.CancelledError:
+        log.warning("global_api.llm.request_cancelled", trace_id=trace_id)
+        raise HTTPException(
+            status_code=499,
+            detail="Request cancelled because test is stopping",
+        )
+
+    finally:
+        unregister_task(task)
 
 
 @router.post("/start_test")
