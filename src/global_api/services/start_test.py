@@ -83,8 +83,8 @@ def start_test(config: Config):
 # TODO stop test is not called when the workload scheduler is done.
 async def stop_test():
     """Stop the test."""
-     if test_state.is_stopping():
-        return {"message": "Stop already in progress"}
+    if test_state.is_stopping():
+    return {"message": "Stop already in progress"}
 
     if not test_state.is_running():
         return {"message": "No test running"}
