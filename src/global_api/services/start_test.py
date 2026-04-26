@@ -84,7 +84,7 @@ def start_test(config: Config):
 async def stop_test():
     """Stop the test."""
     if test_state.is_stopping():
-    return {"message": "Stop already in progress"}
+        return {"message": "Stop already in progress"}
 
     if not test_state.is_running():
         return {"message": "No test running"}
