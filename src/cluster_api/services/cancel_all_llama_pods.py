@@ -3,6 +3,7 @@ import threading
 import structlog
 
 from .power_scheduler import run_cmd
+from ...models.test_state import test_state
 
 log = structlog.get_logger()
 

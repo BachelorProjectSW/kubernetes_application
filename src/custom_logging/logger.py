@@ -126,7 +126,7 @@ def log_request(
 
     row = entry.model_dump(mode="json")
 
-    enqueue_model_log(_current_config_id(), entry)
+    save_model_log(_current_config_id(), entry)
 
     log.info("custom_logging.request.logged", **row)
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import queue
 import threading
 from typing import Any
+from .logger import log_request
 
 from pydantic import BaseModel
 
@@ -114,3 +115,10 @@ def stop_log_worker(timeout: float = 5.0) -> None:
 
     if _worker_thread is not None:
         _worker_thread.join(timeout=timeout)
+
+async def log_request_fresh_async(*args, **kwargs):
+    """
+    Persist RequestLog before continuing, without blocking the async event loop.
+    Use this for logs used by cluster scoring.
+    """
+    return await asyncio.to_thread(log_request, *args, **kwargs)
