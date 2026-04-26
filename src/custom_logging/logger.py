@@ -1,3 +1,4 @@
+from src.custom_logging.log_queue import enqueue_terminal_log
 import structlog
 import uuid
 from datetime import datetime, timezone
@@ -35,7 +36,7 @@ def _get_terminal_logs(_, __, event_dict):
     level = str(event_dict.get("level", "info"))
     message = str(event_dict.get("event", ""))
     config_id = _current_config_id()
-    save_terminal_debug(config_id, message, level, dict(event_dict))
+    enqueue_terminal_log(config_id, message, level, dict(event_dict))
     return event_dict
 
 
