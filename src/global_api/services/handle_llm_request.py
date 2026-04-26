@@ -6,7 +6,7 @@ import aiohttp
 import structlog
 from fastapi import HTTPException
 from ...models.basemodels import QuestionConfig, LLMResponse
-from .cluster_data import get_cluster_runtime_data
+from .cluster_data import get_cluster_runtime_data, get_cluster_runtime_data_async
 from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import log_request, log_request_async
@@ -59,8 +59,7 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
 
     all_cluster_energy_data = await asyncio.gather(
         *[
-            asyncio.to_thread(
-                get_cluster_runtime_data,
+            get_cluster_runtime_data_async(
                 cluster,
                 simulated_time,
                 config.energy,
