@@ -60,11 +60,11 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
     all_cluster_energy_data = await asyncio.gather(
         *[
             asyncio.to_thread(
-                get_cluster_runtime_data(
+                get_cluster_runtime_data,
                 cluster,
                 simulated_time,
                 config.energy,
-                config.latency.latency_window_s)
+                config.latency.latency_window_s,
             )
             for cluster in config.clusters
         ]

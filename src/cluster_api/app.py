@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from .routes.routes import router
 from ..db.postgres import init_database
-from ..custom_logging.log_queue import start_log_worker
 import os
 import uvicorn
 
@@ -10,7 +9,6 @@ app = FastAPI()
 app.include_router(router)
 
 init_database()
-start_log_worker()
 
 #TODO lav context manager
 
