@@ -44,11 +44,12 @@ def set_config(cluster_information: ClusterInformation):
     return config_store.get()
 
 
+
 @router.post("/handle_llm_request")
-def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
+async def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
     """Handle llm request."""
     trace_id = request.headers.get("X-Trace-Id")
-    return handle_llm(question, trace_id=trace_id)
+    return await asyncio.to_thread(handle_llm, question, trace_id=trace_id)
 
 
 @router.get("/get_cluster_information")
@@ -58,6 +59,6 @@ def get_cluster_information_endpoint():
 
 
 @router.post("/cancel_all_llama_pods")
-def cancel_all_llama_pods_endpoint():
+async def cancel_all_llama_pods_endpoint():
     """Delete all llama pods."""
-    return cancel_all_llama_pods()
+    return await asyncio.to_thread(cancel_all_llama_pods)

@@ -9,6 +9,7 @@ from ..util.cluster_config import config_store
 from threading import Lock
 from ...custom_logging.logger import log_node_status_snapshot
 from ...models.test_state import test_state
+import math
 
 worker_lock = Lock()  # Cannot have any race conditions
 
@@ -83,7 +84,11 @@ def sync_worker_status(worker: WorkerNode) -> None:
 def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     """Send the request to the correct working node and log."""
 
-
+    config = None
+    cluster_name = None
+    worker_node = None
+    trace_id = trace_id
+    start_time = time.monotonic()
     if test_state.is_stopping():
             logger.info(
                 "cluster_api.llm.rejected_stopping",
@@ -93,11 +98,6 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             raise HTTPException(status_code=409, detail="Cluster is stopping")
 
     try:
-        config = None
-        cluster_name = None
-        worker_node = None
-        trace_id = trace_id
-        start_time = time.monotonic()
 
         config = config_store.get()
         cluster_name = config.cluster_config.name
@@ -189,7 +189,19 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             trace_id=trace_id,
             target_url=url,
         )
-        timeout = 180 + (queued_at_selection * 90)
+        
+        BASE_GENERATION_TIMEOUT_S = 120
+        QUEUE_WAVE_TIMEOUT_S = 120
+        SAFETY_BUFFER_S = 30
+
+        requests_ahead = max(0, inflight_at_selection - 1)
+        waves_ahead = math.ceil(requests_ahead / max(1, max_slots_at_selection))
+
+        timeout = (
+            BASE_GENERATION_TIMEOUT_S
+            + waves_ahead * QUEUE_WAVE_TIMEOUT_S
+            + SAFETY_BUFFER_S
+        )
 
         response = requests.post(
             url,
