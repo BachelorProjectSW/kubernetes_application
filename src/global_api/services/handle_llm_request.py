@@ -231,7 +231,7 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
             global_total_time_ms=global_total_time_ms,
             payload_type=type(data).__name__,
         )
-       await asyncio.to_thread(
+        await asyncio.to_thread(
             log_request,
             request_id=request_id,
             cluster_name=cluster.name,
