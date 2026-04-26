@@ -8,6 +8,7 @@ from ...models.basemodels import QuestionConfig, WorkerNode, LLMResponse
 from ..util.cluster_config import config_store
 from threading import Lock
 from ...custom_logging.logger import log_node_status_snapshot
+from ...models.test_state import test_state
 
 worker_lock = Lock()  # Cannot have any race conditions
 
@@ -81,6 +82,16 @@ def sync_worker_status(worker: WorkerNode) -> None:
 
 def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     """Send the request to the correct working node and log."""
+
+
+    if test_state.is_stopping():
+            logger.info(
+                "cluster_api.llm.rejected_stopping",
+                service="cluster_api",
+                trace_id=trace_id,
+            )
+            raise HTTPException(status_code=409, detail="Cluster is stopping")
+
     try:
         config = None
         cluster_name = None
@@ -152,9 +163,21 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             "temperature": 0.2, 
         }
 
+        if test_state.is_stopping():
+        logger.info(
+            "cluster_api.llm.rejected_before_worker_forward",
+            service="cluster_api",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            trace_id=trace_id,
+        )
+        raise HTTPException(status_code=409, detail="Cluster is stopping")
+
+
 
         cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()
+        #TODO async
         logger.info(
             "cluster_api.llm.llama_inference_started",
             service="cluster_api",

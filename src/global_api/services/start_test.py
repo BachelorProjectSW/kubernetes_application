@@ -2,12 +2,14 @@ from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import set_current_config_id
 import requests
+import aiohttp
 import structlog
 from .power_scheduler import power_scheduler_loop
 import asyncio
 import threading
 from .ensure_nodes_ready import ensure_nodes_ready
 from datetime import datetime, timezone
+from ...models.test_state import test_state
 
 
 _power_scheduler_thread: threading.Thread | None = None
@@ -21,6 +23,8 @@ def _run_power_scheduler_loop():
 
 def start_test(config: Config):
     """Start the test and send configs."""
+    if test_state.is_running():
+        raise HTTPException(status_code=409, detail="A test is already running")
     try:
         global _power_scheduler_thread
         config.start.start_time_real = datetime.now(timezone.utc).isoformat()
@@ -77,22 +81,33 @@ def start_test(config: Config):
 
 
 # TODO stop test is not called when the workload scheduler is done.
-def stop_test():
+async def stop_test():
     """Stop the test."""
+     if test_state.is_stopping():
+        return {"message": "Stop already in progress"}
+
+    if not test_state.is_running():
+        return {"message": "No test running"}
+    
     config = config_store.get()
     config_store.stop_power_scheduler()
+    test_state.mark_stopping()
+    
     if config:
-        for cluster in config.clusters:
-            try:
-                # All pods are deleted (recreated automatically).
-                # Because when the test is stopped --> possibility of inflight-requests
-                # These needs to be deleted, such that the next test can run deterministcally
-                requests.post(
-                    f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-                    timeout=60
-                )
-                log.info("global.stop_test.pods_deleted", cluster=cluster.name)
-            except Exception as e:
-                log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            for cluster in config.clusters:
+                try:
+                    # All pods are deleted (recreated automatically).
+                    # Because when the test is stopped --> possibility of inflight-requests
+                    # These needs to be deleted, such that the next test can run deterministcally
+                    async with session.post(
+                        f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
+                    ) as response:
+                        response.raise_for_status()
+                    log.info("global.stop_test.pods_deleted", cluster=cluster.name)
+                except Exception as e:
+                    log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
+    test_state.reset()
     log.info("global.stop_test.done")
     return {"message": "Test stopped"}

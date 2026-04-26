@@ -5,6 +5,8 @@ from ..services.llm import handle_llm
 from ...models.basemodels import ClusterInformation, QuestionConfig
 from ...custom_logging.logger import set_current_config_id
 from ..util.cluster_config import config_store
+from ...models.test_state import test_state
+
 router = APIRouter()
 
 
@@ -57,5 +59,6 @@ def get_cluster_information_endpoint():
 @router.post("/cancel_all_llama_pods")
 def cancel_all_llama_pods_endpoint():
     """Delete all llama pods."""
+    test_state.mark_stopping()
     cancel_all_llama_pods()
     return {"message": "Llama pods deleted, restarting"}

@@ -1,4 +1,5 @@
 import threading
+import time
 
 import requests
 import uuid
@@ -14,53 +15,58 @@ log = structlog.get_logger()
 
 test_state_lock = threading.Lock()
 test_running = False
-stop_requested = False
 current_config = None
+stop_event = threading.Event()
+
 
 
 def start_test(config: Config):
-    """Start test in a background thread and return immediately."""
-    global test_running, stop_requested, current_config
+    """Start test.
 
-    try:
-        config.id = str(uuid.uuid4())
+    This endpoint only returns success after global API has accepted /start_test.
+    The workload itself still runs in a background thread.
+    """
+    global test_running, current_config
 
-        # Sanity checks of the config entries
-        ip = config.global_scheduler.ip
-        port = config.global_scheduler.port
-        response = requests.post(
-            f"http://{ip}:{port}/validate_config",
-            json=config.model_dump(),
-            timeout=60
-        )
-        response.raise_for_status()
-        validation = response.json()
-        if not validation["valid"]:
-            raise RuntimeError(f"Invalid config: {validation['errors']}")
-    except Exception as e:
-        raise RuntimeError(f"Validation failed: {str(e)}")
+    config.id = str(uuid.uuid4())
 
-    # Only run one test at a time
+    # Validate config against global before reserving local test state
+    for attempt in range(5):
+        try:
+            ip = config.global_scheduler.ip
+            port = config.global_scheduler.port
+            response = requests.post(
+                f"http://{ip}:{port}/validate_config",
+                json=config.model_dump(),
+                timeout=60,
+            )
+            response.raise_for_status()
+            validation = response.json()
+            if not validation["valid"]:
+                raise RuntimeError(f"Invalid config: {validation['errors']}")
+            break
+        except RuntimeError:
+            raise
+        except Exception as e:
+            if attempt == 4:
+                raise RuntimeError(f"Could not reach global cluster: {e}")
+            log.info("test.validate_config.retrying", attempt=attempt)
+            time.sleep(3)
+
+    # Reserve local state so only one test can start
     with test_state_lock:
         if test_running:
+            if stop_event.is_set():
+                raise RuntimeError("Previous test is still stopping.")
             raise RuntimeError("A test is already running. Stop the current test before starting a new one.")
         test_running = True
-        stop_requested = False
         current_config = config
+        stop_event.clear()
 
-    # run the test in a background thread, such the main thread is still open
-    thread = threading.Thread(target=run_test, args=(config,), daemon=True, name="test-runner")
-    thread.start()
-    log.info("test.started_in_background", config_id=config.id, test_name=config.name)
-    return {"message": f"{config.name} test started successfully"}
-
-
-def run_test(config: Config):
-    """Run the full test in a background thread."""
-    global test_running, stop_requested, current_config
     try:
         set_current_config_id(config.id)
-        save_config(config)
+        
+
         log.info("test.begins", source="strato_api", config_id=config.id, test_name=config.name)
 
         ip = config.global_scheduler.ip
@@ -68,9 +74,50 @@ def run_test(config: Config):
         url = f"http://{ip}:{port}/start_test"
 
         log.info("test.forward_to_global", url=url)
-        response = requests.post(url, json=config.model_dump(), timeout=180)
-        response.raise_for_status()
+        for attempt in range(20):
+            response = requests.post(url, json=config.model_dump(), timeout=180)
+            if response.status_code == 409:
+                log.info("test.global_still_recovering", attempt=attempt)
+                time.sleep(5)
+                continue
+            response.raise_for_status()
+            break
+        else:
+            raise RuntimeError("Global API still recovering after max retries")
+        
         log.info("test.global_started", status_code=response.status_code)
+        save_config(config)
+
+        # Global accepted. Now start workload in background.
+        thread = threading.Thread(
+            target=run_test_workload,
+            args=(config,),
+            daemon=True,
+            name="test-runner",
+        )
+        thread.start()
+
+        log.info("test.started_in_background", config_id=config.id, test_name=config.name)
+        return {"message": f"{config.name} test started successfully"}
+
+    except Exception:
+        #Global did not accept start, so release state again
+        with test_state_lock:
+            test_running = False
+            current_config = None
+            stop_event.clear()
+        raise
+
+
+def run_test_workload(config: Config):
+    """Run only the workload phase in a background thread."""
+    global test_running, current_config
+
+    try:
+        set_current_config_id(config.id)
+
+        ip = config.global_scheduler.ip
+        port = config.global_scheduler.port
 
         results = run_workload(
             f"http://{ip}:{port}",
@@ -92,42 +139,34 @@ def run_test(config: Config):
     except Exception as e:
         log.exception("test.failed", error=str(e))
     finally:
-        # regardless we return them to default values, such that we are ready for new test
         with test_state_lock:
             test_running = False
-            stop_requested = False
             current_config = None
-
+            stop_event.clear()
 
 def should_stop_test() -> bool:
     """Return True if the running test should stop."""
-    with test_state_lock:
-        return stop_requested
+    return stop_event.is_set()
 
 
 def stop_test():
-    """Stop the currently running test.
-
-    Sets the stop flag which signals the workload generator to cancel all in-flight requests.
-    Then calls global to stop the power scheduler and delete all llama pods on all clusters.
-    Raises RuntimeError if no test is currently running.
-    """
-    global stop_requested
+    """Stop the currently running test."""
     with test_state_lock:
         if not test_running:
             raise RuntimeError("No test is currently running.")
-        stop_requested = True
         config = current_config
+        stop_event.set()
 
     log.info("test.stop_requested")
     stop_global_power_scheduler(config.global_scheduler.ip, config.global_scheduler.port)
     return {"message": "Stop requested"}
 
 
+
 def stop_global_power_scheduler(ip, port):
     """Tell global API to stop the power scheduler."""
     try:
-        requests.post(f"http://{ip}:{port}/stop_test", timeout=300)
+        requests.post(f"http://{ip}:{port}/stop_test", timeout=60)
         log.info("test.global_stop_requested")
     except Exception as e:
         log.warning("test.global_stop_failed", error=str(e))
@@ -139,10 +178,23 @@ def start_test_test():
 
 
 def get_test_status() -> dict:
-    """Return current test status."""
     with test_state_lock:
-        if not test_running:
-            return {"status": "idle"}
-        if stop_requested:
-            return {"status": "stopping"}
-        return {"status": "running"}
+        config = current_config
+    
+    if config is None:
+        return {"status": "idle"}
+    
+    try:
+        r = requests.get(
+            f"http://{config.global_scheduler.ip}:{config.global_scheduler.port}/test_status",
+            timeout=5,
+        )
+        return r.json()
+    except Exception:
+        #fall back to local state if global unreachable
+        with test_state_lock:
+            if stop_event.is_set():
+                return {"status": "stopping"}
+            if test_running:
+                return {"status": "running"}
+        return {"status": "idle"}

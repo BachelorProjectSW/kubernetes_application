@@ -1,7 +1,8 @@
+import asyncio
 import time
 import uuid
-import requests
 from datetime import datetime, timezone
+import aiohttp
 import structlog
 from fastapi import HTTPException
 from ...models.basemodels import QuestionConfig, LLMResponse
@@ -18,7 +19,7 @@ log = structlog.get_logger()
 # TODO jeg tror ikke den tager højde for at den ikke
 # sender request ud til at cluster med kun slukkede worker nodes.
 # TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
-def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
+async def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     """Send the question to the local cluster request scheduler llama-service."""
     request_id = str(uuid.uuid4())
     trace_id = trace_id
@@ -56,15 +57,18 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
 
     market_data_fetch_start = time.monotonic()
 
-    all_cluster_energy_data = [
-        get_cluster_runtime_data(
-            cluster,
-            simulated_time,
-            config.energy,
-            config.latency.latency_window_s,
-        )
-        for cluster in config.clusters
-    ]
+    all_cluster_energy_data = await asyncio.gather(
+        *[
+            asyncio.to_thread(
+                get_cluster_runtime_data,
+                cluster,
+                simulated_time,
+                config.energy,
+                config.latency.latency_window_s,
+            )
+            for cluster in config.clusters
+        ]
+    )
 
     global_market_data_fetch_ms = int((time.monotonic() - market_data_fetch_start) * 1000)
 
@@ -108,19 +112,27 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     if trace_id:
         headers["X-Trace-Id"] = trace_id
 
+    response_status_code = 502
+    response_text = ""
     try:
-        response = requests.post(
-            url,
-            json=question.model_dump(),
-            headers=headers,
-            timeout=1000,
-        )
-        response.raise_for_status()
-        data = response.json()
-    except requests.HTTPError as e:
+        timeout = aiohttp.ClientTimeout(total=1000)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(
+                url,
+                json=question.model_dump(),
+                headers=headers,
+            ) as response:
+                response_text = await response.text()
+                if response.status >= 400:
+                    response_status_code = response.status
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Cluster API returned {response_status_code}",
+                    )
+                data = await response.json()
+    except HTTPException as e:
         global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-        response_status_code = e.response.status_code if e.response else 502
         log_request(
             request_id=request_id,
             cluster_name=cluster.name,
@@ -134,16 +146,15 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             question=question.question,
             answer=None,
             response_status_code=response_status_code,
-            all_content=e.response.text if e.response is not None else str(e),
+            all_content=response_text,
             trace_id=trace_id,
             global_market_data_fetch_ms=global_market_data_fetch_ms,
             global_cluster_scoring_ms=global_cluster_scoring_ms,
             global_cluster_api_call_ms=global_cluster_api_call_ms,
             global_total_time_ms=global_total_time_ms,
         )
-        detail = f"Cluster API returned {e.response.status_code if e.response else 'error'}"
-        raise HTTPException(status_code=502, detail=detail) from e
-    except requests.RequestException as e:
+        raise
+    except aiohttp.ClientError as e:
         global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
         log_request(
