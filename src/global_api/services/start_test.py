@@ -133,13 +133,19 @@ async def cancel_cluster_pods(session: aiohttp.ClientSession, cluster):
         async with session.post(
             f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
         ) as response:
+            text = await response.text()
             response.raise_for_status()
 
-        log.info("global.stop_test.pods_deleted", cluster=cluster.name)
+        log.info(
+            "global.stop_test.pods_deleted",
+            cluster=cluster.name,
+            response_text=text,
+        )
 
         return {
             "cluster": cluster.name,
             "success": True,
+            "response_text": text,
         }
 
     except Exception as e:
@@ -147,10 +153,14 @@ async def cancel_cluster_pods(session: aiohttp.ClientSession, cluster):
             "global.stop_test.pods_delete_failed",
             cluster=cluster.name,
             error=str(e),
+            error_type=type(e).__name__,
+            repr_error=repr(e),
         )
 
         return {
             "cluster": cluster.name,
             "success": False,
             "error": str(e),
+            "error_type": type(e).__name__,
+            "repr_error": repr(e),
         }

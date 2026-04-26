@@ -59,6 +59,5 @@ def get_cluster_information_endpoint():
 
 @router.post("/cancel_all_llama_pods")
 def cancel_all_llama_pods_endpoint():
-    test_state.mark_stopping()
-    cancel_all_llama_pods()
-    return {"message": "Llama pod restart requested"}
+    """Delete all llama pods."""
+    return cancel_all_llama_pods()

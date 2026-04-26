@@ -6,21 +6,26 @@ from .power_scheduler import run_cmd
 
 log = structlog.get_logger()
 
-def _cancel_all_llama_pods_background():
-    """Restart llama pods in the background."""
+
+def cancel_all_llama_pods() -> dict:
+    """Delete all llama pods and return when kubectl delete has completed."""
+    test_state.mark_stopping()
+
     try:
         stdout = run_cmd(
-            "sudo kubectl delete pod -l app=llama-server --grace-period=0 --force")
+            "sudo kubectl delete pod -l app=llama-server --grace-period=0 --force"
+        )
+
         log.info("cluster.llama_pods_deleted", stdout=stdout.strip())
+
+        return {
+            "message": "Llama pods deleted",
+            "stdout": stdout,
+        }
+
     except Exception as e:
         log.exception("cluster.llama_pods_delete_failed", error=str(e))
-
-
-def cancel_all_llama_pods():
-    """Request llama pod restart and return immediately."""
-    threading.Thread(
-        target=_cancel_all_llama_pods_background,
-        daemon=True,
-        name="cancel-all-llama-pods",
-    ).start()
-    return {"message": "Llama pod restart requested"}
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete llama pods: {e}",
+        ) from e
