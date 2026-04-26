@@ -80,10 +80,10 @@ export const handleSubmit = async (e, inputs) => {
         
    
 */
-        "id": inputs.expID || "",
+        "id": inputs.expID,
         "name": inputs.name || "",
         "start": {
-            "duration_time_s": totalSeconds || "",
+            "duration_time_s": totalSeconds,
             "start_time_simulated": inputs.startdate || "",
             "start_time_real": null
         } || "",
@@ -98,8 +98,8 @@ export const handleSubmit = async (e, inputs) => {
             "idle_time_for_turn_off_s":inputs.turn_off_s
         } || "",
        "latency":{
-            "latency_window_s": inputs.latency_window || "", //opdater andre steder
-            "max_ms":inputs.max_latency || ""
+            "latency_window_s": inputs.latency_window, //opdater andre steder
+            "max_ms":inputs.max_latency
         },
         "workload": {
             "request_per_minute": 10,
