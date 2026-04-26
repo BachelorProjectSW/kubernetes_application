@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from http.client import HTTPException
 import threading
 
 import structlog
@@ -11,6 +11,7 @@ log = structlog.get_logger()
 
 def cancel_all_llama_pods() -> dict:
     """Delete all llama pods and return when kubectl delete has completed."""
+    test_state.mark_stopping()
 
     try:
         stdout = run_cmd(
