@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from ..services.cancel_all_llama_pods import cancel_all_llama_pods
 from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
-from ..services.llm import handle_llm
+from ..services.llm import handle_llm, handle_llm_async
 from ...models.basemodels import ClusterInformation, QuestionConfig
 from ...custom_logging.logger import set_current_config_id
 from ..util.cluster_config import config_store
@@ -50,8 +50,7 @@ def set_config(cluster_information: ClusterInformation):
 async def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
     """Handle llm request."""
     trace_id = request.headers.get("X-Trace-Id")
-    return await asyncio.to_thread(handle_llm, question, trace_id=trace_id)
-
+    return await handle_llm_async(question, trace_id=trace_id)
 
 @router.get("/get_cluster_information")
 def get_cluster_information_endpoint():
