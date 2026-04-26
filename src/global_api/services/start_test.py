@@ -92,16 +92,13 @@ async def stop_test():
 
     config = config_store.get()
 
-    # 1. Block new incoming LLM requests immediately.
+
     test_state.mark_stopping()
 
-    # 2. Stop anything that creates/schedules more work.
-    config_store.stop_power_scheduler()
 
-    # 3. Cancel global API tasks currently waiting on LLM/cluster responses.
+    config_store.stop_power_scheduler()
     cancelled_global_tasks = cancel_active_llm_tasks()
 
-    # 4. Tell clusters to cancel/delete their running work.
     cluster_results = []
 
     if config:
@@ -116,9 +113,6 @@ async def stop_test():
             )
 
             cluster_results = results
-
-    # Be careful with this.
-    # If reset() clears is_stopping, new requests may be accepted again immediately.
     test_state.reset()
 
     log.info(
