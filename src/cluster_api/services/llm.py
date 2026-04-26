@@ -75,10 +75,7 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
 
 def sync_worker_status(worker: WorkerNode) -> None:
     """Sync the status of the worker."""
-    cluster = config_store.get()
-    cluster_name = cluster.cluster_config.name
     worker.status = WorkerStatus.IDLE if worker.inflight_requests == 0 else WorkerStatus.WORKING
-    log_node_status_snapshot(cluster_name, worker)
 
 
 def handle_llm(question: QuestionConfig, trace_id: str | None = None):
@@ -110,12 +107,14 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             trace_id=trace_id,
             worker_count=len(config.worker_nodes),
         )
+        nodes_to_log = []
 
         with worker_lock:
             if test_state.is_stopping():
                 raise HTTPException(status_code=503, detail="Cluster is stopping")
             for worker in config.worker_nodes:
                 sync_worker_status(worker)
+                nodes_to_log.append(worker)
 
             worker_node = choose_worker_node(config.worker_nodes)
             if worker_node is None:
@@ -129,6 +128,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
 
             worker_node.inflight_requests += 1
             sync_worker_status(worker_node)
+            nodes_to_log.append(worker_node)
             inflight_at_selection = worker_node.inflight_requests
             active_at_selection = worker_node.active_requests
             queued_at_selection = worker_node.queued_requests
@@ -154,6 +154,8 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
                 free_slots_after=free_slots_after,
             )
 
+        for node in nodes_to_log:
+            log_node_status_snapshot(cluster_name, node)
         if config.cluster_config.k3d:
             url = f"http://localhost:{worker_node.forwarded_port}/completion"
         else:
