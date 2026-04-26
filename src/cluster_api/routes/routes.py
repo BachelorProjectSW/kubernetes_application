@@ -39,6 +39,7 @@ def set_config(cluster_information: ClusterInformation):
     """Set the config in util."""
     set_current_config_id(cluster_information.config_id)
     config_store.set(cluster_information)
+    test_state.start()
     config_store.build_worker_nodes()
     return config_store.get()
 
