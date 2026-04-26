@@ -112,6 +112,8 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         )
 
         with worker_lock:
+            if test_state.is_stopping():
+                raise HTTPException(status_code=503, detail="Cluster is stopping")
             for worker in config.worker_nodes:
                 sync_worker_status(worker)
 

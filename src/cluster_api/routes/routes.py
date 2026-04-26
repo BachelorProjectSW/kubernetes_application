@@ -62,4 +62,5 @@ def get_cluster_information_endpoint():
 @router.post("/cancel_all_llama_pods")
 async def cancel_all_llama_pods_endpoint():
     """Delete all llama pods."""
+    test_state.mark_stopping()
     return await asyncio.to_thread(cancel_all_llama_pods)
