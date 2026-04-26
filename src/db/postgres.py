@@ -12,6 +12,10 @@ from sqlalchemy import JSON, Column, Text, create_engine, text
 from sqlalchemy.engine import URL, make_url
 from sqlmodel import Field, SQLModel, Session, select
 
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+from sqlmodel.ext.asyncio.session import AsyncSession as SQLModelAsyncSession
+
+
 from ..custom_logging.models.log_models import (
     NodeStatusLog,
     RequestLog,
@@ -85,6 +89,25 @@ def _engine():
     return _ENGINE
 
 
+def _async_database_url() -> str:
+    return _database_url().replace("postgresql+psycopg://", "postgresql+psycopg_async://")
+
+_ASYNC_ENGINE: AsyncEngine | None = None
+_ASYNC_ENGINE_LOCK = threading.Lock()
+
+def _async_engine() -> AsyncEngine:
+    global _ASYNC_ENGINE
+    if _ASYNC_ENGINE is None:
+        with _ASYNC_ENGINE_LOCK:
+            if _ASYNC_ENGINE is None:
+                _ASYNC_ENGINE = create_async_engine(
+                    _async_database_url(),
+                    pool_pre_ping=True,
+                    pool_size=20,
+                    max_overflow=10,
+                )
+    return _ASYNC_ENGINE
+
 def _ensure_database_exists() -> None:
     url = make_url(_database_url())
     database_name = _db_name(url)
@@ -134,6 +157,24 @@ def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
         session.add(row)
         session.commit()
     log.info("db.save_model_log", config_id=config_id, log_type=type(log_model).__name__)
+
+async def save_model_log_async(config_id: str | None, log_model: BaseModel) -> None:
+    """Async version of save_model_log. Awaiting this returns only after Postgres
+    has committed the row, so subsequent reads see fresh data."""
+    row = AppLogRecord(
+        config_id=config_id,
+        log_type=type(log_model).__name__,
+        payload_json=log_model.model_dump(mode="json"),
+        terminal_debug=None,
+    )
+    async with AsyncSession(_async_engine()) as session:
+        session.add(row)
+        await session.commit()
+    log.info(
+        "db.save_model_log_async",
+        config_id=config_id,
+        log_type=type(log_model).__name__,
+    )
 
 
 def save_terminal_debug(config_id: str | None, message: str, level: str, payload: dict[str, Any]) -> None:
@@ -241,3 +282,5 @@ def read_all_configs() -> list[Config]:
 def read_all_node_status_logs(config_id: str | None = None) -> list[NodeStatusLog]:
     """Read node status logs for a config as NodeStatusLog models."""
     return read_model_logs(NodeStatusLog, config_id)
+
+

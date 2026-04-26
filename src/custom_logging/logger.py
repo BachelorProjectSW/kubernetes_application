@@ -10,6 +10,7 @@ from ..db.postgres import (
     read_terminal_debug_logs,
     read_model_logs,
     save_model_log,
+    save_model_log_async,
     save_payload_log,
     save_terminal_debug,
 )
@@ -210,3 +211,64 @@ def save_summary(summary: dict):
         save_payload_log(_current_config_id(), "summary", summary)
     except Exception as e:
         log.warning("custom_logging.db.save_summary_failed", error=str(e))
+
+
+async def log_request_async(
+    request_id: str,
+    cluster_name: str,
+    worker_node_name: str,
+    latency_ms: float,
+    cluster_load_w: float,
+    renewable_fraction: float,
+    blended_carbon_gco2_per_kwh: float,
+    blended_cost_eur_per_kwh: float,
+    question: str | None = None,
+    answer: str | None = None,
+    response_status_code: int | None = None,
+    all_content: dict | list | str | None = None,
+    success: bool = True,
+    trace_id: str | None = None,
+    global_market_data_fetch_ms: int | None = None,
+    global_cluster_scoring_ms: int | None = None,
+    global_cluster_api_call_ms: int | None = None,
+    global_total_time_ms: int | None = None,
+    cluster_queue_time_ms: int | None = None,
+    cluster_llama_inference_ms: int | None = None,
+):
+    """Async version of log_request. Persists the row before returning."""
+    entry = RequestLog(
+        request_id=request_id,
+        trace_id=trace_id,
+        timestamp=datetime.now(timezone.utc),
+        cluster=cluster_name,
+        node=worker_node_name,
+        success=success,
+        latency_ms=round(latency_ms, 2),
+        cluster_load_w=round(cluster_load_w, 2),
+        renewable_fraction=round(renewable_fraction, 4),
+        blended_carbon_gco2_per_kwh=round(blended_carbon_gco2_per_kwh, 4),
+        blended_cost_eur_per_kwh=round(blended_cost_eur_per_kwh, 6),
+        question=question,
+        answer=answer,
+        response_status_code=response_status_code,
+        all_content=all_content,
+        global_market_data_fetch_ms=global_market_data_fetch_ms,
+        global_cluster_scoring_ms=global_cluster_scoring_ms,
+        global_cluster_api_call_ms=global_cluster_api_call_ms,
+        global_total_time_ms=global_total_time_ms,
+        cluster_queue_time_ms=cluster_queue_time_ms,
+        cluster_llama_inference_ms=cluster_llama_inference_ms,
+    )
+
+    row = entry.model_dump(mode="json")
+
+    try:
+        await save_model_log_async(_current_config_id(), entry)
+    except Exception as e:
+        log.warning(
+            "custom_logging.db.save_model_log_failed",
+            error=str(e),
+            log_type="RequestLog",
+        )
+
+    log.info("custom_logging.request.logged", **row)
