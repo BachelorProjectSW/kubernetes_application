@@ -163,6 +163,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             "temperature": 0.2, 
         }
 
+
         if test_state.is_stopping():
             logger.info(
                 "cluster_api.llm.rejected_before_worker_forward",
@@ -178,6 +179,8 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()
         #TODO async
+        if test_state.is_stopping():
+            raise HTTPException(status_code=503, detail="Cluster is stopping")
         logger.info(
             "cluster_api.llm.llama_inference_started",
             service="cluster_api",
