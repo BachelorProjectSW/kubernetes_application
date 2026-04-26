@@ -9,10 +9,10 @@ from ..db.postgres import (
     read_all_request_logs,
     read_terminal_debug_logs,
     read_model_logs,
-    save_payload_log,
     save_model_log,
+    save_payload_log,
+    save_terminal_debug,
 )
-from .log_queue import enqueue_model_log, enqueue_terminal_log
 
 log = structlog.get_logger()
 
@@ -34,7 +34,7 @@ def _get_terminal_logs(_, __, event_dict):
     level = str(event_dict.get("level", "info"))
     message = str(event_dict.get("event", ""))
     config_id = _current_config_id()
-    enqueue_terminal_log(config_id, message, level, dict(event_dict))
+    save_terminal_debug(config_id, message, level, dict(event_dict))
     return event_dict
 
 
@@ -127,7 +127,10 @@ def log_request(
 
     row = entry.model_dump(mode="json")
 
-    save_model_log(_current_config_id(), entry)
+    try:
+        save_model_log(_current_config_id(), entry)
+    except Exception as e:
+        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="RequestLog")
 
     log.info("custom_logging.request.logged", **row)
 
@@ -142,7 +145,10 @@ def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
         node=node.name,
         status=node.status
     )
-    enqueue_model_log(_current_config_id(), entry)
+    try:
+        save_model_log(_current_config_id(), entry)
+    except Exception as e:
+        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
 
 
 def generate_summary() -> dict:

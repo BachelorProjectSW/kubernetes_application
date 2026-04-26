@@ -60,11 +60,11 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
     all_cluster_energy_data = await asyncio.gather(
         *[
             asyncio.to_thread(
-                get_cluster_runtime_data,
+                get_cluster_runtime_data(
                 cluster,
                 simulated_time,
                 config.energy,
-                config.latency.latency_window_s,
+                config.latency.latency_window_s)
             )
             for cluster in config.clusters
         ]
@@ -144,8 +144,7 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
     except HTTPException as e:
         global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-        await asyncio.to_thread(
-            log_request,
+        log_request(
             request_id=request_id,
             cluster_name=cluster.name,
             worker_node_name="unknown",
@@ -169,8 +168,7 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
     except aiohttp.ClientError as e:
         global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-        await asyncio.to_thread(
-            log_request,
+        log_request(
             request_id=request_id,
             cluster_name=cluster.name,
             worker_node_name="unknown",
@@ -194,8 +192,7 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
     except ValueError as e:
         global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-        await asyncio.to_thread(
-            log_request,
+        log_request(
             request_id=request_id,
             cluster_name=cluster.name,
             worker_node_name="unknown",
@@ -231,8 +228,7 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
             global_total_time_ms=global_total_time_ms,
             payload_type=type(data).__name__,
         )
-        await asyncio.to_thread(
-            log_request,
+        log_request(
             request_id=request_id,
             cluster_name=cluster.name,
             worker_node_name="unknown",
@@ -286,8 +282,7 @@ async def handle_llm_request(question: QuestionConfig, trace_id: str | None = No
         global_total_time_ms=global_total_time_ms,
     )
 
-    await asyncio.to_thread(
-        log_request,
+    log_request(
         request_id=request_id,
         cluster_name=cluster.name,
         worker_node_name=worker_node.name,
