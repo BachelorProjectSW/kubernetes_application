@@ -109,6 +109,10 @@ const handleSelectHistory = (e) => {
             seed: config.workload?.seed || "",
             peakiness: config.workload?.peakiness || "",
 
+            //Question
+            question: config.question?.question ||"", 
+            max_output_tokens: config.question?.max_output_tokens || "",
+
             // Cluster & Infrastructure
             clusters: config.clusters || [],
             ip_global: config.global_scheduler?.ip || "",

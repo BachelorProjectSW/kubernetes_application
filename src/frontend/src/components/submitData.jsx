@@ -104,74 +104,78 @@ export const handleSubmit = async (e, inputs) => {
         "workload": {
             "request_per_minute": inputs.request_per_min, // opdate?
             "pattern": inputs.pattern,
-           "seed": inputs.seed,
+            "seed": inputs.seed,
             "peakiness": inputs.peakiness
         } || "",
-    "clusters": [
-        {
-            "name": "dk",
-            "ip": "100.114.88.102",
-            "port": "8033",
-            "gpio_list": [17, 27, 23],
-            "simulated_country_code": "ES",
-            "llama_service_port": "8083",
-            "renewable_output_w": 200,
-            "cluster_load_w": 1000,
-            "grid_carbon_intensity": 100,
-            "grid_electricity_price": 0.12,
-            "k3d": false
+        "question": {
+            "question": inputs.question,
+            "max_output_tokens": inputs.max_output_tokens,
         },
-        {
-            "name": "pt",
-            "ip": "100.83.243.61",
-            "port": "8033",
-            "gpio_list": [17, 27, 23],
-            "simulated_country_code": "pt",
-            "llama_service_port": "8082",
-            "renewable_output_w": 400,
-            "cluster_load_w": 1000,
-            "grid_carbon_intensity": 300,
-            "grid_electricity_price": 0.14,
-            "k3d": false
-        }
-    ],
+        "clusters": [
+            {
+                "name": "dk",
+                "ip": "100.114.88.102",
+                "port": "8033",
+                "gpio_list": [17, 27, 23],
+                "simulated_country_code": "ES",
+                "llama_service_port": "8083",
+                "renewable_output_w": 200,
+                "cluster_load_w": 1000,
+                "grid_carbon_intensity": 100,
+                "grid_electricity_price": 0.12,
+                "k3d": false
+            },
+            {
+                "name": "pt",
+                "ip": "100.83.243.61",
+                "port": "8033",
+                "gpio_list": [17, 27, 23],
+                "simulated_country_code": "pt",
+                "llama_service_port": "8082",
+                "renewable_output_w": 400,
+                "cluster_load_w": 1000,
+                "grid_carbon_intensity": 300,
+                "grid_electricity_price": 0.14,
+                "k3d": false
+            }
+        ],
         "global_scheduler": {
-        "ip": "100.84.252.101",
+            "ip": "100.84.252.101",
             "port": "8022"
-    },
-    "strato": {
-        "ip": "100.109.95.2",
-            "port": "8011"
-    }
-
-};
-
-try {
-    console.log(exportData);
-    const response = await fetch('http://100.109.95.2:8095/start_test', { // Ensure port matches your FastAPI server
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
         },
-        body: JSON.stringify(exportData),
-    });
+        "strato": {
+            "ip": "100.109.95.2",
+            "port": "8011"
+        }
+
+    };
+
+    try {
+        console.log(exportData);
+        const response = await fetch('http://100.109.95.2:8095/start_test', { // Ensure port matches your FastAPI server
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(exportData),
+        });
 
 
-    if (!response.ok) {
-        const errorDetail = await response.json();
-        console.error("Validation Error:", errorDetail);
-        alert("Failed to start test. Check console for details.");
-        return;
+        if (!response.ok) {
+            const errorDetail = await response.json();
+            console.error("Validation Error:", errorDetail);
+            alert("Failed to start test. Check console for details.");
+            return;
+        }
+
+        const data = await response.json();
+        console.log("Success:", data);
+        alert("Test started successfully!");
+    } catch (error) {
+        console.error("Network Error:", error);
+        alert("Could not connect to the backend.");
     }
-
-    const data = await response.json();
-    console.log("Success:", data);
-    alert("Test started successfully!");
-} catch (error) {
-    console.error("Network Error:", error);
-    alert("Could not connect to the backend.");
-}
-console.log(JSON.stringify(exportData, null, 2));
+    console.log(JSON.stringify(exportData, null, 2));
 };
 
 

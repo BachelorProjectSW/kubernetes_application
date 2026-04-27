@@ -16,6 +16,7 @@ import ClusterMangening from './cluster';
 import GlobalScheduler from './global_schedular';
 import StratoConfigs from './strato_config';
 import Latency from './latency';
+import Question from './question';
 
 function AllConfigs({ onSubmit }) {
     const [inputs, setInputs] = useState({});
@@ -80,6 +81,13 @@ function AllConfigs({ onSubmit }) {
 
             <div>
                 <Workload
+                    inputs={inputs}
+                    handleChange={handleChange}
+                />
+            </div>
+
+            <div>
+                <Question
                     inputs={inputs}
                     handleChange={handleChange}
                 />
