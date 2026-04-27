@@ -241,24 +241,12 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     )
     worker_node = result.worker_node
     llm_content = result.llm_content
-    log.debug("global_api.llm_content", llm_content=llm_content)
+    log.debug("global_api.llm_content", llm_content=llm_content, worker_node=worker_node)
     answer = None
 
     if isinstance(llm_content, dict):
         answer = llm_content.get("content") or None
 
-    log.info(
-        "global_api.llm.request_completed",
-        service="global_api",
-        trace_id=trace_id,
-        request_id=request_id,
-        cluster_name=cluster.name,
-        worker_node=worker_node.name,
-        global_market_data_fetch_ms=global_market_data_fetch_ms,
-        global_cluster_scoring_ms=global_cluster_scoring_ms,
-        global_cluster_api_call_ms=global_cluster_api_call_ms,
-        global_total_time_ms=global_total_time_ms,
-    )
 
     log_request(
         request_id=request_id,
