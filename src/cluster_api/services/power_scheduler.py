@@ -302,6 +302,12 @@ def turn_off_idle_nodes(idle_time: int):
         )
         return
     request_logs = get_request_logs(config_id)
+    now = datetime.now(timezone.utc)
+    test_has_run_long_enough = False
+    if request_logs:
+        first_request_age_s = (now - request_logs[0].timestamp).total_seconds()
+        test_has_run_long_enough = first_request_age_s > idle_time
+
     nodes = config.worker_nodes
 
     for node in nodes:
@@ -314,5 +320,8 @@ def turn_off_idle_nodes(idle_time: int):
             continue
 
         last_request = get_idle_time(request_logs, node.name, cluster_name)
+        if last_request == float("inf") and not test_has_run_long_enough:
+            return
+
         if last_request > idle_time:
             turn_off_node(node, cluster_name)
