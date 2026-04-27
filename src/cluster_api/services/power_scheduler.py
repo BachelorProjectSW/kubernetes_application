@@ -5,7 +5,7 @@ from ...models.basemodels import WorkerNode
 from ..util.cluster_config import config_store
 from ..util.client_setup import get_api_client
 from ...models.enum import WorkerStatus
-from ...custom_logging.util.log_reader import get_request_logs
+from ...custom_logging.util.log_reader import get_worker_nodes_logs
 from ...custom_logging.models.log_models import RequestLog
 from datetime import datetime, timezone
 import subprocess
@@ -260,11 +260,10 @@ def select_nodes_to_turn_off(number_of_nodes: int, worker_nodes: list[WorkerNode
     return nodes_to_turn_off
 
 
-def get_idle_time(request_logs: list[RequestLog], node_name: str, cluster_name: str) -> float:
+def get_idle_time(node_name: str, cluster_name: str) -> float:
     """Return the idle time in seconds for a given node in a cluster.
 
     Args:
-        request_logs: List of RequestLog entries.
         node_name: Name of the node to check.
         cluster_name: Name of the cluster the node belongs to.
 
@@ -274,15 +273,20 @@ def get_idle_time(request_logs: list[RequestLog], node_name: str, cluster_name: 
 
     """
     now = datetime.now(timezone.utc)
+    # If no request log exists for this node, fall back to node status logs
+    try:
+        config = config_store.get()
+        config_id = config.config_id
+        node_status_logs = get_worker_nodes_logs(config_id)
+    except Exception:
+        node_status_logs = []
 
-    # Iterate in reverse to find the latest request first
-    for request in reversed(request_logs):
-        if request.cluster == cluster_name and request.node == node_name:
-            return (now - request.timestamp).total_seconds()
+    # Look for the most recent time the node become idle
+    for entry in reversed(node_status_logs or []):
+        if entry.cluster == cluster_name and entry.node == node_name and str(entry.status).lower() == WorkerStatus.IDLE.value:
+            return (now - entry.timestamp).total_seconds()
 
-    # If no requests found
-    return float('inf')
-
+    return 0
 
 def turn_off_idle_nodes(idle_time: int):
     """Turn off all nodes that have been idle for longer than `idle_time` seconds.
@@ -301,23 +305,6 @@ def turn_off_idle_nodes(idle_time: int):
             worker_node=None,
         )
         return
-    request_logs = get_request_logs(config_id)
-    now = datetime.now(timezone.utc)
-    test_has_run_long_enough = False
-    if request_logs:
-        first_request_age_s = (now - request_logs[0].timestamp).total_seconds()
-        test_has_run_long_enough = first_request_age_s > idle_time
-    else:
-        first_request_age_s = None
-
-    log.debug(
-        "cluster_api.power.turn_off_idle_scan_started",
-        cluster_name=cluster_name,
-        idle_time_s=idle_time,
-        request_log_count=len(request_logs),
-        first_request_age_s=first_request_age_s,
-        test_has_run_long_enough=test_has_run_long_enough,
-    )
 
     nodes = config.worker_nodes
 
@@ -342,15 +329,7 @@ def turn_off_idle_nodes(idle_time: int):
             )
             continue
 
-        last_request = get_idle_time(request_logs, node.name, cluster_name)
-        if last_request == float("inf") and not test_has_run_long_enough:
-            log.debug(
-                "cluster_api.power.turn_off_idle_skipped_no_requests_yet",
-                cluster_name=cluster_name,
-                worker_node=node.name,
-                idle_time_s=idle_time,
-            )
-            continue
+        last_request = get_idle_time(node.name, cluster_name)
 
         if last_request > idle_time:
             log.info(

@@ -192,7 +192,7 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
 
         try:
             url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_on_nodes/"
-            response = requests.post(url, params={"number_of_nodes": amount}, timeout=10)
+            response = requests.post(url, params={"number_of_nodes": amount}, timeout=500)
             response.raise_for_status()
             payload = response.json() if response.content else {}
             turned_on = payload.get("node_changed", amount)
@@ -224,7 +224,7 @@ def turn_off_idle_nodes(config: Config):
                 cluster_name=cluster.name,
                 idle_time_s=idle_time,
             )
-            response = requests.post(url, params={"idle_time": idle_time}, timeout=20)
+            response = requests.post(url, params={"idle_time": idle_time}, timeout=500)
             response.raise_for_status()
         except Exception as e:
             log.error(
