@@ -94,7 +94,7 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         )
         cluster_score = score_cluster(
             runtime_data.renewable_output_w,
-            runtime_data.cluster_load_w,
+            0.0, #cluster_load_w is not taken into account in powerscheduler to priority the weights.
             runtime_data.grid_carbon_intensity,
             runtime_data.grid_electricity_price,
             config.weights.gco2,
@@ -122,6 +122,15 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         current_active_nodes,
         current_rps
     )
+    log.info(
+        "global_api.power.turn_on", 
+        nodes_to_add=nodes_to_add, 
+        max_user_latency=max_latency_ms, 
+        avg_latency=avg_latency_ms, 
+        current_active_nodes=current_active_nodes, 
+        current_rps=current_rps
+    )
+    
     for cluster in sorted_clusters:
         if nodes_to_add <= 0:
             break
