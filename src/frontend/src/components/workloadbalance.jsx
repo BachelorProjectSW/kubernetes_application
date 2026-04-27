@@ -9,8 +9,8 @@ function Workload({ inputs, handleChange }) {
                 <label> Requests pr. Minute</label>
                 <input
                     type="number"
-                    name="request_pr_min"
-                    value={inputs.request_pr_min || ""}
+                    name="request_per_min"
+                    value={inputs.request_per_min || ""}
                     onChange={handleChange}
                 />
             </div>
