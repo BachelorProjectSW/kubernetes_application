@@ -101,7 +101,7 @@ const handleSelectHistory = (e) => {
             turn_off_s: config.power_scheduler?.idle_time_for_turn_off_s || "",
 
             // Latency - Mapping 'latency_window_s' to the UI state 'window'
-            window: config.latency?.latency_window_s || "", 
+            latency_window: config.latency?.latency_window_s || "", 
             max_latency: config.latency?.max_ms || "",
 
             // Workload
