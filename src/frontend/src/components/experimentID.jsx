@@ -104,7 +104,7 @@ const handleSelectHistory = (e) => {
             max_latency: config.latency?.max_ms || "",
 
             // Workload
-            request_pr_min: config.workload?.request_per_minute || "",
+            request_per_min: config.workload?.request_per_minute || "",
             pattern: config.workload?.pattern || "",
             seed: config.workload?.seed || "",
             peakiness: config.workload?.peakiness || "",
