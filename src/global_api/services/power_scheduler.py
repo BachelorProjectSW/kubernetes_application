@@ -61,12 +61,30 @@ def estimate_nodes_to_add(
 
     to keep latency under max_latency_s.
     """
-    # how many nodes needed in total
-    required_nodes = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
-    log.debug("global_api.power.required_nodes_estimated", required_nodes=required_nodes)
-
     if current_active_nodes <= 0:
         return 1
+
+    if max_latency_ms <= 0:
+        return 0
+
+    # Throughput-based estimate.
+    required_by_rps = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
+
+    # Latency-pressure estimate.
+    # If observed latency is above SLO while requests are flowing, scale current
+    # active capacity by the latency ratio to force additional nodes.
+    required_by_latency = current_active_nodes
+    if current_rps > 0 and avg_latency_per_node_ms > max_latency_ms:
+        latency_ratio = avg_latency_per_node_ms / max_latency_ms
+        required_by_latency = math.ceil(current_active_nodes * latency_ratio)
+
+    required_nodes = max(required_by_rps, required_by_latency)
+    log.debug(
+        "global_api.power.required_nodes_estimated",
+        required_nodes=required_nodes,
+        required_by_rps=required_by_rps,
+        required_by_latency=required_by_latency,
+    )
 
     # how many more to add
     nodes_to_add = max(0, required_nodes - current_active_nodes)
