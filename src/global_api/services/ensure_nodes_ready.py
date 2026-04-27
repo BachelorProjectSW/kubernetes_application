@@ -12,7 +12,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
 
     # Step 1: Get total node count
     try:
-        info = requests.get(f"{base}/get_cluster_information", timeout=10).json()
+        info = requests.get(f"{base}/get_cluster_information", timeout=180).json()
     except Exception as e:
         log.warning("ensure_nodes_ready.info_failed", cluster=cluster.name, error=str(e))
         return
@@ -26,7 +26,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
         requests.post(
             f"{base}/turn_on_nodes/",
             params={"number_of_nodes": total},
-            timeout=60,
+            timeout=300,
         )
     except Exception as e:
         log.warning("ensure_nodes_ready.turn_on_failed", cluster=cluster.name, error=str(e))
@@ -35,7 +35,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         try:
-            response = requests.get(f"{base}/get_cluster_working_nodes", timeout=10)
+            response = requests.get(f"{base}/get_cluster_working_nodes", timeout=300)
             response.raise_for_status()
             worker_nodes = response.json()
 
@@ -60,7 +60,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         try:
-            info = requests.get(f"{base}/get_cluster_information", timeout=10).json()
+            info = requests.get(f"{base}/get_cluster_information", timeout=300).json()
             nodes = info.get("worker_nodes", [])
             in_flight = sum(n["inflight_requests"] for n in nodes)
 

@@ -69,7 +69,7 @@ def validate_cluster_reachability(config: Config) -> list[str]:
         try:
             response = requests.get(
                 f"http://{cluster.ip}:{cluster.port}/get_cluster_information",
-                timeout=10,
+                timeout=180,
             )
             response.raise_for_status()
             log.info("validate.cluster_reachable", cluster=cluster.name)

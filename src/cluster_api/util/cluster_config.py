@@ -210,7 +210,7 @@ class ConfigStore:
                     url=url,
                 )
 
-                response = requests.get(url, timeout=60)
+                response = requests.get(url, timeout=120)
                 response.raise_for_status()
 
                 props = response.json()

@@ -44,7 +44,7 @@ def start_test(config: Config):
                 cluster_name=cluster.name,
                 target_url=url,
             )
-            response = requests.post(url, json=cluster_information.model_dump(), timeout=30)
+            response = requests.post(url, json=cluster_information.model_dump(), timeout=120)
             response.raise_for_status()
             log.info(
                 "global_api.test.cluster_config_push_succeeded",
@@ -89,7 +89,7 @@ def stop_test():
                 # These needs to be deleted, such that the next test can run deterministcally
                 requests.post(
                     f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-                    timeout=60
+                    timeout=300
                 )
                 log.info("global.stop_test.pods_deleted", cluster=cluster.name)
             except Exception as e:
