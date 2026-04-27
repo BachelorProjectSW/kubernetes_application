@@ -125,6 +125,24 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             float(config.latency.max_ms),
             config.energy,
         )
+        active_or_idle_nodes = sum(
+            1
+            for worker_node in cluster.worker_nodes
+            if worker_node.status in {WorkerStatus.WORKING, WorkerStatus.IDLE}
+        )
+        off_nodes = sum(
+            1
+            for worker_node in cluster.worker_nodes
+            if worker_node.status == WorkerStatus.OFF
+        )
+        log.debug(
+            "global_api.power.cluster_scored",
+            cluster_name=cluster.cluster_config.name,
+            score=cluster_score,
+            active_or_idle_nodes=active_or_idle_nodes,
+            off_nodes=off_nodes,
+            cluster_avg_latency_ms=runtime_data.avg_latency_ms,
+        )
         scored_clusters.append((cluster_score, cluster))
 
     sorted_clusters = [
@@ -179,6 +197,13 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             payload = response.json() if response.content else {}
             turned_on = payload.get("node_changed", amount)
             nodes_to_add -= turned_on
+            log.info(
+                "global_api.power.turn_on_nodes_requested",
+                cluster_name=cluster.cluster_config.name,
+                requested=amount,
+                turned_on=turned_on,
+                nodes_remaining_to_add=nodes_to_add,
+            )
         except Exception as e:
             log.error(
                 "global_api.power.turn_on_request_failed",
@@ -194,6 +219,11 @@ def turn_off_idle_nodes(config: Config):
         try:
             url = f"http://{cluster.ip}:{cluster.port}/turn_off_idle_nodes/"
             idle_time = config.power_scheduler.idle_time_for_turn_off_s
+            log.debug(
+                "global_api.power.turn_off_idle_requested",
+                cluster_name=cluster.name,
+                idle_time_s=idle_time,
+            )
             response = requests.post(url, params={"idle_time": idle_time}, timeout=20)
             response.raise_for_status()
         except Exception as e:

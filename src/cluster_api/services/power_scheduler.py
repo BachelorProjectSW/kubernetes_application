@@ -307,21 +307,65 @@ def turn_off_idle_nodes(idle_time: int):
     if request_logs:
         first_request_age_s = (now - request_logs[0].timestamp).total_seconds()
         test_has_run_long_enough = first_request_age_s > idle_time
+    else:
+        first_request_age_s = None
+
+    log.debug(
+        "cluster_api.power.turn_off_idle_scan_started",
+        cluster_name=cluster_name,
+        idle_time_s=idle_time,
+        request_log_count=len(request_logs),
+        first_request_age_s=first_request_age_s,
+        test_has_run_long_enough=test_has_run_long_enough,
+    )
 
     nodes = config.worker_nodes
 
     for node in nodes:
         # Only true idle nodes are eligible for automatic power-off.
         if node.status != WorkerStatus.IDLE:
+            log.debug(
+                "cluster_api.power.turn_off_idle_skipped_status",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                status=node.status,
+            )
             continue
 
         # Never power off a node while requests are still inflight.
         if node.inflight_requests > 0:
+            log.debug(
+                "cluster_api.power.turn_off_idle_skipped_inflight",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                inflight_requests=node.inflight_requests,
+            )
             continue
 
         last_request = get_idle_time(request_logs, node.name, cluster_name)
         if last_request == float("inf") and not test_has_run_long_enough:
-            return
+            log.debug(
+                "cluster_api.power.turn_off_idle_skipped_no_requests_yet",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                idle_time_s=idle_time,
+            )
+            continue
 
         if last_request > idle_time:
+            log.info(
+                "cluster_api.power.turn_off_idle_node_selected",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                last_request_age_s=last_request,
+                idle_time_s=idle_time,
+            )
             turn_off_node(node, cluster_name)
+        else:
+            log.debug(
+                "cluster_api.power.turn_off_idle_skipped_recent_request",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                last_request_age_s=last_request,
+                idle_time_s=idle_time,
+            )
