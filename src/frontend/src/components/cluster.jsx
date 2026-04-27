@@ -1,42 +1,65 @@
-function ClusterMangening({inputs, setInputs}){
+
+/*
+"clusters": (inputs.clusters || []).map((cluster) => ({
+            "name": cluster.name || "", //str
+            "ip": "",
+            "port": cluster.port || "", //str
+            "gpio_list": cluster.gpio_list || "", // list[int]
+            "simulated_country_code": cluster.simulated_country_code || "",  //str
+            "llama_service_port": "",
+            "renewable_output_w": "",
+            "cluster_load_w": "",
+            "grid_carbon_intensity": "",
+            "grid_electricity_price": "",
+            "k3d": false
+        })),
+
+    */
+
+function ClusterMangening({ inputs, setInputs }) {
     const clusters = inputs.clusters || []
 
 
-    const addCluster =() => {
-    setInputs(prev => ({
-        ...prev,
-        clusters: [
-            ...(prev.clusters || []), 
-            { 
-                name: "", 
-                ip: "", 
-                port: "", 
-                gpio_list:"",
-                simulated_country_code: "", 
-                llama_service_port: "" 
-            }
-        ]
-    }));
-};
-
-
-const updateCluster =(index, field, value) => {
-    setInputs(prev => {
-        const updatedClusters = [...(prev.clusters || [])];
-    
-        updatedClusters[index] = { 
-            ...updatedClusters[index], 
-            [field]: value 
-        };
-
-        return {
+    const addCluster = () => {
+        setInputs(prev => ({
             ...prev,
-            clusters: updatedClusters
-        };
-    });
-};
+            clusters: [
+                ...(prev.clusters || []),
+                {
+                    "name": "",
+                    "ip": "",
+                    "port": "",
+                    "gpio_list": [],
+                    "simulated_country_code": "",
+                    "llama_service_port": "",
+                    "renewable_output_w": "",
+                    "cluster_load_w": "",
+                    "grid_carbon_intensity": "",
+                    "grid_electricity_price": "",
+                    "k3d": false
+                }
+            ]
+        }));
+    };
 
-const removeCluster = (index) => {
+
+    const updateCluster = (index, field, value) => {
+        setInputs(prev => {
+            const updatedClusters = [...(prev.clusters || [])];
+
+            updatedClusters[index] = {
+                ...updatedClusters[index],
+                [field]: value
+            };
+
+            return {
+                ...prev,
+                clusters: updatedClusters
+            };
+        });
+    };
+
+    const removeCluster = (index) => {
         const newClusters = (inputs.clusters || []).filter((_, i) => i !== index);
         setInputs(prev => ({
             ...prev,
@@ -44,10 +67,10 @@ const removeCluster = (index) => {
         }));
     };
 
-return (
+    return (
         <div style={{ border: "1px solid #ccc", padding: "10px", marginTop: "10px" }}>
             <p><strong>Cluster Configurations</strong></p>
-            
+
             {clusters.map((cluster, index) => (
                 <div key={index} style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "center" }}>
                     <input
@@ -56,12 +79,7 @@ return (
                         onChange={(e) => updateCluster(index, "name", e.target.value)}
                         style={{ width: "100px" }}
                     />
-                    <input
-                        placeholder="IP Address"
-                        value={cluster.ip || ""}
-                        onChange={(e) => updateCluster(index, "ip", e.target.value)}
-                        style={{ width: "120px" }}
-                    />
+
                     <input
                         placeholder="Port"
                         type="number"
@@ -69,29 +87,44 @@ return (
                         onChange={(e) => updateCluster(index, "port", e.target.value)}
                         style={{ width: "70px" }}
                     />
-                     <input
-                        placeholder="gpiolist"
-                        type="number"
-                        value={cluster.gpio_list || ""}
-                        onChange={(e) => updateCluster(index, "gpio_list", e.target.value)}
-                        style={{ width: "70px" }}
-                    />
-                     <input
+                    <div>
+                        <label>GPIO Pins:</label>
+                        {(cluster.gpio_list || []).map((pin, pinIdx) => (
+                            <input
+                                key={pinIdx}
+                                type="number"
+                                value={pin}
+                                onChange={(e) => {
+                                    const newList = [...cluster.gpio_list];
+                                    newList[pinIdx] = parseInt(e.target.value);
+                                    updateCluster(index, "gpio_list", newList);
+                                }}
+                                style={{ width: "50px", marginRight: "5px" }}
+                            />
+                        ))}
+                        <button type="button" onClick={() => {
+                            const newList = [...(cluster.gpio_list || []), 0];
+                            updateCluster(index, "gpio_list", newList);
+                        }}>
+                            +
+                        </button>
+                    </div>
+                    <input
                         placeholder="simulated country code"
                         type="text"
                         value={cluster.simulated_country_code || ""}
                         onChange={(e) => updateCluster(index, "simulated_country_code", e.target.value)}
                         style={{ width: "70px" }}
                     />
-                     <input
+                    <input
                         placeholder="llama service port"
                         type="number"
                         value={cluster.llama_service_port || ""}
                         onChange={(e) => updateCluster(index, "llama_service_port", e.target.value)}
                         style={{ width: "70px" }}
                     />
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         onClick={() => removeCluster(index)}
                         style={{ color: "red", border: "1px solid red", background: "none", cursor: "pointer" }}
                     >

@@ -111,34 +111,19 @@ export const handleSubmit = async (e, inputs) => {
             "question": inputs.question,
             "max_output_tokens": inputs.max_output_tokens,
         },
-        "clusters": [
-            {
-                "name": "dk",
-                "ip": "100.114.88.102",
-                "port": "8033",
-                "gpio_list": [17, 27, 23],
-                "simulated_country_code": "ES",
-                "llama_service_port": "8083",
-                "renewable_output_w": 200,
-                "cluster_load_w": 1000,
-                "grid_carbon_intensity": 100,
-                "grid_electricity_price": 0.12,
-                "k3d": false
-            },
-            {
-                "name": "pt",
-                "ip": "100.83.243.61",
-                "port": "8033",
-                "gpio_list": [17, 27, 23],
-                "simulated_country_code": "pt",
-                "llama_service_port": "8082",
-                "renewable_output_w": 400,
-                "cluster_load_w": 1000,
-                "grid_carbon_intensity": 300,
-                "grid_electricity_price": 0.14,
-                "k3d": false
-            }
-        ],
+        "clusters": (inputs.clusters || []).map((cluster) => ({
+            "name": cluster.name || "", //str
+            "ip": "",
+            "port": cluster.port || "", //str
+            "gpio_list": cluster.gpio_list || "", // list[int]
+            "simulated_country_code": cluster.simulated_country_code || "",  //str
+            "llama_service_port": "",
+            "renewable_output_w": "",
+            "cluster_load_w": "",
+            "grid_carbon_intensity": "",
+            "grid_electricity_price": "",
+            "k3d": false
+        })),
         "global_scheduler": {
             "ip": "100.84.252.101",
             "port": "8022"
