@@ -127,17 +127,6 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         )
         scored_clusters.append((cluster_score, cluster))
 
-    runnable_clusters = [
-        (cluster_score, cluster)
-        for cluster_score, cluster in scored_clusters
-        if any(
-            worker_node.status in {WorkerStatus.IDLE, WorkerStatus.WORKING}
-            for worker_node in cluster.worker_nodes
-        )
-    ]
-    if runnable_clusters:
-        scored_clusters = runnable_clusters
-
     sorted_clusters = [
         cluster
         for _, cluster in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
