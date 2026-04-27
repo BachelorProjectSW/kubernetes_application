@@ -281,7 +281,8 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
         config = config_store.get()
         config_id = config.config_id
         node_status_logs = get_worker_nodes_logs(config_id)
-    except Exception:
+    except Exception as e:
+        log.debug("cluster_api.power.get_worker_nodes_logs", error=e)
         return 0
 
     # Find the most recent entry for this node/cluster
@@ -301,6 +302,7 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
                 return 0
     
     # No log entry found for this node; conservatively return 0 (don't turn off)
+    log.debug("cluster_api.power.gggggggggggggggg")
     return 0
 
 def turn_off_idle_nodes(idle_time: int):
