@@ -65,6 +65,21 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
     """Turn of node with SSH."""
     try:
         log.info("cluster_api.power.turning_off_node", cluster=cluster_name, node=worker_node)
+        worker_node.status = WorkerStatus.TURNING_OFF
+        log_node_status_snapshot(cluster_name, worker_node)
+        time.sleep(10)
+
+        if worker_node.inflight_requests > 0:
+            worker_node.status = WorkerStatus.IDLE
+            log_node_status_snapshot(cluster_name, worker_node)
+            log.warning(
+                "cluster_api.power.turn_off_aborted_inflight_requests",
+                cluster_name=cluster_name,
+                worker_node=worker_node.name,
+                inflight_requests=worker_node.inflight_requests,
+            )
+            return False
+
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -106,6 +121,8 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         log_node_status_snapshot(cluster_name, worker_node)
         return True
     except Exception as e:
+        worker_node.status = WorkerStatus.IDLE
+        log_node_status_snapshot(cluster_name, worker_node)
         log.warning(
             "cluster_api.power.turn_off_failed",
             cluster_name=cluster_name,

@@ -74,7 +74,7 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
 def sync_worker_status(worker: WorkerNode) -> None:
     """Sync the status of the worker."""
     # Preserve power-state transitions managed by power_scheduler.
-    if worker.status in {WorkerStatus.OFF, WorkerStatus.TURNING_ON}:
+    if worker.status in {WorkerStatus.OFF, WorkerStatus.TURNING_ON, WorkerStatus.TURNING_OFF}:
         return
 
     cluster = config_store.get()

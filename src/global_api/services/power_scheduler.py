@@ -65,6 +65,9 @@ def estimate_nodes_to_add(
     required_nodes = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
     log.debug("global_api.power.required_nodes_estimated", required_nodes=required_nodes)
 
+    if current_active_nodes <= 0:
+        return 1
+
     # how many more to add
     nodes_to_add = max(0, required_nodes - current_active_nodes)
 
@@ -105,6 +108,17 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             config.energy,
         )
         scored_clusters.append((cluster_score, cluster))
+
+    runnable_clusters = [
+        (cluster_score, cluster)
+        for cluster_score, cluster in scored_clusters
+        if any(
+            worker_node.status in {WorkerStatus.IDLE, WorkerStatus.WORKING}
+            for worker_node in cluster.worker_nodes
+        )
+    ]
+    if runnable_clusters:
+        scored_clusters = runnable_clusters
 
     sorted_clusters = [
         cluster

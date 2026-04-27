@@ -68,129 +68,95 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
 
     global_market_data_fetch_ms = int((time.monotonic() - market_data_fetch_start) * 1000)
 
-    cluster_select_start = time.monotonic()
-    cluster, cluster_energy_data = choose_cluster(
-        config.clusters, all_cluster_energy_data, config.weights, config.energy, config.latency.max_ms
-    )
-    global_cluster_scoring_ms = int((time.monotonic() - cluster_select_start) * 1000)
+    cluster_candidates = [
+        (cluster, cluster_energy_data)
+        for cluster, cluster_energy_data in zip(config.clusters, all_cluster_energy_data)
+        if cluster_energy_data.cluster_load_w > 0
+    ]
+    if not cluster_candidates:
+        cluster_candidates = list(zip(config.clusters, all_cluster_energy_data))
 
-    grid_fraction = compute_grid_fraction(
-        cluster_energy_data.renewable_output_w,
-        cluster_energy_data.cluster_load_w,
-    )
-    renewable_fraction = round(max(0.0, 1.0 - grid_fraction), 4)
-    blended_carbon = compute_carbon_blend(
-        cluster_energy_data.renewable_output_w,
-        cluster_energy_data.cluster_load_w,
-        cluster_energy_data.grid_carbon_intensity,
-    )
-    blended_cost = compute_cost_blend(
-        cluster_energy_data.renewable_output_w,
-        cluster_energy_data.cluster_load_w,
-        cluster_energy_data.grid_electricity_price,
-    )
+    cluster = None
+    cluster_energy_data = None
+    data = None
+    last_error = None
+    remaining_candidates = cluster_candidates[:]
 
-    url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
-
-    t_start = time.monotonic()
-    log.info(
-        "global_api.llm.cluster_api_call_started",
-        service="global_api",
-        trace_id=trace_id,
-        request_id=request_id,
-        cluster_name=cluster.name,
-        target_url=url,
-        global_market_data_fetch_ms=global_market_data_fetch_ms,
-        global_cluster_scoring_ms=global_cluster_scoring_ms,
-    )
-
-    headers = {}
-    if trace_id:
-        headers["X-Trace-Id"] = trace_id
-
-    try:
-        response = requests.post(
-            url,
-            json=question.model_dump(),
-            headers=headers,
-            timeout=1000,
+    while remaining_candidates:
+        cluster_select_start = time.monotonic()
+        cluster, cluster_energy_data = choose_cluster(
+            [candidate_cluster for candidate_cluster, _ in remaining_candidates],
+            [candidate_data for _, candidate_data in remaining_candidates],
+            config.weights,
+            config.energy,
+            config.latency.max_ms,
         )
-        response.raise_for_status()
-        data = response.json()
-    except requests.HTTPError as e:
-        global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
-        global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-        response_status_code = e.response.status_code if e.response else 502
-        log_request(
+        global_cluster_scoring_ms = int((time.monotonic() - cluster_select_start) * 1000)
+
+        grid_fraction = compute_grid_fraction(
+            cluster_energy_data.renewable_output_w,
+            cluster_energy_data.cluster_load_w,
+        )
+        renewable_fraction = round(max(0.0, 1.0 - grid_fraction), 4)
+        blended_carbon = compute_carbon_blend(
+            cluster_energy_data.renewable_output_w,
+            cluster_energy_data.cluster_load_w,
+            cluster_energy_data.grid_carbon_intensity,
+        )
+        blended_cost = compute_cost_blend(
+            cluster_energy_data.renewable_output_w,
+            cluster_energy_data.cluster_load_w,
+            cluster_energy_data.grid_electricity_price,
+        )
+
+        url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
+
+        t_start = time.monotonic()
+        log.info(
+            "global_api.llm.cluster_api_call_started",
+            service="global_api",
+            trace_id=trace_id,
             request_id=request_id,
             cluster_name=cluster.name,
-            worker_node_name="unknown",
-            success=False,
-            latency_ms=global_cluster_api_call_ms,
-            cluster_load_w=cluster_energy_data.cluster_load_w,
-            renewable_fraction=renewable_fraction,
-            blended_carbon_gco2_per_kwh=blended_carbon,
-            blended_cost_eur_per_kwh=blended_cost,
-            question=question.question,
-            answer=None,
-            response_status_code=response_status_code,
-            all_content=e.response.text if e.response is not None else str(e),
-            trace_id=trace_id,
+            target_url=url,
             global_market_data_fetch_ms=global_market_data_fetch_ms,
             global_cluster_scoring_ms=global_cluster_scoring_ms,
-            global_cluster_api_call_ms=global_cluster_api_call_ms,
-            global_total_time_ms=global_total_time_ms,
         )
-        detail = f"Cluster API returned {e.response.status_code if e.response else 'error'}"
-        raise HTTPException(status_code=502, detail=detail) from e
-    except requests.RequestException as e:
-        global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
+
+        headers = {}
+        if trace_id:
+            headers["X-Trace-Id"] = trace_id
+
+        try:
+            response = requests.post(
+                url,
+                json=question.model_dump(),
+                headers=headers,
+                timeout=1000,
+            )
+            response.raise_for_status()
+            data = response.json()
+            break
+        except (requests.HTTPError, requests.RequestException, ValueError) as e:
+            last_error = e
+            remaining_candidates = [
+                candidate
+                for candidate in remaining_candidates
+                if candidate[0].name != cluster.name
+            ]
+            log.warning(
+                "global_api.llm.cluster_attempt_failed",
+                service="global_api",
+                trace_id=trace_id,
+                request_id=request_id,
+                cluster_name=cluster.name,
+                error=str(e),
+                remaining_candidates=len(remaining_candidates),
+            )
+
+    if data is None or cluster is None or cluster_energy_data is None:
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-        log_request(
-            request_id=request_id,
-            cluster_name=cluster.name,
-            worker_node_name="unknown",
-            success=False,
-            latency_ms=global_cluster_api_call_ms,
-            cluster_load_w=cluster_energy_data.cluster_load_w,
-            renewable_fraction=renewable_fraction,
-            blended_carbon_gco2_per_kwh=blended_carbon,
-            blended_cost_eur_per_kwh=blended_cost,
-            question=question.question,
-            answer=None,
-            response_status_code=502,
-            all_content=str(e),
-            trace_id=trace_id,
-            global_market_data_fetch_ms=global_market_data_fetch_ms,
-            global_cluster_scoring_ms=global_cluster_scoring_ms,
-            global_cluster_api_call_ms=global_cluster_api_call_ms,
-            global_total_time_ms=global_total_time_ms,
-        )
-        raise HTTPException(status_code=502, detail=f"Cluster API request failed: {str(e)}") from e
-    except ValueError as e:
-        global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
-        global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-        log_request(
-            request_id=request_id,
-            cluster_name=cluster.name,
-            worker_node_name="unknown",
-            success=False,
-            latency_ms=global_cluster_api_call_ms,
-            cluster_load_w=cluster_energy_data.cluster_load_w,
-            renewable_fraction=renewable_fraction,
-            blended_carbon_gco2_per_kwh=blended_carbon,
-            blended_cost_eur_per_kwh=blended_cost,
-            question=question.question,
-            answer=None,
-            response_status_code=502,
-            all_content=str(e),
-            trace_id=trace_id,
-            global_market_data_fetch_ms=global_market_data_fetch_ms,
-            global_cluster_scoring_ms=global_cluster_scoring_ms,
-            global_cluster_api_call_ms=global_cluster_api_call_ms,
-            global_total_time_ms=global_total_time_ms,
-        )
-        raise HTTPException(status_code=502, detail=f"Invalid JSON from cluster API: {str(e)}") from e
+        raise HTTPException(status_code=503, detail=f"No available cluster: {last_error}")
 
     global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
     global_total_time_ms = int((time.monotonic() - total_start) * 1000)
