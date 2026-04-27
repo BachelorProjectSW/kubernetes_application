@@ -64,6 +64,7 @@ def turn_on_node(worker_node: WorkerNode, cluster_name: str):
 def turn_off_node(worker_node: WorkerNode, cluster_name: str):
     """Turn of node with SSH."""
     try:
+        log.info("cluster_api.power.turning_off_node", cluster=cluster_name, node=worker_node)
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -287,8 +288,14 @@ def turn_off_idle_nodes(idle_time: int):
     nodes = config.worker_nodes
 
     for node in nodes:
-        if node.status == WorkerStatus.OFF:
+        # Only true idle nodes are eligible for automatic power-off.
+        if node.status != WorkerStatus.IDLE:
             continue
+
+        # Never power off a node while requests are still inflight.
+        if node.inflight_requests > 0:
+            continue
+
         last_request = get_idle_time(request_logs, node.name, cluster_name)
         if last_request > idle_time:
             turn_off_node(node, cluster_name)
