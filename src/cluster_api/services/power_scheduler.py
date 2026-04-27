@@ -286,6 +286,7 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
 
     # Find the most recent entry for this node/cluster
     for entry in reversed(node_status_logs or []):
+        log.debug("cluster_api.power.entry_debug", entry=entry)
         if entry.cluster == cluster_name and entry.node == node_name:
             # Found most recent entry for this node
             log.debug("cluster_api.power.latest_node_change", status=entry.status)
