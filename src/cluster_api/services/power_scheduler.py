@@ -263,29 +263,43 @@ def select_nodes_to_turn_off(number_of_nodes: int, worker_nodes: list[WorkerNode
 def get_idle_time(node_name: str, cluster_name: str) -> float:
     """Return the idle time in seconds for a given node in a cluster.
 
+    Checks the most recent NodeStatusLog entry for this node. If it shows status==IDLE,
+    returns the seconds since that transition. Otherwise returns 0 (node not currently idle).
+
     Args:
         node_name: Name of the node to check.
         cluster_name: Name of the cluster the node belongs to.
 
     Returns:
-        Time in seconds since the last request handled by this node.
-        Returns a very large number if the node has never handled a request.
+        Time in seconds since the node transitioned to IDLE.
+        Returns 0 if the most recent status is not IDLE.
 
     """
     now = datetime.now(timezone.utc)
-    # If no request log exists for this node, fall back to node status logs
+    
     try:
         config = config_store.get()
         config_id = config.config_id
         node_status_logs = get_worker_nodes_logs(config_id)
     except Exception:
-        node_status_logs = []
+        return 0
 
-    # Look for the most recent time the node become idle
+    # Find the most recent entry for this node/cluster
     for entry in reversed(node_status_logs or []):
-        if entry.cluster == cluster_name and entry.node == node_name and str(entry.status).lower() == WorkerStatus.IDLE.value:
-            return (now - entry.timestamp).total_seconds()
+        if entry.cluster == cluster_name and entry.node == node_name:
+            # Found most recent entry for this node
+            log.debug("cluster_api.power.latest_node_change", status=entry.status)
+            if str(entry.status).lower() == WorkerStatus.IDLE.value:
+                # Node is currently idle; return seconds since transition
+                log.debug("cluster_api.power.latest_node_change", changed=True)
 
+                return (now - entry.timestamp).total_seconds()
+            else:
+                log.debug("cluster_api.power.latest_node_change", changed=False)
+                # Node's most recent status is not IDLE (e.g., WORKING), so not idle
+                return 0
+    
+    # No log entry found for this node; conservatively return 0 (don't turn off)
     return 0
 
 def turn_off_idle_nodes(idle_time: int):
