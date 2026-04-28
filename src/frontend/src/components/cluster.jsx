@@ -1,35 +1,3 @@
-
-/*
-"clusters": (inputs.clusters || []).map((cluster) => ({
-            "name": cluster.name || "", //str
-            "ip": "",
-            "port": cluster.port || "", //str
-            "gpio_list": cluster.gpio_list || "", // list[int]
-            "simulated_country_code": cluster.simulated_country_code || "",  //str
-            "llama_service_port": "",
-            "renewable_output_w": "",
-            "cluster_load_w": "",
-            "grid_carbon_intensity": "",
-            "grid_electricity_price": "",
-            "k3d": false
-        })),
-
-
-
-    example: 
-     "name": "dk",
-      "ip": "100.114.88.102",
-      "port": "8033",
-      "gpio_list": [17, 27, 23],
-      "simulated_country_code": "ES",
-      "llama_service_port": "8083",
-      "renewable_output_w": 200,
-      "cluster_load_w": 1000,
-      "grid_carbon_intensity": 100,
-      "grid_electricity_price": 0.12,
-      "k3d": false
-    */
-
 function ClusterMangening({ inputs, setInputs }) {
     const clusters = inputs.clusters || []
 
@@ -104,18 +72,37 @@ function ClusterMangening({ inputs, setInputs }) {
                     <div>
                         <label>GPIO Pins:</label>
                         {(cluster.gpio_list || []).map((pin, pinIdx) => (
-                            <input
-                                key={pinIdx}
-                                type="number"
-                                value={pin}
-                                onChange={(e) => {
-                                    const newList = [...cluster.gpio_list];
-                                    newList[pinIdx] = parseInt(e.target.value);
-                                    updateCluster(index, "gpio_list", newList);
-                                }}
-                                style={{ width: "50px", marginRight: "5px" }}
-                            />
+                            <div key={pinIdx} style={{ display: "inline-block", marginRight: "5px" }}>
+                                <input
+                                    type="number"
+                                    value={pin}
+                                    onChange={(e) => {
+                                        const newList = [...cluster.gpio_list];
+                                        newList[pinIdx] = parseInt(e.target.value) || 0;
+                                        updateCluster(index, "gpio_list", newList);
+                                    }}
+                                    style={{ width: "50px" }}
+                                />
+                                {/* REMOVE PIN BUTTON */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const newList = cluster.gpio_list.filter((_, i) => i !== pinIdx);
+                                        updateCluster(index, "gpio_list", newList);
+                                    }}
+                                    style={{
+                                        border: "none",
+                                        background: "none",
+                                        color: "red",
+                                        cursor: "pointer",
+                                        padding: "0 2px"
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
                         ))}
+
                         <button type="button" onClick={() => {
                             const newList = [...(cluster.gpio_list || []), 0];
                             updateCluster(index, "gpio_list", newList);
