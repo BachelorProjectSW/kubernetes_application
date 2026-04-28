@@ -100,34 +100,34 @@ const handleSelectHistory = (e) => {
             dur_minutes: m,
 
             // Weights
-            gco2: config.weights?.gco2 || "",
-            cost: config.weights?.cost || "",
-            latency: config.weights?.latency || "",
+            gco2: config.weights?.gco2 ?? "",
+            cost: config.weights?.cost ?? "",
+            latency: config.weights?.latency ?? "",
 
             // Power Scheduler
-            timeout_s: config.power_scheduler?.timeout_s || "",
-            turn_off_s: config.power_scheduler?.idle_time_for_turn_off_s || "",
+            timeout_s: config.power_scheduler?.timeout_s ?? "",
+            turn_off_s: config.power_scheduler?.idle_time_for_turn_off_s ?? "",
 
             // Latency - Mapping 'latency_window_s' to the UI state 'window'
-            latency_window: config.latency?.latency_window_s || "", 
-            max_latency: config.latency?.max_ms || "",
+            latency_window: config.latency?.latency_window_s ?? "", 
+            max_latency: config.latency?.max_ms ?? "",
 
             // Workload
-            request_per_min: config.workload?.request_per_minute || "",
+            request_per_min: config.workload?.request_per_minute ?? "",
             pattern: config.workload?.pattern || "",
-            seed: config.workload?.seed || "",
-            peakiness: config.workload?.peakiness || "",
+            seed: config.workload?.seed ?? "",
+            peakiness: config.workload?.peakiness ??"",
 
             //Question
             question: config.question?.question ||"", 
-            max_output_tokens: config.question?.max_output_tokens || "",
+            max_output_tokens: config.question?.max_output_tokens ?? "",
 
             // Cluster & Infrastructure
             clusters: config.clusters || [],
             ip_global: config.global_scheduler?.ip || "",
-            port_global: config.global_scheduler?.port || "",
+            port_global: config.global_scheduler?.port ?? "",
             ip_strato: config.strato?.ip || "",
-            port_strato: config.strato?.port || ""
+            port_strato: config.strato?.port ?? ""
         });
     }
 };
