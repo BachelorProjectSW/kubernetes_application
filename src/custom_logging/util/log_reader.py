@@ -53,9 +53,9 @@ def get_request_logs(config_id: str) -> list[RequestLog]:
     return read_all_request_logs(config_id)
 
 
-def get_worker_nodes_logs() -> list[NodeStatusLog]:
+def get_worker_nodes_logs(config_id: str | None = None) -> list[NodeStatusLog]:
     """Return all node status snapshot entries as NodeStatusLog objects."""
-    return get_logs(NodeStatusLog)
+    return get_logs(NodeStatusLog, config_id)
 
 
 def get_terminal_debug_log_entries() -> list[TerminalDebugLog]:

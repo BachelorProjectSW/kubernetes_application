@@ -55,17 +55,22 @@ structlog.configure(
 T = TypeVar("T")
 
 
-def get_logs(log_class: Type[T]) -> list[T]:
+def get_logs(log_class: Type[T], config_id: str | None = None) -> list[T]:
     """Return typed logs from DB for the requested model class."""
     try:
-        config_id = _current_config_id()
+        effective_config_id = _current_config_id() if config_id is None else config_id
         if log_class is RequestLog:
-            return read_all_request_logs(config_id)  # type: ignore[return-value]
+            return read_all_request_logs(effective_config_id)  # type: ignore[return-value]
         if log_class is NodeStatusLog:
-            return read_all_node_status_logs(config_id)  # type: ignore[return-value]
-        return read_model_logs(log_class, _current_config_id())
+            return read_all_node_status_logs(effective_config_id)  # type: ignore[return-value]
+        return read_model_logs(log_class, effective_config_id)
     except Exception as e:
-        log.warning("custom_logging.db.read_logs_failed", error=str(e), log_class=log_class.__name__)
+        log.warning(
+            "custom_logging.db.read_logs_failed",
+            error=str(e),
+            log_class=log_class.__name__,
+            config_id=config_id,
+        )
         return []
 
 
