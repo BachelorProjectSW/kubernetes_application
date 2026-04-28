@@ -1,7 +1,7 @@
 export const handleSubmit = async (e, inputs) => {
     e.preventDefault();
 
-    
+
     const days = parseInt(inputs.dur_days) || 0;
     const hours = parseInt(inputs.dur_hours) || 0;
     const minutes = parseInt(inputs.dur_minutes) || 0;
@@ -29,11 +29,11 @@ export const handleSubmit = async (e, inputs) => {
             "idle_time_for_turn_off_s": inputs.turn_off_s
         } || "",
         "latency": {
-            "latency_window_s": inputs.latency_window || 0, //opdater andre steder
+            "latency_window_s": inputs.latency_window || 0, 
             "max_ms": inputs.max_latency || 0
         },
         "workload": {
-            "request_per_minute": inputs.request_per_min, // opdate?
+            "request_per_minute": inputs.request_per_min,
             "pattern": inputs.pattern,
             "seed": inputs.seed,
             "peakiness": inputs.peakiness
@@ -43,10 +43,10 @@ export const handleSubmit = async (e, inputs) => {
             "max_output_tokens": inputs.max_output_tokens,
         },
         "clusters": (inputs.clusters || []).map((cluster) => ({
-            "name": cluster.name || "", //str
+            "name": cluster.name || "", 
             "ip": cluster.ip || "",
-            "port": cluster.port || "", //str
-            "gpio_list": cluster.gpio_list || "", // list[int]
+            "port": cluster.port || "", 
+            "gpio_list": cluster.gpio_list || "", 
             "simulated_country_code": cluster.simulated_country_code || "",  //str
             "llama_service_port": cluster.llama_service_port || "",
             "renewable_output_w": cluster.renewable_output_w || "",

@@ -1,4 +1,4 @@
-// RET LLAMA SERVICE PORT. 
+
 
 function ClusterMangening({ inputs, setInputs }) {
     const clusters = inputs.clusters || []
@@ -85,7 +85,7 @@ function ClusterMangening({ inputs, setInputs }) {
                                     }}
                                     style={{ width: "50px" }}
                                 />
-                                {/* REMOVE PIN BUTTON */}
+                
                                 <button
                                     type="button"
                                     onClick={() => {

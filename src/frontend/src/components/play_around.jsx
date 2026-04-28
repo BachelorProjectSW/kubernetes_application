@@ -1,11 +1,8 @@
 // things to handle:
 //send data til backend  ( tjek om den gør dette )
 // et problem der sker er at tidligere experimenters data godt kan overgå det der allerede eksister. 
-// lav resten af experiemtn tingende 
-// tjekke at configurationer er det samme for det sammen experiement id (gør i backend)
 // refactor = del det op i flere filer. 
-// lav endpoint i backend. hvor navn er save-config 
-//
+
 import { useState } from 'react';
 import Ids from './experimentID';
 import Start from './startTime';

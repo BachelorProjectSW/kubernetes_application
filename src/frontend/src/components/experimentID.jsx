@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 function Ids({ inputs, setInputs, handleChange }) {
 
-    // 1. Create state to hold the fetched configurations
+
     const [earlierExpIds, setEarlierExpIds] = useState([]);
     const [isExisting, setIsExisting] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -27,47 +27,11 @@ function Ids({ inputs, setInputs, handleChange }) {
 
     const toggleMode = () => setIsExisting(!isExisting);
 
-   /* const handleSelectHistory = (e) => {
-        const selectedId = e.target.value;
-        if (!selectedId) return;
 
-        const historicalData = earlierExpIds.find(exp => exp.id == selectedId);
-
-        if (historicalData) {
-            setInputs(prev => ({
-                ...prev,
-                expID: historicalData.id,
-                name: historicalData.name,
-                startdate: historicalData.startdate,
-                dur_days: historicalData.dur_days,
-                dur_hours: historicalData.dur_hours, 
-                dur_minutes: historicalData.dur_minutes, 
-                gco2: historicalData.gco2, 
-                cost: historicalData.cost,
-                latency: historicalData.latency,
-                timeout_s: historicalData.timeout_s,
-                turn_off_s:historicalData.turn_off_s,
-                latency_window:historicalData.latency_window,
-                max_latency: historicalData.max_latency,
-                request_pr_min: historicalData.request_pr_min,
-                pattern: historicalData.pattern,
-                seed:historicalData.seed,
-                peakiness: historicalData.peakiness,
-                clusters: historicalData.clusters || [],
-                ip_global:historicalData.ip_global,
-                port_global:historicalData.port_global,
-                ip_strato:historicalData.ip_strato,
-                port_strato:historicalData.port_strato
-            }));
-        }
-    };
-
-*/
 const handleSelectHistory = (e) => {
     const selectedId = e.target.value;
     if (!selectedId) return;
 
-    // Find the selected experiment from the fetched list
     const entry = earlierExpIds.find(exp => exp.id == selectedId);
 
     if (entry && entry.config_json) {
@@ -75,14 +39,14 @@ const handleSelectHistory = (e) => {
 
         let formattedDate = "";
         if (config.start?.start_time_simulated) {
-            // Converts "01/10/2021 10:21:00" to "2021-10-01T10:21"
+            
             const [datePart, timePart] = config.start.start_time_simulated.split(' ');
             const [day, month, year] = datePart.split('/');
             const [hours, minutes] = timePart.split(':');
             formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
         }
 
-        // Convert total duration seconds back into days, hours, and minutes for the UI
+        
         const totalSeconds = config.start?.duration_time_s || 0;
         const d = Math.floor(totalSeconds / 86400);
         const h = Math.floor((totalSeconds % 86400) / 3600);
@@ -90,7 +54,7 @@ const handleSelectHistory = (e) => {
 
         setInputs({
             // Identification
-            expID: entry.config_id, // Using the database ID
+            expID: entry.config_id, 
             name: entry.config_name || config.name,
             
             // Start & Duration
@@ -108,7 +72,7 @@ const handleSelectHistory = (e) => {
             timeout_s: config.power_scheduler?.timeout_s ?? "",
             turn_off_s: config.power_scheduler?.idle_time_for_turn_off_s ?? "",
 
-            // Latency - Mapping 'latency_window_s' to the UI state 'window'
+            // Latency 
             latency_window: config.latency?.latency_window_s ?? "", 
             max_latency: config.latency?.max_ms ?? "",
 
