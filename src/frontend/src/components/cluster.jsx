@@ -49,8 +49,6 @@ function ClusterMangening({ inputs, setInputs }) {
                     "renewable_output_w": null,
                     "cluster_load_w": null,
                     "grid_carbon_intensity": null,
-                    "grid_electricity_price": null,
-                    "k3d": null
                 }
             ]
         }));
