@@ -9,7 +9,7 @@ function StratoConfigs({ inputs, handleChange }) {
                 <label> Ip adress </label>
                 <input
                     type="text"
-                    name="ip_strato "
+                    name="ip_strato"
                     value={inputs.ip_strato}
                     onChange={handleChange} />
             </div>

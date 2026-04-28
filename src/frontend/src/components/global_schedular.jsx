@@ -8,7 +8,7 @@ function GlobalScheduler({ inputs, handleChange }) {
                 <label> Ip adress </label>
                 <input
                     type="text"
-                    name="ip_global "
+                    name="ip_global"
                     value={inputs.ip_global}
                     onChange={handleChange} />
             </div>
