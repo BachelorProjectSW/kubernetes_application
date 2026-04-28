@@ -113,16 +113,16 @@ export const handleSubmit = async (e, inputs) => {
         },
         "clusters": (inputs.clusters || []).map((cluster) => ({
             "name": cluster.name || "", //str
-            "ip": "",
+            "ip": cluster.ip || "",
             "port": cluster.port || "", //str
             "gpio_list": cluster.gpio_list || "", // list[int]
             "simulated_country_code": cluster.simulated_country_code || "",  //str
-            "llama_service_port": "",
-            "renewable_output_w": "",
-            "cluster_load_w": "",
-            "grid_carbon_intensity": "",
-            "grid_electricity_price": "",
-            "k3d": false
+            "llama_service_port": cluster.llama_service_port || "",
+            "renewable_output_w": cluster.renewable_output_w || "",
+            "cluster_load_w": cluster.cluster_load_w || "",
+            "grid_carbon_intensity": cluster.grid_carbon_intensity,
+            "grid_electricity_price": cluster.grid_electricity_price,
+            "k3d": cluster.k3d
         })),
         "global_scheduler": {
             "ip": "100.84.252.101",

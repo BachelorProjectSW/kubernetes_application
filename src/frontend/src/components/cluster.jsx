@@ -14,6 +14,20 @@
             "k3d": false
         })),
 
+
+
+    example: 
+     "name": "dk",
+      "ip": "100.114.88.102",
+      "port": "8033",
+      "gpio_list": [17, 27, 23],
+      "simulated_country_code": "ES",
+      "llama_service_port": "8083",
+      "renewable_output_w": 200,
+      "cluster_load_w": 1000,
+      "grid_carbon_intensity": 100,
+      "grid_electricity_price": 0.12,
+      "k3d": false
     */
 
 function ClusterMangening({ inputs, setInputs }) {
@@ -28,15 +42,15 @@ function ClusterMangening({ inputs, setInputs }) {
                 {
                     "name": "",
                     "ip": "",
-                    "port": "",
+                    "port": null,
                     "gpio_list": [],
                     "simulated_country_code": "",
-                    "llama_service_port": "",
-                    "renewable_output_w": "",
-                    "cluster_load_w": "",
-                    "grid_carbon_intensity": "",
-                    "grid_electricity_price": "",
-                    "k3d": false
+                    "llama_service_port": null,
+                    "renewable_output_w": null,
+                    "cluster_load_w": null,
+                    "grid_carbon_intensity": null,
+                    "grid_electricity_price": null,
+                    "k3d": null
                 }
             ]
         }));
