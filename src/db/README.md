@@ -35,6 +35,6 @@ After logging in:
 3. Connection
 
 - Hostname / address: IP where Postgres is hosted (local or strato ip)
-- Port: `5432`
+- Port: `5433`
 - Username: `admin`
 - Password: `admin`
