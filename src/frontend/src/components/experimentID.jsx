@@ -73,6 +73,15 @@ const handleSelectHistory = (e) => {
     if (entry && entry.config_json) {
         const config = entry.config_json;
 
+        let formattedDate = "";
+        if (config.start?.start_time_simulated) {
+            // Converts "01/10/2021 10:21:00" to "2021-10-01T10:21"
+            const [datePart, timePart] = config.start.start_time_simulated.split(' ');
+            const [day, month, year] = datePart.split('/');
+            const [hours, minutes] = timePart.split(':');
+            formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
         // Convert total duration seconds back into days, hours, and minutes for the UI
         const totalSeconds = config.start?.duration_time_s || 0;
         const d = Math.floor(totalSeconds / 86400);
@@ -85,7 +94,7 @@ const handleSelectHistory = (e) => {
             name: entry.config_name || config.name,
             
             // Start & Duration
-            startdate: config.start?.start_time_simulated || "",
+            startdate: formattedDate,
             dur_days: d,
             dur_hours: h,
             dur_minutes: m,
