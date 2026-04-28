@@ -10,13 +10,13 @@ function ClusterMangening({ inputs, setInputs }) {
                 {
                     "name": "",
                     "ip": "",
-                    "port": null,
+                    "port": undefined,
                     "gpio_list": [],
                     "simulated_country_code": "",
-                    "llama_service_port": null,
-                    "renewable_output_w": null,
-                    "cluster_load_w": null,
-                    "grid_carbon_intensity": null,
+                    "llama_service_port": undefined,
+                    "renewable_output_w": undefined,
+                    "cluster_load_w": undefined,
+                    "grid_carbon_intensity": undefined,
                     "grid_electricity_price": undefined,
                     "k3d": undefined
                 }
