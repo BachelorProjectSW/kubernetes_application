@@ -124,13 +124,14 @@ export const handleSubmit = async (e, inputs) => {
             "grid_electricity_price": cluster.grid_electricity_price,
             "k3d": cluster.k3d
         })),
+
         "global_scheduler": {
-            "ip": "100.84.252.101",
-            "port": "8022"
+            "ip": inputs.ip_global,
+            "port": inputs.port_global
         },
         "strato": {
-            "ip": "100.109.95.2",
-            "port": "8011"
+            "ip": inputs.ip_strato,
+            "port": inputs.port_global
         }
 
     };
