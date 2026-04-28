@@ -1,5 +1,11 @@
+/* ============================================================
+   MICROGRID CONFIGURATION — Industrial-Tech Theme
+   Fonts: DM Mono (labels/data) + Syne (headings)
+   Palette: Deep navy bg, electric teal accents, warm white text
+   ============================================================ */
+
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=DM+Mono:wght@300;400;500&display=swap');
- 
+
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
   --bg:          #0d1117;
@@ -21,12 +27,12 @@
   --display:     'Syne', sans-serif;
   --transition:  0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
- 
+
 /* ── Reset & Base ──────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
+
 html { font-size: 15px; scroll-behavior: smooth; }
- 
+
 body {
   background-color: var(--bg);
   background-image:
@@ -37,13 +43,13 @@ body {
   min-height: 100vh;
   padding: 2rem 1rem 4rem;
 }
- 
+
 /* ── App Shell ─────────────────────────────────────────────── */
 #root {
   max-width: 860px;
   margin: 0 auto;
 }
- 
+
 /* ── Page Heading ──────────────────────────────────────────── */
 h1 {
   font-family: var(--display);
@@ -55,7 +61,7 @@ h1 {
   margin-bottom: 2.5rem;
   position: relative;
 }
- 
+
 h1::after {
   content: '';
   display: block;
@@ -66,14 +72,14 @@ h1::after {
   margin: 0.6rem auto 0;
   box-shadow: 0 0 12px var(--accent);
 }
- 
+
 /* ── Form ──────────────────────────────────────────────────── */
 form {
   display: flex;
   flex-direction: column;
   gap: 0;
 }
- 
+
 /* ── Section Panels (the bordered divs) ────────────────────── */
 form > div,
 div[style*="border: 1px solid #ccc"],
@@ -86,12 +92,12 @@ div[style*='border: "1px solid #ccc"'] {
   position: relative;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
- 
+
 div[style*="border: 1px solid #ccc"]:hover {
   border-color: var(--border-glow) !important;
   box-shadow: 0 0 0 1px var(--border-glow), 0 4px 24px #00000040;
 }
- 
+
 /* ── Panel Titles (the <p> headings inside sections) ────────── */
 div[style*="border: 1px solid #ccc"] > p:first-child,
 div[style*="border: 1px solid #ccc"] > p:first-of-type {
@@ -105,7 +111,7 @@ div[style*="border: 1px solid #ccc"] > p:first-of-type {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border);
 }
- 
+
 /* ── Labels ────────────────────────────────────────────────── */
 label {
   font-size: 0.8rem;
@@ -117,7 +123,7 @@ label {
   gap: 0.5rem;
   white-space: nowrap;
 }
- 
+
 /* ── Inputs & Selects ──────────────────────────────────────── */
 input[type="text"],
 input[type="number"],
@@ -136,7 +142,7 @@ textarea {
   width: auto;
   min-width: 80px;
 }
- 
+
 input[type="text"]:focus,
 input[type="number"]:focus,
 input[type="datetime-local"]:focus,
@@ -145,21 +151,21 @@ select:focus {
   box-shadow: 0 0 0 3px var(--accent-soft);
   background: var(--surface-2);
 }
- 
+
 input::placeholder { color: var(--text-muted); opacity: 1; }
- 
+
 /* datetime-local calendar icon tint */
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: invert(0.6) sepia(1) saturate(3) hue-rotate(130deg);
   cursor: pointer;
 }
- 
+
 /* number spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   filter: invert(0.5);
 }
- 
+
 /* select arrow */
 select {
   appearance: none;
@@ -168,12 +174,12 @@ select {
   background-position: right 0.65rem center;
   padding-right: 2rem;
 }
- 
+
 select option {
   background: var(--surface-2);
   color: var(--text);
 }
- 
+
 /* ── Range Sliders (Weights) ───────────────────────────────── */
 input[type="range"] {
   -webkit-appearance: none;
@@ -188,7 +194,7 @@ input[type="range"] {
   min-width: 120px;
   padding: 0;
 }
- 
+
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -200,12 +206,12 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition);
 }
- 
+
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.25);
   box-shadow: 0 0 16px var(--accent);
 }
- 
+
 input[type="range"]::-moz-range-thumb {
   width: 16px;
   height: 16px;
@@ -214,7 +220,7 @@ input[type="range"]::-moz-range-thumb {
   border: none;
   cursor: pointer;
 }
- 
+
 /* Slider value badge */
 span[style*="fontWeight: \"bold\""],
 span[style*='fontWeight: "bold"'],
@@ -231,7 +237,7 @@ input[type="range"] + span {
   min-width: 36px;
   text-align: center;
 }
- 
+
 /* ── Buttons ───────────────────────────────────────────────── */
 button {
   font-family: var(--mono);
@@ -243,7 +249,7 @@ button {
   align-items: center;
   gap: 0.3rem;
 }
- 
+
 /* Primary / Add buttons */
 button[type="button"]:not([style*="red"]):not([style*="color: red"]) {
   background: var(--accent-soft);
@@ -251,13 +257,13 @@ button[type="button"]:not([style*="red"]):not([style*="color: red"]) {
   color: var(--accent);
   padding: 0.35rem 0.85rem;
 }
- 
+
 button[type="button"]:not([style*="red"]):not([style*="color: red"]):hover {
   background: var(--accent);
   color: #000;
   box-shadow: 0 0 12px var(--accent);
 }
- 
+
 /* Submit button */
 button[type="submit"] {
   background: var(--accent);
@@ -274,16 +280,16 @@ button[type="submit"] {
   box-shadow: 0 0 20px var(--accent-dim);
   transition: box-shadow var(--transition), transform var(--transition);
 }
- 
+
 button[type="submit"]:hover {
   box-shadow: 0 0 32px var(--accent), 0 4px 20px #00000060;
   transform: translateY(-1px);
 }
- 
+
 button[type="submit"]:active {
   transform: translateY(0);
 }
- 
+
 /* Danger / Remove buttons (red ones) */
 button[style*="color: red"],
 button[style*='color: "red"'] {
@@ -293,13 +299,13 @@ button[style*='color: "red"'] {
   padding: 0.25rem 0.6rem !important;
   font-size: 0.75rem !important;
 }
- 
+
 button[style*="color: red"]:hover,
 button[style*='color: "red"']:hover {
   background: var(--danger) !important;
   color: #fff !important;
 }
- 
+
 /* Inline ✕ (no border) */
 button[style*="background: none"][style*="color: red"],
 button[style*='background: "none"'][style*='color: "red"'] {
@@ -309,11 +315,11 @@ button[style*='background: "none"'][style*='color: "red"'] {
   padding: 0 4px !important;
   opacity: 0.7;
 }
- 
+
 button[style*="background: none"][style*="color: red"]:hover {
   opacity: 1;
 }
- 
+
 /* ── Top-level inline label fields (ExpID, Name) ───────────── */
 form > div > label,
 form > label {
@@ -323,14 +329,14 @@ form > label {
   align-items: center;
   gap: 0.6rem;
 }
- 
+
 /* ── ExpID toggle button ───────────────────────────────────── */
 label > button[type="button"] {
   font-size: 0.7rem !important;
   padding: 0.2rem 0.6rem !important;
   margin-left: 0.5rem;
 }
- 
+
 /* ── Cluster Rows ──────────────────────────────────────────── */
 div[style*="display: \"flex\""][style*="marginBottom"],
 div[style*='display: "flex"'][style*='marginBottom'] {
@@ -341,40 +347,40 @@ div[style*='display: "flex"'][style*='marginBottom'] {
   flex-wrap: wrap;
   gap: 0.6rem !important;
 }
- 
+
 /* GPIO pin inputs */
 div[style*="display: \"inline-block\""] input,
 div[style*='display: "inline-block"'] input {
   width: 52px !important;
 }
- 
+
 /* ── Duration Fields ───────────────────────────────────────── */
 div[style*="display: \"flex\""][style*="gap: \"10px\""] input[style*="width: \"50px\""],
 div[style*='display: "flex"'][style*='gap: "10px"'] input[style*='width: "50px"'] {
   width: 64px !important;
   text-align: center;
 }
- 
+
 /* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
- 
+
 /* ── Utility: small section spacing  ───────────────────────── */
 br { display: none; } /* remove <br> clutter; gaps handle spacing */
- 
+
 /* ── Entrance animation ────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
- 
+
 form > div,
 div[style*="border: 1px solid #ccc"] {
   animation: fadeUp 0.35s ease both;
 }
- 
+
 form > div:nth-child(1) { animation-delay: 0.04s; }
 form > div:nth-child(2) { animation-delay: 0.08s; }
 form > div:nth-child(3) { animation-delay: 0.12s; }
