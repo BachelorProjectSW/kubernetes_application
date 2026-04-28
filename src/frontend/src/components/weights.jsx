@@ -52,7 +52,7 @@ function Weights({ inputs, handleChange }) {
                 />
 
                 <span style={{ fontWeight: "bold", color: "#007bff" }}>
-                    {inputs.weight_latency || 0.5}
+                    {inputs.latency || 0.5}
                 </span>
             </div>
         </div>
