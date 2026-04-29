@@ -75,7 +75,7 @@ def get_cluster_runtime_data(
         active_nodes = 0
         idle_nodes = 0
 
-        for _, node_data in enumerate(worker_nodes_payload):
+        for node_data in worker_nodes_payload:
             worker_node = WorkerNode.model_validate(node_data)
             if worker_node.status == WorkerStatus.WORKING:
                 active_nodes += 1
