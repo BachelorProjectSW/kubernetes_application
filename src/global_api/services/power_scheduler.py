@@ -32,12 +32,19 @@ def _get_scored_clusters(
 ) -> list[tuple[float, ClusterInformation, ClusterRuntimeData]]:
     scored_clusters = []
     for cluster in clusters:
-        runtime_data: ClusterRuntimeData = get_cluster_runtime_data(
+        runtime_data = get_cluster_runtime_data(
             cluster.cluster_config,
             simulated_time,
             config.energy,
             config.power_scheduler.timeout_s,
         )
+        if runtime_data is None:
+            log.debug(
+                "global_api.power.cluster_skipped_no_active_nodes",
+                cluster_name=cluster.cluster_config.name,
+            )
+            continue
+
         cluster_score = score_cluster(
             runtime_data.renewable_output_w,
             0.0,
