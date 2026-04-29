@@ -16,7 +16,7 @@ import os
 
 log = structlog.get_logger()
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "CRITICAL").upper()
 
 
 _LOGGER_CONFIG_ID: str | None = None
@@ -45,7 +45,7 @@ structlog.configure(
     processors=[
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
-        _get_terminal_logs,
+        # _get_terminal_logs,
         structlog.dev.ConsoleRenderer(),
     ],
     wrapper_class=structlog.make_filtering_bound_logger(LOG_LEVEL),
