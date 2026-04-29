@@ -173,7 +173,7 @@ function App() {
             <XAxis dataKey="timestamp" tickFormatter={formatTime} />
             <YAxis />
             <Tooltip />
-            <Line dataKey="choose_cluster_ms" stroke="#3b82f6" />
+            <Line dataKey="global_choose_cluster" stroke="#3b82f6" />
             <Line dataKey="cluster_queue_time_ms" stroke="#f59e0b" />
             <Line dataKey="llama_inference_ms" stroke="#22c55e" />
           </LineChart>
