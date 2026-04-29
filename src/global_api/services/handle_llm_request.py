@@ -1,15 +1,15 @@
 import time
-import uuid
+
 import requests
-from datetime import datetime, timezone
 import structlog
 from fastapi import HTTPException
-from ...models.basemodels import QuestionConfig, LLMResponse
-from .cluster_data import get_cluster_runtime_data
-from .scoring import choose_cluster, compute_grid_fraction, compute_carbon_blend, compute_cost_blend
-from ..util.all_configuration import config_store
+
 from ...custom_logging.logger import log_request
+from ...models.basemodels import LLMResponse, QuestionConfig
+from ..util.all_configuration import config_store
 from ..util.time_utils import compute_simulated_now
+from .cluster_data import get_cluster_runtime_data
+from .scoring import choose_cluster, compute_carbon_blend, compute_cost_blend, compute_grid_fraction
 
 
 log = structlog.get_logger()
@@ -51,89 +51,72 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
 
         global_market_data_fetch_ms = int((time.monotonic() - market_data_fetch_start) * 1000)
 
-        cluster_candidates = [
-            (cluster, cluster_energy_data)
-            for cluster, cluster_energy_data in zip(config.clusters, all_cluster_energy_data)
-            if cluster_energy_data.cluster_load_w > 0
-        ]
-        if not cluster_candidates:
-            cluster_candidates = list(zip(config.clusters, all_cluster_energy_data))
-
         cluster = None
         cluster_energy_data = None
         data = None
         last_error = None
-        remaining_candidates = cluster_candidates[:]
+        cluster_select_start = time.monotonic()
+        cluster, cluster_energy_data = choose_cluster(
+            config.clusters,
+            all_cluster_energy_data,
+            config.weights,
+            config.energy,
+            config.latency.max_ms,
+        )
+        global_cluster_scoring_ms = int((time.monotonic() - cluster_select_start) * 1000)
 
-        while remaining_candidates:
-            cluster_select_start = time.monotonic()
-            cluster, cluster_energy_data = choose_cluster(
-                [candidate_cluster for candidate_cluster, _ in remaining_candidates],
-                [candidate_data for _, candidate_data in remaining_candidates],
-                config.weights,
-                config.energy,
-                config.latency.max_ms,
-            )
-            global_cluster_scoring_ms = int((time.monotonic() - cluster_select_start) * 1000)
+        grid_fraction = compute_grid_fraction(
+            cluster_energy_data.renewable_output_w,
+            cluster_energy_data.cluster_load_w,
+        )
+        renewable_fraction = round(max(0.0, 1.0 - grid_fraction), 4)
+        blended_carbon = compute_carbon_blend(
+            cluster_energy_data.renewable_output_w,
+            cluster_energy_data.cluster_load_w,
+            cluster_energy_data.grid_carbon_intensity,
+        )
+        blended_cost = compute_cost_blend(
+            cluster_energy_data.renewable_output_w,
+            cluster_energy_data.cluster_load_w,
+            cluster_energy_data.grid_electricity_price,
+        )
 
-            grid_fraction = compute_grid_fraction(
-                cluster_energy_data.renewable_output_w,
-                cluster_energy_data.cluster_load_w,
-            )
-            renewable_fraction = round(max(0.0, 1.0 - grid_fraction), 4)
-            blended_carbon = compute_carbon_blend(
-                cluster_energy_data.renewable_output_w,
-                cluster_energy_data.cluster_load_w,
-                cluster_energy_data.grid_carbon_intensity,
-            )
-            blended_cost = compute_cost_blend(
-                cluster_energy_data.renewable_output_w,
-                cluster_energy_data.cluster_load_w,
-                cluster_energy_data.grid_electricity_price,
-            )
+        url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
 
-            url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
+        t_start = time.monotonic()
+        log.info(
+            "global_api.llm.cluster_api_call_started",
+            service="global_api",
+            trace_id=trace_id,
+            cluster_name=cluster.name,
+            target_url=url,
+            global_market_data_fetch_ms=global_market_data_fetch_ms,
+            global_cluster_scoring_ms=global_cluster_scoring_ms,
+        )
 
-            t_start = time.monotonic()
-            log.info(
-                "global_api.llm.cluster_api_call_started",
+        headers = {}
+        if trace_id:
+            headers["X-Trace-Id"] = trace_id
+
+        try:
+            response = requests.post(
+                url,
+                json=question.model_dump(),
+                headers=headers,
+                timeout=1000,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except (requests.HTTPError, requests.RequestException, ValueError) as e:
+            last_error = e
+            log.warning(
+                "global_api.llm.cluster_attempt_failed",
                 service="global_api",
                 trace_id=trace_id,
                 cluster_name=cluster.name,
-                target_url=url,
-                global_market_data_fetch_ms=global_market_data_fetch_ms,
-                global_cluster_scoring_ms=global_cluster_scoring_ms,
+                error=str(e),
             )
-
-            headers = {}
-            if trace_id:
-                headers["X-Trace-Id"] = trace_id
-
-            try:
-                response = requests.post(
-                    url,
-                    json=question.model_dump(),
-                    headers=headers,
-                    timeout=1000,
-                )
-                response.raise_for_status()
-                data = response.json()
-                break
-            except (requests.HTTPError, requests.RequestException, ValueError) as e:
-                last_error = e
-                remaining_candidates = [
-                    candidate
-                    for candidate in remaining_candidates
-                    if candidate[0].name != cluster.name
-                ]
-                log.warning(
-                    "global_api.llm.cluster_attempt_failed",
-                    service="global_api",
-                    trace_id=trace_id,
-                    cluster_name=cluster.name,
-                    error=str(e),
-                    remaining_candidates=len(remaining_candidates),
-                )
+            raise HTTPException(status_code=503, detail=f"No available cluster: {last_error}")
 
         if data is None or cluster is None or cluster_energy_data is None:
             global_total_time_ms = int((time.monotonic() - total_start) * 1000)
