@@ -119,7 +119,7 @@ def start_all_servers():
         server_processes.append(p_server)
 
         # Start port-forward directly (non-blocking)
-        start_pod_forwards(cluster.name, base_local_port=int(8080))
+        start_pod_forwards(cluster.name, base_local_port=int(cluster.llama_service_port))
 
     # Wait for Uvicorn servers to finish
     for p in server_processes:
