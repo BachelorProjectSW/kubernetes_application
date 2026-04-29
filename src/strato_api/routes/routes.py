@@ -55,6 +55,7 @@ def test_results_endpoint(config_id: str):
     except HTTPException:
         raise
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/get_configs")
