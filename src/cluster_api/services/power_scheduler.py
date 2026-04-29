@@ -6,7 +6,6 @@ from ..util.cluster_config import config_store
 from ..util.client_setup import get_api_client
 from ...models.enum import WorkerStatus
 from ...custom_logging.util.log_reader import get_worker_nodes_logs
-from ...custom_logging.models.log_models import RequestLog
 from datetime import datetime, timezone
 import subprocess
 import time

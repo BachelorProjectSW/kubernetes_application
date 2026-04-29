@@ -24,20 +24,12 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         total_start = time.monotonic()
         config = config_store.get()
     
-        log.info(
-            "global_api.llm.request_started",
-            service="global_api",
-            trace_id=trace_id,
-            cluster_count=len(config.clusters),
-        )
 
         simulated_time = compute_simulated_now(
             config.start.start_time_simulated,
             config.start.start_time_real,
         )
 
-
-        market_data_fetch_start = time.monotonic()
 
         all_cluster_energy_data = [
             get_cluster_runtime_data(
@@ -49,13 +41,9 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             for cluster in config.clusters
         ]
 
-        global_market_data_fetch_ms = int((time.monotonic() - market_data_fetch_start) * 1000)
 
-        cluster = None
-        cluster_energy_data = None
         data = None
         last_error = None
-        cluster_select_start = time.monotonic()
         cluster, cluster_energy_data = choose_cluster(
             config.clusters,
             all_cluster_energy_data,
@@ -63,7 +51,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             config.energy,
             config.latency.max_ms,
         )
-        global_cluster_scoring_ms = int((time.monotonic() - cluster_select_start) * 1000)
+        choose_cluster_end = int((time.monotonic() - total_start) * 1000)
 
         grid_fraction = compute_grid_fraction(
             cluster_energy_data.renewable_output_w,
@@ -90,8 +78,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             trace_id=trace_id,
             cluster_name=cluster.name,
             target_url=url,
-            global_market_data_fetch_ms=global_market_data_fetch_ms,
-            global_cluster_scoring_ms=global_cluster_scoring_ms,
         )
 
         headers = {}
@@ -149,9 +135,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
                 response_status_code=502,
                 all_content=data,
                 trace_id=trace_id,
-                global_market_data_fetch_ms=global_market_data_fetch_ms,
-                global_cluster_scoring_ms=global_cluster_scoring_ms,
-                global_cluster_api_call_ms=global_cluster_api_call_ms,
+                global_choose_cluster=choose_cluster_end,
                 global_total_time_ms=global_total_time_ms,
             )
             raise HTTPException(status_code=502, detail="Invalid cluster response payload")
@@ -190,8 +174,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             response_status_code=result.llama_response_status_code,
             all_content=llm_content,
             trace_id=trace_id,
-            global_market_data_fetch_ms=global_market_data_fetch_ms,
-            global_cluster_scoring_ms=global_cluster_scoring_ms,
+            global_choose_cluster=choose_cluster_end,
             global_cluster_api_call_ms=global_cluster_api_call_ms,
             global_total_time_ms=global_total_time_ms,
             cluster_queue_time_ms=result.cluster_queue_time_ms,
