@@ -16,6 +16,8 @@ from ..db.postgres import (
 
 log = structlog.get_logger()
 
+
+
 _LOGGER_CONFIG_ID: str | None = None
 
 
@@ -45,7 +47,7 @@ structlog.configure(
         # _get_terminal_logs,
         structlog.dev.ConsoleRenderer(),
     ],
-    wrapper_class=structlog.make_filtering_bound_logger(0),
+    wrapper_class=structlog.make_filtering_bound_logger(logging.critical),
     context_class=dict,
     logger_factory=structlog.PrintLoggerFactory(),
     cache_logger_on_first_use=True,
