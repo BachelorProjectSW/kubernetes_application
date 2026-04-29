@@ -122,7 +122,7 @@ def get_test_results(config_id: str) -> dict:
         service_timeout_over_time.append(
             {
                 **point,
-                "choose_cluster_ms": entry.global_cluster_scoring_ms,
+                "choose_cluster_ms": entry.global_cluster_scoring_ms + entry.global_market_data_fetch_ms,
                 "cluster_queue_time_ms": entry.cluster_queue_time_ms,
                 "llama_inference_ms": entry.cluster_llama_inference_ms,
                 "global_cluster_api_call_ms": entry.global_cluster_api_call_ms,
