@@ -1,28 +1,42 @@
 function GlobalScheduler({ inputs, handleChange }) {
-
     return (
-        <div style={{ border: "1px solid #ccc", padding: "10px", marginTop: "10px" }}>
-            <p> Global Schedular</p>
+        <>
+            <p className="panel-title">
+                <span className="panel-title-icon">🌐</span>
+                Global Scheduler
+            </p>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <label> Ip adress </label>
-                <input
-                    type="text"
-                    name="ip_global"
-                    value={inputs.ip_global}
-                    onChange={handleChange} />
-            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                    <span style={{ fontSize: "0.68rem", color: "var(--text-label)", letterSpacing: "0.04em" }}>
+                        IP Address
+                    </span>
+                    <input
+                        type="text"
+                        name="ip_global"
+                        value={inputs.ip_global || ""}
+                        onChange={handleChange}
+                        placeholder="e.g. 192.168.1.1"
+                        style={{ width: "100%" }}
+                    />
+                </label>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <label> Port </label>
-                <input
-                    type="number"
-                    name="port_global"
-                    value={inputs.port_global}
-                    onChange={handleChange} />
+                <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                    <span style={{ fontSize: "0.68rem", color: "var(--text-label)", letterSpacing: "0.04em" }}>
+                        Port
+                    </span>
+                    <input
+                        type="number"
+                        name="port_global"
+                        value={inputs.port_global || ""}
+                        onChange={handleChange}
+                        placeholder="e.g. 8080"
+                        style={{ width: "100%" }}
+                    />
+                </label>
             </div>
-        </div>
-    )
+        </>
+    );
 }
 
 export default GlobalScheduler;

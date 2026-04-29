@@ -1,8 +1,3 @@
-// things to handle:
-//send data til backend  ( tjek om den gør dette )
-// et problem der sker er at tidligere experimenters data godt kan overgå det der allerede eksister. 
-// refactor = del det op i flere filer. 
-
 import { useState } from 'react';
 import Ids from './experimentID';
 import Start from './startTime';
@@ -26,91 +21,85 @@ function AllConfigs({ onSubmit }) {
 
     return (
         <form onSubmit={(e) => onSubmit(e, inputs)}>
-            <div style={{ marginBottom: "20px" }}>
-                <Ids
-                    inputs={inputs}
-                    setInputs={setInputs}
-                    handleChange={handleChange}
-                />
-            </div>
-            <br />
 
-            <label> Name:
-                <input
-                    type="text"
-                    name="name"
-                    value={inputs.name || ""}
-                    onChange={handleChange}
-                />
-            </label>
-            <br />
-            <div>
-                <Start
-                    inputs={inputs}
-                    handleChange={handleChange}
-                />
+            {/* ── Identity row ── */}
+            <div className="section-panel full-width" style={{ display: "flex", gap: "2rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                <p className="panel-title">
+                    <span className="panel-title-icon">🔖</span>
+                    Experiment Identity
+                </p>
+                <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-end" }}>
+                    <Ids inputs={inputs} setInputs={setInputs} handleChange={handleChange} />
+                    <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                        <span style={{ fontSize: "0.68rem", color: "var(--text-label)", letterSpacing: "0.04em" }}>Experiment Name</span>
+                        <input
+                            type="text"
+                            name="name"
+                            value={inputs.name || ""}
+                            onChange={handleChange}
+                            placeholder="e.g. baseline-run-01"
+                            style={{ minWidth: "200px" }}
+                        />
+                    </label>
+                </div>
             </div>
 
-            <br />
-
-            <div>
-                <Weights
-                    inputs={inputs}
-                    handleChange={handleChange}
-                />
+            {/* ── Timing ── */}
+            <div className="section-panel full-width">
+                <Start inputs={inputs} handleChange={handleChange} />
             </div>
 
-            <div>
-                <Power_schedular
-                    inputs={inputs}
-                    handleChange={handleChange}
-                />
+            <div className="section-divider full-width">Scheduling &amp; Performance</div>
+
+            {/* ── Weights + Power side by side ── */}
+            <div className="section-panel">
+                <Weights inputs={inputs} handleChange={handleChange} />
             </div>
 
-            <br />
-
-            <div>
-                <Latency
-                    inputs={inputs}
-                    handleChange={handleChange}
-                    />
+            <div className="section-panel">
+                <Power_schedular inputs={inputs} handleChange={handleChange} />
             </div>
 
-            <div>
-                <Workload
-                    inputs={inputs}
-                    handleChange={handleChange}
-                />
+            {/* ── Latency + Workload side by side ── */}
+            <div className="section-panel">
+                <Latency inputs={inputs} handleChange={handleChange} />
             </div>
 
-            <div>
-                <Question
-                    inputs={inputs}
-                    handleChange={handleChange}
-                />
+            <div className="section-panel">
+                <Workload inputs={inputs} handleChange={handleChange} />
             </div>
 
-            <div>
-                <ClusterMangening
-                    inputs={inputs}
-                    setInputs={setInputs}
-                    />
-            </div>
-            <div>
-                <GlobalScheduler
-                    inputs={inputs}
-                    handleChange={handleChange}
-                    />
-            </div>
-             <div>
-                <StratoConfigs
-                    inputs={inputs}
-                    handleChange={handleChange}
-                    />
+            {/* ── Question full width ── */}
+            <div className="section-panel full-width">
+                <Question inputs={inputs} handleChange={handleChange} />
             </div>
 
-            <button type="submit"> Save configurations</button>
+            <div className="section-divider full-width">Infrastructure</div>
+
+            {/* ── Clusters full width ── */}
+            <div className="section-panel full-width">
+                <ClusterMangening inputs={inputs} setInputs={setInputs} />
+            </div>
+
+            {/* ── Global + Strato side by side ── */}
+            <div className="section-panel">
+                <GlobalScheduler inputs={inputs} handleChange={handleChange} />
+            </div>
+
+            <div className="section-panel">
+                <StratoConfigs inputs={inputs} handleChange={handleChange} />
+            </div>
+
+            {/* ── Submit ── */}
+            <div className="submit-row">
+                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                    All fields will be validated before submission
+                </span>
+                <button type="submit">⚡ Start Test</button>
+            </div>
+
         </form>
-    )
+    );
 }
+
 export default AllConfigs;
