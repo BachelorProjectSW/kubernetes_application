@@ -10,11 +10,11 @@ function ClusterMangening({ inputs, setInputs }) {
             clusters: [
                 ...(prev.clusters || []),
                 {
-                    "name": "",
-                    "ip": "",
-                    "port": undefined,
-                    "gpio_list": [],
-                    "simulated_country_code": "",
+                    "name": "",//
+                    "ip": "",//
+                    "port": undefined,//
+                    "gpio_list": [],//
+                    "simulated_country_code": "",//
                     "llama_service_port": "",
                     "renewable_output_w": undefined,
                     "cluster_load_w": undefined,
@@ -65,6 +65,14 @@ function ClusterMangening({ inputs, setInputs }) {
                     />
 
                     <input
+                        placeholder="IP adress"
+                        value={cluster.ip || ""}
+                        onChange={(e) => updateCluster(index, "ip", e.target.value)}
+                        style={{ width: "100px" }}
+                    />
+
+
+                    <input
                         placeholder="Port"
                         type="number"
                         value={cluster.port || ""}
@@ -85,7 +93,7 @@ function ClusterMangening({ inputs, setInputs }) {
                                     }}
                                     style={{ width: "50px" }}
                                 />
-                
+
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -117,13 +125,6 @@ function ClusterMangening({ inputs, setInputs }) {
                         type="text"
                         value={cluster.simulated_country_code || ""}
                         onChange={(e) => updateCluster(index, "simulated_country_code", e.target.value)}
-                        style={{ width: "70px" }}
-                    />
-                    <input
-                        placeholder="llama service port"
-                        type="number"
-                        value={cluster.llama_service_port || ""}
-                        onChange={(e) => updateCluster(index, "llama_service_port", e.target.value)}
                         style={{ width: "70px" }}
                     />
                     <button

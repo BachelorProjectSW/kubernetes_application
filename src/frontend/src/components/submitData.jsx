@@ -61,7 +61,7 @@ export const handleSubmit = async (e, inputs) => {
             "ip": cluster.ip || "",
             "port": cluster.port || "", 
             "gpio_list": cluster.gpio_list || "", 
-            "simulated_country_code": cluster.simulated_country_code || "",  //str
+            "simulated_country_code": cluster.simulated_country_code || "",  
             "llama_service_port": cluster.llama_service_port || "",
             "renewable_output_w": cluster.renewable_output_w || "",
             "cluster_load_w": cluster.cluster_load_w || "",
