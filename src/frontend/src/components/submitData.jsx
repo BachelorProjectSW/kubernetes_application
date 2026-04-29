@@ -7,6 +7,20 @@ export const handleSubmit = async (e, inputs) => {
     const minutes = parseInt(inputs.dur_minutes) || 0;
 
     const totalSeconds = (days * 86400) + (hours * 3600) + (minutes * 60);
+    
+    let formattedDate = "";
+    if (inputs.startdate) {
+        const dateObj = new Date(inputs.startdate);
+        
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const year = dateObj.getFullYear();
+        const hoursDate = String(dateObj.getHours()).padStart(2, '0');
+        const minsDate = String(dateObj.getMinutes()).padStart(2, '0');
+        const secsDate = "00"; // datetime-local usually doesn't capture seconds
+
+        formattedDate = `${day}/${month}/${year} ${hoursDate}:${minsDate}:${secsDate}`;
+    }
 
 
     const exportData = {
@@ -15,7 +29,7 @@ export const handleSubmit = async (e, inputs) => {
         "name": inputs.name || "",
         "start": {
             "duration_time_s": totalSeconds,
-            "start_time_simulated": inputs.startdate || "",
+            "start_time_simulated": formattedDate || "",
             "start_time_real": null
         } || "",
         "weights": {
