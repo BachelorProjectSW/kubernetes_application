@@ -2,6 +2,21 @@ import requests
 import pytest
 from concurrent.futures import ThreadPoolExecutor
 
+from ...k3d.cluster_configs.test_config import get_test_config
+
+
+def _cluster_api_base_url() -> str:
+    config = get_test_config()
+    cluster = config.clusters[0]
+    return f"http://{cluster.ip}:{cluster.port}"
+
+
+def _post_or_skip(url: str, **kwargs):
+    try:
+        return requests.post(url, **kwargs)
+    except requests.RequestException as e:
+        pytest.skip(f"cluster API is not available: {e}")
+
 
 @pytest.mark.integration
 def test_handle_llm_request_dk_one_worker():
@@ -16,8 +31,8 @@ def test_handle_llm_request_dk_one_worker():
         "max_output_tokens": 32,
     }
 
-    response = requests.post(
-        "http://127.0.0.1:8040/handle_llm_request",
+    response = _post_or_skip(
+        f"{_cluster_api_base_url()}/handle_llm_request",
         json=payload,
         timeout=120,
     )
@@ -41,8 +56,8 @@ def test_handle_llm_request_dk_uses_both_workers_when_requests_overlap():
     }
 
     def send_request():
-        response = requests.post(
-            "http://127.0.0.1:8040/handle_llm_request",
+        response = _post_or_skip(
+            f"{_cluster_api_base_url()}/handle_llm_request",
             json=payload,
             timeout=120,
         )
@@ -71,8 +86,8 @@ def test_handle_llm_request_dk_enters_queueing_when_requests_exceed_total_slots(
     }
 
     def send_request():
-        response = requests.post(
-            "http://127.0.0.1:8040/handle_llm_request",
+        response = _post_or_skip(
+            f"{_cluster_api_base_url()}/handle_llm_request",
             json=payload,
             timeout=180,
         )

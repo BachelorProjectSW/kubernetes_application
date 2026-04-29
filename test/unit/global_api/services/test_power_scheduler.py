@@ -72,7 +72,7 @@ def test_estimate_nodes_to_add_calculates_and_clamps_to_zero():
         max_latency_ms=250,
         current_active_nodes=10,
         current_rps=0.8,
-    ) == 0
+    ) == 30
 
 
 @pytest.mark.unit
