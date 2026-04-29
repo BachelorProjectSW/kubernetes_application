@@ -94,7 +94,6 @@ def get_test_results(config_id: str) -> dict:
             "timestamp": entry.timestamp.isoformat(),
             "cluster": entry.cluster,
             "node": entry.node,
-            "request_id": entry.request_id,
         }
         gco2_over_time.append(
             {
