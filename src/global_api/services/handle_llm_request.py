@@ -18,7 +18,7 @@ log = structlog.get_logger()
 # TODO jeg tror ikke den tager højde for at den ikke
 # sender request ud til at cluster med kun slukkede worker nodes.
 # TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
-def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
+def handle_llm_request(question: QuestionConfig, trace_id: str):
     """Send the question to the local cluster request scheduler llama-service."""
     try:
         total_start = time.monotonic()
@@ -42,8 +42,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         ]
 
 
-        data = None
-        last_error = None
         cluster, cluster_energy_data = choose_cluster(
             config.clusters,
             all_cluster_energy_data,
@@ -71,18 +69,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
 
         url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
 
-        t_start = time.monotonic()
-        log.info(
-            "global_api.llm.cluster_api_call_started",
-            service="global_api",
-            trace_id=trace_id,
-            cluster_name=cluster.name,
-            target_url=url,
-        )
-
-        headers = {}
-        if trace_id:
-            headers["X-Trace-Id"] = trace_id
+        headers = {"X-Trace-Id": trace_id}
 
         try:
             response = requests.post(
@@ -108,7 +95,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             global_total_time_ms = int((time.monotonic() - total_start) * 1000)
             raise HTTPException(status_code=503, detail=f"No available cluster: {last_error}")
 
-        global_cluster_api_call_ms = int((time.monotonic() - t_start) * 1000)
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
 
         if not isinstance(data, dict):
@@ -117,7 +103,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
                 service="global_api",
                 trace_id=trace_id,
                 cluster_name=cluster.name,
-                global_cluster_api_call_ms=int(global_cluster_api_call_ms),
                 global_total_time_ms=global_total_time_ms,
                 payload_type=type(data).__name__,
             )
@@ -125,7 +110,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
                 cluster_name=cluster.name,
                 worker_node_name="unknown",
                 success=False,
-                latency_ms=global_cluster_api_call_ms,
+                latency_ms=global_total_time_ms,
                 cluster_load_w=cluster_energy_data.cluster_load_w,
                 renewable_fraction=renewable_fraction,
                 blended_carbon_gco2_per_kwh=blended_carbon,
@@ -164,7 +149,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             cluster_name=cluster.name,
             worker_node_name=worker_node.name,
             success=True,
-            latency_ms=global_cluster_api_call_ms,
+            latency_ms=global_total_time_ms,
             cluster_load_w=cluster_energy_data.cluster_load_w,
             renewable_fraction=renewable_fraction,
             blended_carbon_gco2_per_kwh=blended_carbon,
@@ -175,7 +160,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             all_content=llm_content,
             trace_id=trace_id,
             global_choose_cluster=choose_cluster_end,
-            global_cluster_api_call_ms=global_cluster_api_call_ms,
             global_total_time_ms=global_total_time_ms,
             cluster_queue_time_ms=result.cluster_queue_time_ms,
             cluster_llama_inference_ms=result.cluster_llama_inference_ms,
