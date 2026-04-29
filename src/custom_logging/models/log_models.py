@@ -6,7 +6,6 @@ from typing import Any
 class RequestLog(BaseModel):
     """Model for a single completed request log entry."""
 
-    request_id: str
     trace_id: str | None = None
     timestamp: datetime
     cluster: str

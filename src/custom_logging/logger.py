@@ -88,7 +88,6 @@ def get_terminal_debug_logs() -> list[TerminalDebugLog]:
 
 
 def log_request(
-    request_id: str,
     cluster_name: str,
     worker_node_name: str,
     latency_ms: float,
@@ -111,7 +110,6 @@ def log_request(
 ):
     """Log a completed request to the CSV and console."""
     entry = RequestLog(
-        request_id=request_id,
         trace_id=trace_id,
         timestamp=datetime.now(timezone.utc),
         cluster=cluster_name,

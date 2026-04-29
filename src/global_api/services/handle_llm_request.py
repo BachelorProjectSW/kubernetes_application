@@ -20,8 +20,6 @@ log = structlog.get_logger()
 # TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
 def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
     """Send the question to the local cluster request scheduler llama-service."""
-    request_id = str(uuid.uuid4())
-    trace_id = trace_id
     config = config_store.get()
     if config is None:
         raise HTTPException(status_code=409,
@@ -36,7 +34,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         "global_api.llm.request_started",
         service="global_api",
         trace_id=trace_id,
-        request_id=request_id,
         cluster_count=len(config.clusters),
     )
 
@@ -50,7 +47,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
         log.warning(
             "global_api.llm.simulated_time_fallback_to_now",
             trace_id=trace_id,
-            request_id=request_id,
             error=str(e),
         )
 
@@ -116,7 +112,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             "global_api.llm.cluster_api_call_started",
             service="global_api",
             trace_id=trace_id,
-            request_id=request_id,
             cluster_name=cluster.name,
             target_url=url,
             global_market_data_fetch_ms=global_market_data_fetch_ms,
@@ -148,7 +143,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
                 "global_api.llm.cluster_attempt_failed",
                 service="global_api",
                 trace_id=trace_id,
-                request_id=request_id,
                 cluster_name=cluster.name,
                 error=str(e),
                 remaining_candidates=len(remaining_candidates),
@@ -166,14 +160,12 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
             "global_api.llm.invalid_cluster_response",
             service="global_api",
             trace_id=trace_id,
-            request_id=request_id,
             cluster_name=cluster.name,
             global_cluster_api_call_ms=int(global_cluster_api_call_ms),
             global_total_time_ms=global_total_time_ms,
             payload_type=type(data).__name__,
         )
         log_request(
-            request_id=request_id,
             cluster_name=cluster.name,
             worker_node_name="unknown",
             success=False,
@@ -215,7 +207,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str | None = None):
 
 
     log_request(
-        request_id=request_id,
         cluster_name=cluster.name,
         worker_node_name=worker_node.name,
         success=True,
