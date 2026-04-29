@@ -48,7 +48,7 @@ def get_avg_latency(time_interval_s: int) -> float:
     return round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
 
-def get_request_logs(config_id: str | None = None) -> list[RequestLog]:
+def get_request_logs(config_id: str) -> list[RequestLog]:
     """Return request log entries for a specific config id."""
     return read_all_request_logs(config_id)
 

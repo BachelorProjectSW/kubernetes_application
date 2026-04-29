@@ -14,18 +14,6 @@ from sqlmodel import Session, delete
 from src.models.enum import WorkerStatus
 
 
-def _make_cluster(name: str = "denmark") -> ClusterConfig:
-    """Return a minimal ClusterConfig for testing."""
-    return ClusterConfig(
-        name=name,
-        ip="127.0.0.1",
-        port="8080",
-        gpio_list=[],
-        simulated_country_code="DK",
-        llama_service_port="11434",
-    )
-
-
 def _make_node(name: str = "nano1") -> WorkerNode:
     """Return a minimal WorkerNode for testing."""
     return WorkerNode(name=name, ip="127.0.0.1", status=WorkerStatus.WORKING, gpio=1)
@@ -53,12 +41,12 @@ def clean_logs():
 
 def make_log_request(**overrides):
     """Call log_request with default values, optionally overriding any field."""
-    cluster_name = overrides.pop("cluster", "denmark")
-    node_name = overrides.pop("node", "nano1")
+    cluster_name = overrides.pop("cluster_name", "denmark")
+    node_name = overrides.pop("worker_node_name", "nano1")
     defaults = dict(
-        request_id="req001",
-        cluster=_make_cluster(cluster_name),
-        node=_make_node(node_name),
+        trace_id="req001",
+        cluster_name=cluster_name,
+        worker_node_name=node_name,
         success=True,
         latency_ms=1000.0,
         cluster_load_w=1000.0,
@@ -85,11 +73,11 @@ def test_database_does_not_lose_data_during_test():
 @pytest.mark.integration
 def test_log_request_writes_row():
     """Test that log_request writes a row to the database."""
-    make_log_request(request_id="req001", cluster="portugal", node="nano4")
+    make_log_request(trace_id="req001", cluster_name="portugal", worker_node_name="nano4")
 
     result = get_request_logs()
     assert len(result) == 1
-    assert result[0].request_id == "req001"
+    assert result[0].trace_id == "req001"
     assert result[0].cluster == "portugal"
     assert result[0].node == "nano4"
 
@@ -122,7 +110,7 @@ def test_log_request_writes_energy_fields():
 def test_log_request_multiple_rows_append():
     """Test that log_request appends multiple rows to the database."""
     for i in range(5):
-        make_log_request(request_id=f"req{i}", latency_ms=1000.0 + i)
+        make_log_request(trace_id=f"req{i}", latency_ms=1000.0 + i)
 
     result = get_request_logs()
     assert len(result) == 5
@@ -168,7 +156,7 @@ def test_generate_summary_returns_error_when_empty():
 def test_generate_summary_correct_total():
     """Test that generate_summary computes the correct total number of requests."""
     for i in range(3):
-        make_log_request(request_id=f"req{i}")
+        make_log_request(trace_id=f"req{i}")
 
     summary = generate_summary()
     assert summary["total_requests"] == 3
@@ -177,8 +165,8 @@ def test_generate_summary_correct_total():
 @pytest.mark.integration
 def test_generate_summary_correct_avg_latency():
     """Test that generate_summary computes the correct average latency."""
-    make_log_request(request_id="req1", latency_ms=1000.0)
-    make_log_request(request_id="req2", latency_ms=3000.0)
+    make_log_request(trace_id="req1", latency_ms=1000.0)
+    make_log_request(trace_id="req2", latency_ms=3000.0)
 
     summary = generate_summary()
     assert summary["avg_latency_ms"] == 2000.0
@@ -187,9 +175,9 @@ def test_generate_summary_correct_avg_latency():
 @pytest.mark.integration
 def test_generate_summary_correct_cluster_distribution():
     """Test that generate_summary computes the correct cluster distribution."""
-    make_log_request(request_id="req1", cluster="denmark")
-    make_log_request(request_id="req2", cluster="portugal")
-    make_log_request(request_id="req3", cluster="portugal")
+    make_log_request(trace_id="req1", cluster_name="denmark")
+    make_log_request(trace_id="req2", cluster_name="portugal")
+    make_log_request(trace_id="req3", cluster_name="portugal")
 
     summary = generate_summary()
     assert summary["cluster_distribution"]["denmark"] == 1
@@ -235,7 +223,7 @@ def test_save_summary_saves_to_database():
 @pytest.mark.integration
 def test_get_request_logs_returns_request_log_objects():
     """Test that get_request_logs returns a list of RequestLog objects."""
-    make_log_request(request_id="req001")
+    make_log_request(trace_id="req001")
 
     result = get_request_logs()
 
@@ -247,7 +235,7 @@ def test_get_request_logs_returns_request_log_objects():
 def test_get_request_logs_returns_all_rows():
     """Test that get_request_logs returns one entry per logged request."""
     for i in range(3):
-        make_log_request(request_id=f"req{i}")
+        make_log_request(trace_id=f"req{i}")
 
     result = get_request_logs()
 
@@ -258,9 +246,9 @@ def test_get_request_logs_returns_all_rows():
 def test_get_request_logs_fields_match_logged_values():
     """Test that the returned RequestLog fields match what was logged."""
     make_log_request(
-        request_id="req001",
-        cluster="portugal",
-        node="nano4",
+        trace_id="req001",
+        cluster_name="portugal",
+        worker_node_name="nano4",
         latency_ms=1234.5,
         cluster_load_w=800.0,
         renewable_fraction=0.4,
@@ -271,7 +259,7 @@ def test_get_request_logs_fields_match_logged_values():
     result = get_request_logs()
     entry = result[0]
 
-    assert entry.request_id == "req001"
+    assert entry.trace_id == "req001"
     assert entry.cluster == "portugal"
     assert entry.node == "nano4"
     assert entry.latency_ms == 1234.5
@@ -298,7 +286,7 @@ def _write_old_request(latency_ms: float, age_s: int):
 
     timestamp = datetime.now(timezone.utc) - timedelta(seconds=age_s)
     request_log = RequestLog(
-        request_id="old-req",
+        trace_id="old-req",
         timestamp=timestamp,
         cluster="denmark",
         node="nano1",
