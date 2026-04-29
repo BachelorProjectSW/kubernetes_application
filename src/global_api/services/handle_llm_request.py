@@ -80,32 +80,8 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             )
             response.raise_for_status()
             data = response.json()
-        except (requests.HTTPError, requests.RequestException, ValueError) as e:
-            last_error = e
-            log.warning(
-                "global_api.llm.cluster_attempt_failed",
-                service="global_api",
-                trace_id=trace_id,
-                cluster_name=cluster.name,
-                error=str(e),
-            )
-            raise HTTPException(status_code=503, detail=f"No available cluster: {last_error}")
-
-        if data is None or cluster is None or cluster_energy_data is None:
+        except Exception as e:
             global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-            raise HTTPException(status_code=503, detail=f"No available cluster: {last_error}")
-
-        global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-
-        if not isinstance(data, dict):
-            log.warning(
-                "global_api.llm.invalid_cluster_response",
-                service="global_api",
-                trace_id=trace_id,
-                cluster_name=cluster.name,
-                global_total_time_ms=global_total_time_ms,
-                payload_type=type(data).__name__,
-            )
             log_request(
                 cluster_name=cluster.name,
                 worker_node_name="unknown",
@@ -123,7 +99,8 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 global_choose_cluster=choose_cluster_end,
                 global_total_time_ms=global_total_time_ms,
             )
-            raise HTTPException(status_code=502, detail="Invalid cluster response payload")
+            raise Exception(e)
+
 
         result = LLMResponse(
             llm_content=data["llm_content"],
@@ -144,6 +121,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         if isinstance(llm_content, dict):
             answer = llm_content.get("content") or None
 
+        global_total_time_ms = int((time.monotonic() - total_start) * 1000)
 
         log_request(
             cluster_name=cluster.name,
