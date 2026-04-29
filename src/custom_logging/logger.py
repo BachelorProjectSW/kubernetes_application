@@ -10,7 +10,6 @@ from ..db.postgres import (
     read_terminal_debug_logs,
     read_model_logs,
     save_model_log,
-    save_payload_log,
     save_terminal_debug,
 )
 import os
@@ -157,63 +156,3 @@ def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
     except Exception as e:
         log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="NodeStatusLog")
 
-
-def generate_summary() -> dict:
-    """Read request logs from DB and compute summary metrics."""
-    rows = get_logs(RequestLog)
-
-    if not rows:
-        return {"error": "No requests in the database"}
-
-    total = len(rows)
-    avg_latency = sum(r.latency_ms for r in rows) / total
-
-    # Cluster distribution
-    cluster_counts: dict[str, int] = {}
-    for r in rows:
-        cluster_counts[r.cluster] = cluster_counts.get(r.cluster, 0) + 1
-
-    # Energy: energy_kwh per request = cluster_load_w / 1000 * latency_ms / 3_600_000
-    total_gco2_g = 0.0
-    total_cost_eur = 0.0
-    renewable_fractions = []
-    latency_over_time = []
-    cost_over_time = []
-
-    for r in rows:
-        energy_kwh = (r.cluster_load_w / 1000) * (r.latency_ms / 3_600_000)
-        total_gco2_g += energy_kwh * r.blended_carbon_gco2_per_kwh
-        total_cost_eur += energy_kwh * r.blended_cost_eur_per_kwh
-        renewable_fractions.append(r.renewable_fraction)
-        latency_over_time.append({"timestamp": r.timestamp.isoformat(), "latency_ms": r.latency_ms})
-        cost_over_time.append({
-            "timestamp": r.timestamp.isoformat(),
-            "blended_cost_eur_per_kwh": r.blended_cost_eur_per_kwh,
-        })
-
-    avg_renewable_pct = (
-        round(sum(renewable_fractions) / len(renewable_fractions) * 100, 1)
-        if renewable_fractions else 0
-    )
-
-    summary = {
-        "summary_id": str(uuid.uuid4()),
-        "total_requests": total,
-        "avg_latency_ms": round(avg_latency, 1),
-        "latency_over_time": latency_over_time,
-        "cluster_distribution": cluster_counts,
-        "total_gco2_g": round(total_gco2_g, 4),
-        "total_cost_eur": round(total_cost_eur, 6),
-        "cost_over_time": cost_over_time,
-        "avg_renewable_pct": avg_renewable_pct,
-    }
-
-    return summary
-
-
-def save_summary(summary: dict):
-    """Persist summary payload in DB instead of writing to a local file."""
-    try:
-        save_payload_log(_current_config_id(), "summary", summary)
-    except Exception as e:
-        log.warning("custom_logging.db.save_summary_failed", error=str(e))

@@ -51,7 +51,6 @@ def get_cluster_runtime_data(
     """
     try:
         simulated_time_end = simulated_time_start + timedelta(hours=1)
-        retrieved_at_utc = datetime.utcnow().isoformat() + "Z"
         runtime_start = time.monotonic()
 
         pv_start = time.monotonic()
@@ -109,7 +108,6 @@ def get_cluster_runtime_data(
             cluster_name=cluster.name,
             simulated_time_start=simulated_time_start.isoformat(),
             simulated_time_end=simulated_time_end.isoformat(),
-            retrieved_at_utc=retrieved_at_utc,
             worker_fetch_ms=worker_fetch_ms,
             worker_nodes_count=len(worker_nodes),
             active_nodes=active_nodes,
@@ -137,7 +135,6 @@ def get_cluster_runtime_data(
             cluster_name=cluster.name,
             simulated_time_start=simulated_time_start.isoformat(),
             simulated_time_end=simulated_time_end.isoformat(),
-            retrieved_at_utc=retrieved_at_utc,
             pv_fetch_ms=pv_fetch_ms,
             carbon_fetch_ms=carbon_fetch_ms,
             price_fetch_ms=price_fetch_ms,
