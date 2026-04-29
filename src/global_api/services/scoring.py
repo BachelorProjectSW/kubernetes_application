@@ -150,7 +150,9 @@ def score_cluster(
         4,
     )
 
-
+# TODO jeg tror ikke den tager højde for at den ikke
+# sender request ud til at cluster med kun slukkede worker nodes.
+# TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
 def choose_cluster(
     clusters: list[ClusterConfig],
     cluster_energy_data_list: list[ClusterRuntimeData],

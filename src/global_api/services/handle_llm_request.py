@@ -15,9 +15,6 @@ from .scoring import choose_cluster, compute_carbon_blend, compute_cost_blend, c
 log = structlog.get_logger()
 
 
-# TODO jeg tror ikke den tager højde for at den ikke
-# sender request ud til at cluster med kun slukkede worker nodes.
-# TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
 def handle_llm_request(question: QuestionConfig, trace_id: str):
     """Send the question to the local cluster request scheduler llama-service."""
     try:
