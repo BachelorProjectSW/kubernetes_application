@@ -125,16 +125,14 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             float(config.latency.max_ms),
             config.energy,
         )
-        active_or_idle_nodes = sum(
-            1
-            for worker_node in cluster.worker_nodes
-            if worker_node.status in {WorkerStatus.WORKING, WorkerStatus.IDLE}
-        )
-        off_nodes = sum(
-            1
-            for worker_node in cluster.worker_nodes
-            if worker_node.status == WorkerStatus.OFF
-        )
+        active_or_idle_nodes = 0
+        off_nodes = 0
+        for worker_node in cluster.worker_nodes:
+            if worker_node.status in {WorkerStatus.WORKING, WorkerStatus.IDLE}:
+                active_or_idle_nodes += 1
+            else:
+                off_nodes += 1
+      
         log.debug(
             "global_api.power.cluster_scored",
             cluster_name=cluster.cluster_config.name,
