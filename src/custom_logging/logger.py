@@ -13,9 +13,11 @@ from ..db.postgres import (
     save_payload_log,
     save_terminal_debug,
 )
+import os
 
 log = structlog.get_logger()
 
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
 
 _LOGGER_CONFIG_ID: str | None = None
@@ -47,7 +49,7 @@ structlog.configure(
         # _get_terminal_logs,
         structlog.dev.ConsoleRenderer(),
     ],
-    wrapper_class=structlog.make_filtering_bound_logger(logging.critical),
+    wrapper_class=structlog.make_filtering_bound_logger(LOG_LEVEL),
     context_class=dict,
     logger_factory=structlog.PrintLoggerFactory(),
     cache_logger_on_first_use=True,
