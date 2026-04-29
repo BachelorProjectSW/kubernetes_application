@@ -1,29 +1,43 @@
-
 function StratoConfigs({ inputs, handleChange }) {
-
+    
     return (
-        <div style={{ border: "1px solid #ccc", padding: "10px", marginTop: "10px" }}>
-            <p> Strato configurations</p>
+        <>
+            <p className="panel-title">
+                <span className="panel-title-icon">🛰️</span>
+                Strato Config
+            </p>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <label> Ip adress </label>
-                <input
-                    type="text"
-                    name="ip_strato"
-                    value={inputs.ip_strato}
-                    onChange={handleChange} />
-            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                    <span style={{ fontSize: "0.68rem", color: "var(--text-label)", letterSpacing: "0.04em" }}>
+                        IP Address
+                    </span>
+                    <input
+                        type="text"
+                        name="ip_strato"
+                        value={inputs.ip_strato || ""}
+                        onChange={handleChange}
+                        placeholder="e.g. 192.168.1.2"
+                        style={{ width: "100%" }}
+                    />
+                </label>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <label> Port </label>
-                <input
-                    type="number"
-                    name="port_strato"
-                    value={inputs.port_strato}
-                    onChange={handleChange}/>
+                <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                    <span style={{ fontSize: "0.68rem", color: "var(--text-label)", letterSpacing: "0.04em" }}>
+                        Port
+                    </span>
+                    <input
+                        type="number"
+                        name="port_strato"
+                        value={inputs.port_strato || ""}
+                        onChange={handleChange}
+                        placeholder="e.g. 9090"
+                        style={{ width: "100%" }}
+                    />
+                </label>
             </div>
-        </div>
-    )
+        </>
+    );
 }
 
 export default StratoConfigs;
