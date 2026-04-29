@@ -16,7 +16,7 @@ import os
 
 log = structlog.get_logger()
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "CRITICAL").upper()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
 
 
 _LOGGER_CONFIG_ID: str | None = None
