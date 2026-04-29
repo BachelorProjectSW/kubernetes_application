@@ -53,6 +53,7 @@ def get_test_config():
                 port="8073",
                 gpio_list=[1,2],
                 simulated_country_code="ES",
+                llama_service_port= 8080,
                 k3d=True
             ),
             ClusterConfig(
@@ -61,6 +62,7 @@ def get_test_config():
                 port="8074",
                 gpio_list=[17, 27, 23],
                 simulated_country_code="PT",
+                llama_service_port= 8080,
                 k3d=True
             ),
         ],
