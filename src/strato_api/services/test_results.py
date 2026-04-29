@@ -124,7 +124,6 @@ def get_test_results(config_id: str) -> dict:
                 "cluster_queue_time_ms": entry.cluster_queue_time_ms,
                 "llama_inference_ms": entry.cluster_llama_inference_ms,
                 "global_choose_cluster": entry.global_choose_cluster,
-                "global_total_time_ms": entry.global_total_time_ms,
             }
         )
         cluster_usage_over_time.append(
