@@ -304,7 +304,7 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
     log.debug("cluster_api.power.gggggggggggggggg")
     return 0
 
-def turn_off_idle_nodes(idle_time: int):
+def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
     """Turn off all nodes that have been idle for longer than `idle_time` seconds.
 
     Args:
@@ -323,6 +323,24 @@ def turn_off_idle_nodes(idle_time: int):
         return
 
     nodes = config.worker_nodes
+
+    if stay_one:
+        active_or_idle_nodes = 0
+        for node in nodes:
+            if node.status in {WorkerStatus.WORKING, WorkerStatus.IDLE}:
+                active_or_idle_nodes += 1
+        if active_or_idle_nodes <= 1:
+            log.debug(
+                "cluster_api.power.turn_off_idle_stay_one_protected",
+                cluster_name=cluster_name,
+                active_or_idle_nodes=active_or_idle_nodes,
+            )
+            return {
+                "requested": 0,
+                "status": "off",
+                "node_changed": 0,
+                "nodes": [],
+            }
 
     for node in nodes:
         # Only true idle nodes are eligible for automatic power-off.
