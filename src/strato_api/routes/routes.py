@@ -11,6 +11,7 @@ router = APIRouter()
 # TODO LAV DOCSTRINGS TIL ALLE FUNKTIONER!!!
 #TODO Sikre sig at CROM Data virker
 #TODO få harddrive data. 
+#TODO få API til at kører hver klokkeslæt time og ikke hver time fra test start. 
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
     """Start the test."""
