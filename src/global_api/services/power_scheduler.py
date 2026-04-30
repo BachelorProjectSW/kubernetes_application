@@ -168,7 +168,7 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         current_active_nodes=current_active_nodes,
         current_rps=current_rps
     )
-
+    best_cluster_flag = True
     for cluster in sorted_clusters:
         if nodes_to_add <= 0:
             break
@@ -186,6 +186,11 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         )
 
         amount = min(nodes_to_add, powered_off_nodes)
+        if best_cluster_flag and powered_off_nodes == len(cluster.worker_nodes) and amount <= 0:
+            #Always have at least one node on on the best cluster.
+            amount = 1
+        
+        best_cluster_flag = False
         if amount <= 0:
             continue
 
