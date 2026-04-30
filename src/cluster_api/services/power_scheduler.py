@@ -207,6 +207,8 @@ def change_node_status(number_of_nodes: int, status: str):
     cluster_name = cluster_config.cluster_config.name
     k3d = cluster_config.cluster_config.k3d
     if k3d:
+        for node in cluster_config.worker_nodes:
+            node.status = WorkerStatus.IDLE
         return {
             "requested": number_of_nodes,
             "status": status,
