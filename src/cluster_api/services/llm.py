@@ -16,7 +16,6 @@ logger = structlog.get_logger()
 rr_index = 0
 
 
-# TODO måske lige prøve at teste en ny model sådan man får nogleunde svar tilbage igen.
 def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
     """Pick a worker in round-robin order."""
     global rr_index
