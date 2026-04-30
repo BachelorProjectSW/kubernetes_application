@@ -4,6 +4,7 @@ from pathlib import Path
 
 DATA_PATH = Path(__file__).parent.parent / "data" / "pv_all_countries_2025_2026Q1.csv"
 
+
 def floor_to_hour(dt: datetime) -> datetime:
     """Floor datetime to hour to the csv can find the row."""
     return dt.replace(minute=0, second=0, microsecond=0)
