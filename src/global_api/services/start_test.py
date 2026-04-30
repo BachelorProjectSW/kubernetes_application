@@ -51,8 +51,6 @@ def start_test(config: Config):
                 cluster_name=cluster.name,
                 status_code=response.status_code,
             )
-            # ensure that all nodes + pods are on and ready to recieve requests
-            # TODO VIRKER IKKE NÅR WORKER NODES ER SLUKKET TIL AT STARTE MED:D pga timeout
             ensure_nodes_ready(cluster, timeout_s=400)
 
         if config.power_scheduler.start:
