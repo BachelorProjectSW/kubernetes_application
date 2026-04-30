@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import time
 import requests
 import structlog
 
@@ -83,7 +82,7 @@ def get_cluster_runtime_data(
                 idle_nodes += 1
 
         if active_nodes == 0 and idle_nodes == 0:
-            # If all nodes are turned off do not consider sent to it. 
+            # If all nodes are turned off do not consider sent to it.
             return None
 
         cluster_load_w = compute_cluster_load(active_nodes, idle_nodes, energy)

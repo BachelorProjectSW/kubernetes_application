@@ -150,6 +150,7 @@ def score_cluster(
         4,
     )
 
+
 # TODO jeg tror ikke den tager højde for at den ikke
 # sender request ud til at cluster med kun slukkede worker nodes.
 # TODO Så derfor sikre sig at der er nogle tændte og hvis ikke så tænd nogle inden:D
@@ -179,7 +180,7 @@ def choose_cluster(
 
     for cluster, cluster_energy_data in zip(clusters, cluster_energy_data_list):
         if not cluster_energy_data:
-            #No active nodes on cluster
+            # No active nodes on cluster
             continue
         cluster_score = score_cluster(
             cluster_energy_data.renewable_output_w,

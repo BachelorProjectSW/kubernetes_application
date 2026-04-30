@@ -15,7 +15,8 @@ logger = structlog.get_logger()
 
 rr_index = 0
 
-#TODO måske lige prøve at teste en ny model sådan man får nogleunde svar tilbage igen. 
+
+# TODO måske lige prøve at teste en ny model sådan man får nogleunde svar tilbage igen.
 def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
     """Pick a worker in round-robin order."""
     global rr_index
@@ -153,9 +154,8 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         payload = {
             "prompt": f"Question: {question.question} Answer:",
             "n_predict": question.max_output_tokens,
-            "temperature": 0.2, 
+            "temperature": 0.2,
         }
-
 
         cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()

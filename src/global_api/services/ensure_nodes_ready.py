@@ -10,7 +10,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
     """Turn on all nodes in cluster and wait until they are ready."""
     if cluster.k3d:
         return
-    
+
     base = f"http://{cluster.ip}:{cluster.port}"
 
     # Step 1: Get total node count

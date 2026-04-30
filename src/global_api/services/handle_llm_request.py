@@ -20,13 +20,11 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
     try:
         total_start = time.monotonic()
         config = config_store.get()
-    
 
         simulated_time = compute_simulated_now(
             config.start.start_time_simulated,
             config.start.start_time_real,
         )
-
 
         all_cluster_energy_data = [
             get_cluster_runtime_data(
@@ -37,7 +35,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             )
             for cluster in config.clusters
         ]
-
 
         cluster, cluster_energy_data = choose_cluster(
             config.clusters,
@@ -97,7 +94,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 global_total_time_ms=global_total_time_ms,
             )
             raise Exception(e)
-
 
         result = LLMResponse(
             llm_content=data["llm_content"],

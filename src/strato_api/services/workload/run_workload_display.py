@@ -28,7 +28,7 @@ plt.rcParams.update({
     "ytick.labelsize": 14,    # Y tick labels
     "legend.fontsize": 14,    # Legend text
 })
-#----------------------superposition----------------
+# ----------------------superposition----------------
 
 plt.figure(figsize=(12, 5))
 
@@ -46,7 +46,7 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-#-------------------------------------------probability-------------------------------------
+# -------------------------------------------probability-------------------------------------
 
 
 plt.figure(figsize=(12, 4))
@@ -61,8 +61,6 @@ plt.title("Normalized probability distribution")
 
 plt.tight_layout()
 plt.show()
-
-
 
 
 # --------------- histogram --------------

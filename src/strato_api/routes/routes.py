@@ -9,10 +9,10 @@ router = APIRouter()
 # TODO Lav experiments tests med test om at det er "noglelunde deterministisk."
 # TODO Sørg for at alle logs gir mening og ikke bare spam.
 # TODO LAV DOCSTRINGS TIL ALLE FUNKTIONER!!!
-#TODO Sikre sig at CROM Data virker
-#TODO få harddrive data. 
-#TODO få API til at kører hver klokkeslæt time og ikke hver time fra test start. 
-#TODO calculate cost/gco2 if idle (Jeg tror ikke det er korrekt ift idle times)
+# TODO Sikre sig at CROM Data virker
+# TODO få harddrive data.
+# TODO få API til at kører hver klokkeslæt time og ikke hver time fra test start.
+# TODO calculate cost/gco2 if idle (Jeg tror ikke det er korrekt ift idle times)
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
     """Start the test."""
@@ -58,6 +58,7 @@ def test_results_endpoint(config_id: str):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/get_configs")
 def get_config_endpoint():

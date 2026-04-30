@@ -275,7 +275,7 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
 
     """
     now = datetime.now(timezone.utc)
-    
+
     try:
         config = config_store.get()
         config_id = config.config_id
@@ -299,16 +299,18 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
                 log.debug("cluster_api.power.latest_node_change", changed=False)
                 # Node's most recent status is not IDLE (e.g., WORKING), so not idle
                 return 0
-    
+
     # No log entry found for this node; conservatively return 0 (don't turn off)
     log.debug("cluster_api.power.gggggggggggggggg")
     return 0
+
 
 def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
     """Turn off all nodes that have been idle for longer than `idle_time` seconds.
 
     Args:
         idle_time: Number of seconds a node must be idle before being turned off.
+        stay_one: If its the best cluster after running scoring algorithm then at least stay one up.
 
     """
     config = config_store.get()
