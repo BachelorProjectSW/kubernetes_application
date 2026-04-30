@@ -7,9 +7,10 @@ import uvicorn
 
 app = FastAPI()
 
+# Allow all website traffic as its all hosted on the tailscale network. 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO change to only hosted frontend ip.
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
