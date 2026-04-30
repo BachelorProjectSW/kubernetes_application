@@ -97,7 +97,9 @@ def validate_electricity_maps(config: Config) -> list[str]:
     end = start + timedelta(seconds=config.start.duration_time_s)
 
     for cluster in config.clusters:
-        zone = cluster.simulated_country_code
+        zone = cluster.simulated_country_code.upper()
+        if zone.startswith("DK"):
+            continue
         try:
             carbon = fetch_carbon_intensity(start, end, zone)
             if not carbon:
@@ -169,11 +171,11 @@ def validate_pv_data(config: Config) -> list[str]:
 def validate_config(config: Config) -> dict:
     """Run all validations and return result."""
     errors = []
-    # errors.extend(validate_config_values(config))
-    # errors.extend(validate_cluster_reachability(config))
-    # errors.extend(validate_electricity_maps(config))
-    # errors.extend(validate_dk_energy(config))
-    # errors.extend(validate_pv_data(config))
+    errors.extend(validate_config_values(config))
+    errors.extend(validate_cluster_reachability(config))
+    errors.extend(validate_electricity_maps(config))
+    errors.extend(validate_dk_energy(config))
+    errors.extend(validate_pv_data(config))
 
     valid = len(errors) == 0
     log.info("validate.config", valid=valid, errors=errors)
