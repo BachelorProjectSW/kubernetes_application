@@ -80,18 +80,4 @@ def stop_test():
     """Stop the test."""
     config = config_store.get()
     config_store.stop_power_scheduler()
-    if config:
-        for cluster in config.clusters:
-            try:
-                # All pods are deleted (recreated automatically).
-                # Because when the test is stopped --> possibility of inflight-requests
-                # These needs to be deleted, such that the next test can run deterministcally
-                requests.post(
-                    f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-                    timeout=300
-                )
-                log.info("global.stop_test.pods_deleted", cluster=cluster.name)
-            except Exception as e:
-                log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
-    log.info("global.stop_test.done")
     return {"message": "Test stopped"}
