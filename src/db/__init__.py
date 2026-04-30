@@ -6,6 +6,5 @@ from .postgres import (
     read_terminal_debug_logs as read_terminal_debug_logs,
     save_config as save_config,
     save_model_log as save_model_log,
-    save_payload_log as save_payload_log,
     save_terminal_debug as save_terminal_debug,
 )

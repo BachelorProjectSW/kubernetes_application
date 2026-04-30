@@ -94,7 +94,6 @@ def get_test_results(config_id: str) -> dict:
             "timestamp": entry.timestamp.isoformat(),
             "cluster": entry.cluster,
             "node": entry.node,
-            "request_id": entry.request_id,
         }
         gco2_over_time.append(
             {
@@ -122,11 +121,9 @@ def get_test_results(config_id: str) -> dict:
         service_timeout_over_time.append(
             {
                 **point,
-                "choose_cluster_ms": entry.global_cluster_scoring_ms,
                 "cluster_queue_time_ms": entry.cluster_queue_time_ms,
                 "llama_inference_ms": entry.cluster_llama_inference_ms,
-                "global_cluster_api_call_ms": entry.global_cluster_api_call_ms,
-                "global_total_time_ms": entry.global_total_time_ms,
+                "global_choose_cluster": entry.global_choose_cluster,
             }
         )
         cluster_usage_over_time.append(

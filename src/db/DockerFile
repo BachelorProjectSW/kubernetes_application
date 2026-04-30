@@ -8,7 +8,7 @@ elif docker container inspect p6-postgres >/dev/null 2>&1; then \
 	docker start p6-postgres; \
 else \
 	echo 'creating p6-postgres'; \
-	docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5432:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16; \
+	docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5433:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16; \
 fi; \
 if docker inspect -f '{{.State.Running}}' pgadmin 2>/dev/null | grep -q true; then \
 	echo 'pgadmin already running'; \

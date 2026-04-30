@@ -12,9 +12,9 @@ def test_integration_scoring_chooses_correct_cluster():
 
     cluster_energy_data = [
         ClusterRuntimeData(renewable_output_w=200, cluster_load_w=1000, grid_carbon_intensity=100,
-                           grid_electricity_price=0.12),
+                           grid_electricity_price=0.12, avg_latency_ms=5000),
         ClusterRuntimeData(renewable_output_w=400, cluster_load_w=1000, grid_carbon_intensity=300,
-                           grid_electricity_price=0.14),
+                           grid_electricity_price=0.14, avg_latency_ms=1000),
     ]
 
     chosen_cluster, _ = choose_cluster(

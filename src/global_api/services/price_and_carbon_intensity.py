@@ -54,7 +54,7 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
                 "end": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "temporalGranularity": "hourly",
             },
-            timeout=60,
+            timeout=120,
         )
         response.raise_for_status()
     except requests.HTTPError as e:
@@ -98,7 +98,7 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
                 "end": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "temporalGranularity": "hourly",
             },
-            timeout=60,
+            timeout=120,
         )
         response.raise_for_status()
 

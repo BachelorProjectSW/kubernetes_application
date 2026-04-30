@@ -9,7 +9,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], #TODO change to only hosted frontend ip.
+    allow_origins=["*"],  # TODO change to only hosted frontend ip.
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

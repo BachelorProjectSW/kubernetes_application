@@ -9,7 +9,8 @@ from ..util.time_utils import SIMULATED_TIME_FORMAT
 
 log = structlog.get_logger()
 
-#TODO tjek at config navn og id er unikt:D
+
+# TODO tjek at config navn og id er unikt:D
 def validate_config_values(config: Config) -> list[str]:
     """Validate the values in the config file."""
     errors = []
@@ -69,7 +70,7 @@ def validate_cluster_reachability(config: Config) -> list[str]:
         try:
             response = requests.get(
                 f"http://{cluster.ip}:{cluster.port}/get_cluster_information",
-                timeout=10,
+                timeout=180,
             )
             response.raise_for_status()
             log.info("validate.cluster_reachable", cluster=cluster.name)

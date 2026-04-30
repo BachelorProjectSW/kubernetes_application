@@ -210,7 +210,7 @@ class ConfigStore:
                     url=url,
                 )
 
-                response = requests.get(url, timeout=60)
+                response = requests.get(url, timeout=120)
                 response.raise_for_status()
 
                 props = response.json()
@@ -234,8 +234,19 @@ class ConfigStore:
                     worker_ip=worker.ip,
                     error=str(e),
                 )
-                worker.max_slots = 0
-                worker.status = WorkerStatus.OFF
+                # In k3d mode, use default capacity when probe fails (pods may be starting)
+                if self.config.cluster_config.k3d:
+                    worker.max_slots = 1  # Default capacity for k3d testing
+                    worker.status = WorkerStatus.IDLE
+                    log.debug(
+                        "cluster_api.config.worker_capacity_probe_k3d_fallback",
+                        cluster_name=self.config.cluster_config.name,
+                        worker_node=worker.name,
+                        max_slots=worker.max_slots,
+                    )
+                else:
+                    worker.max_slots = 0
+                    worker.status = WorkerStatus.OFF
 
 
 config_store = ConfigStore()

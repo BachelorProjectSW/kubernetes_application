@@ -15,7 +15,8 @@ logger = structlog.get_logger()
 
 rr_index = 0
 
-#TODO måske lige prøve at teste en ny model sådan man får nogleunde svar tilbage igen. 
+
+# TODO måske lige prøve at teste en ny model sådan man får nogleunde svar tilbage igen.
 def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
     """Pick a worker in round-robin order."""
     global rr_index
@@ -73,6 +74,10 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
 
 def sync_worker_status(worker: WorkerNode) -> None:
     """Sync the status of the worker."""
+    # Preserve power-state transitions managed by power_scheduler.
+    if worker.status in {WorkerStatus.OFF, WorkerStatus.TURNING_ON, WorkerStatus.TURNING_OFF}:
+        return
+
     cluster = config_store.get()
     cluster_name = cluster.cluster_config.name
     worker.status = WorkerStatus.IDLE if worker.inflight_requests == 0 else WorkerStatus.WORKING
@@ -149,9 +154,8 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         payload = {
             "prompt": f"Question: {question.question} Answer:",
             "n_predict": question.max_output_tokens,
-            "temperature": 0.2, 
+            "temperature": 0.2,
         }
-
 
         cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()

@@ -27,9 +27,9 @@ def turn_off_node_endpoint(number_of_nodes: int):
 
 
 @router.post("/turn_off_idle_nodes/")
-def turn_off_idle_nodes_endpoint(idle_time: int):
+def turn_off_idle_nodes_endpoint(idle_time: int, stay_one: bool = False):
     """Return status of turned off nodes."""
-    return turn_off_idle_nodes(idle_time)
+    return turn_off_idle_nodes(idle_time, stay_one=stay_one)
 
 
 @router.post("/set_config")

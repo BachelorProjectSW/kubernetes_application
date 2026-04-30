@@ -44,7 +44,7 @@ class ConfigStore:
         for cluster_cfg in clusters:
             url = f"http://{cluster_cfg.ip}:{cluster_cfg.port}/get_cluster_information"
 
-            response = requests.get(url, timeout=20)
+            response = requests.get(url, timeout=180)
             response.raise_for_status()
 
             data = response.json()

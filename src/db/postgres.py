@@ -29,7 +29,7 @@ def _database_url() -> str:
         return url
 
     host = os.getenv("POSTGRES_HOST", "100.109.95.2")  # Strato IP
-    port = os.getenv("POSTGRES_PORT", "5432")
+    port = os.getenv("POSTGRES_PORT", "5433")
     user = os.getenv("POSTGRES_USER", "strato")
     password = os.getenv("POSTGRES_PASSWORD", "strato")
     db_name = os.getenv("POSTGRES_DB", "strato")
@@ -148,21 +148,6 @@ def save_terminal_debug(config_id: str | None, message: str, level: str, payload
     with Session(_engine()) as session:
         session.add(row)
         session.commit()
-
-
-def save_payload_log(config_id: str | None, log_type: str, payload: dict[str, Any]) -> None:
-    """Persist an arbitrary structured payload log linked to config_id."""
-    safe_payload = jsonable_encoder(payload)
-    row = AppLogRecord(
-        config_id=config_id,
-        log_type=log_type,
-        payload_json=safe_payload,
-        terminal_debug=None,
-    )
-    with Session(_engine()) as session:
-        session.add(row)
-        session.commit()
-    log.info("db.save_payload_log", config_id=config_id, log_type=log_type)
 
 
 def read_model_logs(log_model_class: type[TModel], config_id: str | None = None) -> list[TModel]:
