@@ -76,7 +76,6 @@ def start_test(config: Config):
         raise Exception(f"test failed: {e}")
 
 
-# TODO stop test is not called when the workload scheduler is done.
 def stop_test():
     """Stop the test."""
     config = config_store.get()

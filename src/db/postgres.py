@@ -215,6 +215,19 @@ def read_config_by_id(config_id: str) -> Config | None:
     return Config.model_validate(row.config_json)
 
 
+def read_config_by_name(config_name: str) -> Config | None:
+    """Read the first persisted config snapshot by config name."""
+    query = select(ConfigRecord).where(ConfigRecord.config_name == config_name)
+
+    with Session(_engine()) as session:
+        row = session.exec(query).first()
+
+    if row is None:
+        return None
+
+    return Config.model_validate(row.config_json)
+
+
 def read_all_configs() -> list[Config]:
     """Read all persisted config snapshots."""
     query = select(ConfigRecord).order_by(ConfigRecord.created_at)

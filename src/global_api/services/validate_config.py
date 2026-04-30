@@ -2,6 +2,7 @@ import requests
 import structlog
 from ...models.basemodels import Config, EnergyConfig
 from datetime import datetime, timezone, timedelta
+from ...db.postgres import read_config_by_id, read_config_by_name
 from .price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 from .dk_energy import get_dk_hourly
 from .pv_power import get_power
@@ -10,10 +11,14 @@ from ..util.time_utils import SIMULATED_TIME_FORMAT
 log = structlog.get_logger()
 
 
-# TODO tjek at config navn og id er unikt:D
 def validate_config_values(config: Config) -> list[str]:
     """Validate the values in the config file."""
     errors = []
+
+    if config.id and read_config_by_id(config.id) is not None:
+        errors.append(f"config id already exists: {config.id}")
+    if config.name and read_config_by_name(config.name) is not None:
+        errors.append(f"config name already exists: {config.name}")
 
     # duration and workload
     if config.start.duration_time_s <= 0:
