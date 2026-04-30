@@ -182,7 +182,7 @@ function App() {
                   dot={(props) => {
                     const { cx, cy, payload } = props;
 
-                    const isSuccess = payload.status === 200;
+                    const isSuccess = payload.success === 200;
 
                     return (
                       <circle

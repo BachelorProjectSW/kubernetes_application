@@ -87,7 +87,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 blended_cost_eur_per_kwh=blended_cost,
                 question=question.question,
                 answer=None,
-                response_status_code=502,
+                response_status_code=500,
                 all_content=data,
                 trace_id=trace_id,
                 global_choose_cluster=choose_cluster_end,
