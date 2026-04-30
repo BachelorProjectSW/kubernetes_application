@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+from ..services.dk_energy import get_dk_hourly
 from ..services.pv_power import get_power
 from ..services.price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 
@@ -71,15 +72,31 @@ class MarketDataStore:
         zone: str,
         pv_capacity_w: float,
     ) -> list[tuple[datetime, float]]:
-        """Return PV power from memory unless older than one hour."""
-        cache_key = (zone.upper(), float(pv_capacity_w))
+        """Return PV power from memory unless older than one hour.
+
+        For DK zones the real measured generation is fetched from the AAU Orin
+        proxy (CrateDB) instead of the static CSV capacity-factor table.
+        """
+        zone_key = zone.upper()
+        cache_key = (zone_key, float(pv_capacity_w))
         now = datetime.now(timezone.utc)
 
         entry = self._pv_by_zone_and_capacity.get(cache_key)
         if entry is not None and not self._is_stale(entry.last_updated, now):
             return entry.data
 
-        data = get_power(start, end, zone, pv_capacity_w)
+        if zone_key.startswith("DK"):
+            dk_hourly = get_dk_hourly(start, end)
+            data = [
+                (
+                    datetime.strptime(r["timestamp"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc),
+                    float(r["generation_w"]),
+                )
+                for r in dk_hourly
+            ]
+        else:
+            data = get_power(start, end, zone, pv_capacity_w)
+
         self._pv_by_zone_and_capacity[cache_key] = _PvCacheEntry(data=data, last_updated=now)
         return data
 
