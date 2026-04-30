@@ -19,7 +19,7 @@ def get_test_config():
         name="k3d_test!",
         start=StartConfig(
             duration_time_s=60,
-            start_time_simulated="01/10/2021 10:21:00",
+            start_time_simulated="01/01/2026 10:21:00",
             start_time_real=None
         ),
         weights=WeightsConfig(
