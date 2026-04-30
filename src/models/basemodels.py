@@ -50,7 +50,7 @@ class WorkloadConfig(BaseModel):
 class QuestionConfig(BaseModel):
     """Question class."""
 
-    question: str  # TODO make it a list of question and add x new questions
+    question: str 
     max_output_tokens: int
 
 
