@@ -205,6 +205,14 @@ def change_node_status(number_of_nodes: int, status: str):
     """
     cluster_config = config_store.get()
     cluster_name = cluster_config.cluster_config.name
+    k3d = cluster_config.cluster_config.k3d
+    if k3d:
+        return {
+            "requested": number_of_nodes,
+            "status": status,
+            "node_changed": 0,
+            "nodes": [],
+        }
     nodes = cluster_config.worker_nodes
     if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, nodes)
