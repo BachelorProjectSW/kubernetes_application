@@ -2,8 +2,7 @@ import csv
 from datetime import datetime, timezone
 from pathlib import Path
 
-DATA_PATH = Path(__file__).parent.parent / "data" / "PV_Utility_scale_no_tracking_RGB.csv"
-
+DATA_PATH = Path(__file__).parent.parent / "data" / "pv_all_countries_2025_2026Q1.csv"
 
 def floor_to_hour(dt: datetime) -> datetime:
     """Floor datetime to hour to the csv can find the row."""
@@ -28,7 +27,7 @@ def get_power_factor_by_time(start: datetime, end: datetime, country: str) -> li
     with DATA_PATH.open() as f:
         reader = csv.DictReader(f)
         for row in reader:
-            timestamp = datetime.strptime(row["time"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            timestamp = datetime.strptime(row["Date"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
             if start <= timestamp <= end:
                 results.append((timestamp, float(row[country])))
             elif timestamp > end:
