@@ -38,12 +38,7 @@ def _get_scored_clusters(
             config.energy,
             config.power_scheduler.timeout_s,
         )
-        if runtime_data is None:
-            log.debug(
-                "global_api.power.cluster_skipped_no_active_nodes",
-                cluster_name=cluster.cluster_config.name,
-            )
-            continue
+
 
         cluster_score = score_cluster(
             runtime_data.renewable_output_w,
@@ -58,22 +53,6 @@ def _get_scored_clusters(
             config.energy,
         )
 
-        active_or_idle_nodes = 0
-        off_nodes = 0
-        for worker_node in cluster.worker_nodes:
-            if worker_node.status in {WorkerStatus.WORKING, WorkerStatus.IDLE}:
-                active_or_idle_nodes += 1
-            else:
-                off_nodes += 1
-
-        log.debug(
-            "global_api.power.cluster_scored",
-            cluster_name=cluster.cluster_config.name,
-            score=cluster_score,
-            active_or_idle_nodes=active_or_idle_nodes,
-            off_nodes=off_nodes,
-            cluster_avg_latency_ms=runtime_data.avg_latency_ms,
-        )
         scored_clusters.append((cluster_score, cluster, runtime_data))
 
     return scored_clusters

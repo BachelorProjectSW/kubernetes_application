@@ -179,7 +179,7 @@ def choose_cluster(
     best_score = -1.0
 
     for cluster, cluster_energy_data in zip(clusters, cluster_energy_data_list):
-        if not cluster_energy_data:
+        if cluster_energy_data.all_nodes_powered_off:
             # No active nodes on cluster
             continue
         cluster_score = score_cluster(

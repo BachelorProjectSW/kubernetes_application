@@ -102,6 +102,7 @@ class ClusterRuntimeData(BaseModel):
     grid_carbon_intensity: float
     grid_electricity_price: float
     avg_latency_ms: float
+    all_nodes_powered_off: bool
 
 
 class ClusterInformation(BaseModel):

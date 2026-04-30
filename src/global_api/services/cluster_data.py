@@ -81,10 +81,6 @@ def get_cluster_runtime_data(
             elif worker_node.status == WorkerStatus.IDLE:
                 idle_nodes += 1
 
-        if active_nodes == 0 and idle_nodes == 0:
-            # If all nodes are turned off do not consider sent to it.
-            return None
-
         cluster_load_w = compute_cluster_load(active_nodes, idle_nodes, energy)
 
         microgrid_base_load_w = _get_microgrid_base_load_w(
@@ -105,6 +101,7 @@ def get_cluster_runtime_data(
             active_nodes=active_nodes,
             idle_nodes=idle_nodes,
         )
+        all_nodes_powered_off= active_nodes == 0 and idle_nodes == 0
 
         return ClusterRuntimeData(
             renewable_output_w=renewable_output_w,
@@ -112,6 +109,8 @@ def get_cluster_runtime_data(
             grid_carbon_intensity=grid_carbon_intensity,
             grid_electricity_price=grid_electricity_price,
             avg_latency_ms=avg_latency_ms,
+            all_nodes_powered_off=all_nodes_powered_off
+
         )
 
     except Exception as e:
