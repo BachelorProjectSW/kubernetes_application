@@ -3,7 +3,7 @@ import { handleSubmit } from "./components/submitData";
 
 function App() {
   return (
-    <div>
+    <div style={{ maxWidth: "960px", margin: "0 auto", padding: "0 2rem" }}>
       <div className="page-header">
         <div className="page-header-icon">⚡</div>
         <div>
