@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 import structlog
 
@@ -6,10 +6,43 @@ from ...models.basemodels import ClusterConfig, ClusterRuntimeData, EnergyConfig
 from ...models.enum import WorkerStatus
 from .dk_energy import get_dk_hourly
 from .scoring import compute_cluster_load
+from ...custom_logging.models.log_models import MarketSnapshotLog
 from ...custom_logging.util.log_reader import get_avg_latency_for_cluster
+from ...db.postgres import save_model_log
+from ..util.all_configuration import config_store
 from ..util.market_data_store import market_data_store
 
 log = structlog.get_logger()
+
+_logged_market_hours: set[tuple[str, str, datetime]] = set()
+
+
+def _log_market_snapshot_if_new(
+    cluster_name: str,
+    simulated_hour: datetime,
+    carbon_gco2_per_kwh: float,
+    cost_eur_per_kwh: float,
+) -> None:
+    """Write a MarketSnapshotLog entry for this cluster and hour if not already written."""
+    config = config_store.get()
+    if config is None or config.id is None:
+        return
+
+    key = (config.id, cluster_name, simulated_hour)
+    if key in _logged_market_hours:
+        return
+
+    _logged_market_hours.add(key)
+    save_model_log(
+        config.id,
+        MarketSnapshotLog(
+            timestamp=datetime.now(timezone.utc),
+            simulated_hour=simulated_hour,
+            cluster=cluster_name,
+            carbon_gco2_per_kwh=carbon_gco2_per_kwh,
+            cost_eur_per_kwh=cost_eur_per_kwh,
+        ),
+    )
 
 
 def _get_microgrid_base_load_w(
@@ -66,6 +99,16 @@ def get_cluster_runtime_data(
             simulated_time_start, simulated_time_end, cluster.simulated_country_code
         )
         grid_electricity_price = (price_data[0][1] / 1000) if price_data else 0.0
+
+        # Write a market snapshot once per simulated hour so test_results can
+        # pair the accurate hourly rate with the continuous energy reconstruction.
+        simulated_hour = simulated_time_start.replace(minute=0, second=0, microsecond=0)
+        _log_market_snapshot_if_new(
+            cluster.name,
+            simulated_hour,
+            grid_carbon_intensity,
+            grid_electricity_price,
+        )
 
         url = f"http://{cluster.ip}:{cluster.port}/get_cluster_working_nodes"
         response = requests.get(url, timeout=180)

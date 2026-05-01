@@ -2,8 +2,14 @@ from collections import Counter, defaultdict
 
 from fastapi import HTTPException
 
-from ...custom_logging.models.log_models import NodeStatusLog, RequestLog
-from ...db.postgres import read_all_node_status_logs, read_all_request_logs, read_config_by_id
+from ...custom_logging.models.log_models import MarketSnapshotLog, NodeStatusLog, RequestLog
+from ...custom_logging.util.log_reader import compute_cluster_energy_wh
+from ...db.postgres import (
+    read_all_market_snapshot_logs,
+    read_all_node_status_logs,
+    read_all_request_logs,
+    read_config_by_id,
+)
 
 
 def _request_energy_kwh(request: RequestLog) -> float:
@@ -58,6 +64,7 @@ def get_test_results(config_id: str) -> dict:
             "cluster_usage_over_time": [],
             "node_status_over_time": [],
             "cluster_distribution": {},
+            "cluster_energy_wh": {},
         }
 
     sorted_requests = sorted(request_logs, key=lambda entry: (entry.timestamp, entry.cluster, entry.node))
@@ -75,8 +82,6 @@ def get_test_results(config_id: str) -> dict:
     service_timeout_over_time: list[dict] = []
     cluster_usage_over_time: list[dict] = []
     cluster_distribution = Counter()
-    total_gco2_g = 0.0
-    total_cost_eur = 0.0
     cumulative_gco2_g = 0.0
     cumulative_cost_eur = 0.0
 
@@ -86,8 +91,6 @@ def get_test_results(config_id: str) -> dict:
         request_cost_eur = energy_kwh * entry.blended_cost_eur_per_kwh
         cumulative_gco2_g += request_gco2_g
         cumulative_cost_eur += request_cost_eur
-        total_gco2_g += request_gco2_g
-        total_cost_eur += request_cost_eur
         cluster_distribution[entry.cluster] += 1
 
         point = {
@@ -145,6 +148,46 @@ def get_test_results(config_id: str) -> dict:
     started_at = min((entry.timestamp for entry in sorted_requests), default=None)
     ended_at = max((entry.timestamp for entry in sorted_requests), default=None)
 
+    cluster_energy_wh: dict[str, float] = {}
+    if started_at and ended_at:
+        cluster_names = {log.cluster for log in node_logs}
+        for cluster_name in cluster_names:
+            cluster_energy_wh[cluster_name] = compute_cluster_energy_wh(
+                cluster_name,
+                started_at,
+                ended_at,
+                config.energy,
+                logs=node_logs,
+            )
+
+    market_snapshots = read_all_market_snapshot_logs(config_id)
+
+    snapshots_by_cluster: dict[str, list[MarketSnapshotLog]] = defaultdict(list)
+    for snapshot in market_snapshots:
+        snapshots_by_cluster[snapshot.cluster].append(snapshot)
+    for snapshots in snapshots_by_cluster.values():
+        snapshots.sort(key=lambda s: s.timestamp)
+
+    total_gco2_g = 0.0
+    total_cost_eur = 0.0
+
+    for cluster_name, snapshots in snapshots_by_cluster.items():
+        for i, snapshot in enumerate(snapshots):
+            interval_start = snapshot.timestamp
+            is_last_snapshot = i + 1 == len(snapshots)
+            interval_end = snapshots[i + 1].timestamp if not is_last_snapshot else ended_at
+
+            if interval_end is None or interval_start >= interval_end:
+                continue
+
+            energy_wh = compute_cluster_energy_wh(
+                cluster_name, interval_start, interval_end, config.energy, logs=node_logs
+            )
+            energy_kwh = energy_wh / 1000.0
+
+            total_gco2_g += energy_kwh * snapshot.carbon_gco2_per_kwh
+            total_cost_eur += energy_kwh * snapshot.cost_eur_per_kwh
+
     return {
         "config_id": config_id,
         "test_name": config.name,
@@ -159,6 +202,7 @@ def get_test_results(config_id: str) -> dict:
         "total_cost_eur": round(total_cost_eur, 6),
         "avg_renewable_pct": avg_renewable_pct,
         "cluster_distribution": dict(cluster_distribution),
+        "cluster_energy_wh": cluster_energy_wh,
         "gco2_over_time": gco2_over_time,
         "cost_over_time": cost_over_time,
         "request_over_time": request_over_time,
