@@ -2,9 +2,14 @@ from collections import Counter, defaultdict
 
 from fastapi import HTTPException
 
-from ...custom_logging.models.log_models import NodeStatusLog, RequestLog
+from ...custom_logging.models.log_models import MarketSnapshotLog, NodeStatusLog, RequestLog
 from ...custom_logging.util.log_reader import compute_cluster_energy_wh
-from ...db.postgres import read_all_node_status_logs, read_all_request_logs, read_config_by_id
+from ...db.postgres import (
+    read_all_market_snapshot_logs,
+    read_all_node_status_logs,
+    read_all_request_logs,
+    read_config_by_id,
+)
 
 
 def _request_energy_kwh(request: RequestLog) -> float:
@@ -155,25 +160,33 @@ def get_test_results(config_id: str) -> dict:
                 logs=node_logs,
             )
 
-    requests_by_cluster: dict[str, list[RequestLog]] = defaultdict(list)
-    for entry in sorted_requests:
-        requests_by_cluster[entry.cluster].append(entry)
+    market_snapshots = read_all_market_snapshot_logs(config_id)
+
+    snapshots_by_cluster: dict[str, list[MarketSnapshotLog]] = defaultdict(list)
+    for snapshot in market_snapshots:
+        snapshots_by_cluster[snapshot.cluster].append(snapshot)
+    for snapshots in snapshots_by_cluster.values():
+        snapshots.sort(key=lambda s: s.timestamp)
 
     total_gco2_g = 0.0
     total_cost_eur = 0.0
 
-    for cluster_name, energy_wh in cluster_energy_wh.items():
-        cluster_reqs = requests_by_cluster.get(cluster_name, [])
-        if not cluster_reqs:
-            continue
+    for cluster_name, snapshots in snapshots_by_cluster.items():
+        for i, snapshot in enumerate(snapshots):
+            interval_start = snapshot.timestamp
+            is_last_snapshot = i + 1 == len(snapshots)
+            interval_end = snapshots[i + 1].timestamp if not is_last_snapshot else ended_at
 
-        energy_kwh = energy_wh / 1000.0
+            if interval_end is None or interval_start >= interval_end:
+                continue
 
-        avg_carbon_gco2_per_kwh = sum(e.blended_carbon_gco2_per_kwh for e in cluster_reqs) / len(cluster_reqs)
-        avg_cost_eur_per_kwh = sum(e.blended_cost_eur_per_kwh for e in cluster_reqs) / len(cluster_reqs)
+            energy_wh = compute_cluster_energy_wh(
+                cluster_name, interval_start, interval_end, config.energy, logs=node_logs
+            )
+            energy_kwh = energy_wh / 1000.0
 
-        total_gco2_g += energy_kwh * avg_carbon_gco2_per_kwh
-        total_cost_eur += energy_kwh * avg_cost_eur_per_kwh
+            total_gco2_g += energy_kwh * snapshot.carbon_gco2_per_kwh
+            total_cost_eur += energy_kwh * snapshot.cost_eur_per_kwh
 
     return {
         "config_id": config_id,

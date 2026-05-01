@@ -13,6 +13,7 @@ from sqlalchemy.engine import URL, make_url
 from sqlmodel import Field, SQLModel, Session, select
 
 from ..custom_logging.models.log_models import (
+    MarketSnapshotLog,
     NodeStatusLog,
     RequestLog,
     TerminalDebugLog,
@@ -226,3 +227,8 @@ def read_all_configs() -> list[Config]:
 def read_all_node_status_logs(config_id: str | None = None) -> list[NodeStatusLog]:
     """Read node status logs for a config as NodeStatusLog models."""
     return read_model_logs(NodeStatusLog, config_id)
+
+
+def read_all_market_snapshot_logs(config_id: str | None = None) -> list[MarketSnapshotLog]:
+    """Read market snapshot logs for a config as MarketSnapshotLog models."""
+    return read_model_logs(MarketSnapshotLog, config_id)

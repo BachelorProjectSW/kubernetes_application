@@ -35,6 +35,20 @@ class NodeStatusLog(BaseModel):
     status: str
 
 
+class MarketSnapshotLog(BaseModel):
+    """Carbon intensity and electricity price for one cluster at one simulated hour.
+
+    Written once per (config_id, cluster, simulated_hour) to give test_results
+    an accurate hourly rate to pair with the continuous energy reconstruction.
+    """
+
+    timestamp: datetime
+    simulated_hour: datetime
+    cluster: str
+    carbon_gco2_per_kwh: float
+    cost_eur_per_kwh: float
+
+
 class TerminalDebugLog(BaseModel):
     """Model for terminal debug entries stored in the database."""
 
