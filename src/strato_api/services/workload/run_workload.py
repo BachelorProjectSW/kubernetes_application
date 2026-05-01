@@ -2,9 +2,11 @@ import asyncio
 import time
 import aiohttp
 import json
+import requests
 import structlog
 import uuid
 from .generator import generate_workload
+from ....custom_logging.logger import log_request
 from ....models.basemodels import QuestionConfig
 
 
@@ -51,6 +53,7 @@ async def execute_workload(
             if delay > 0:
                 await asyncio.sleep(delay)
 
+            request_reached_host = False
             try:
                 trace_id = str(uuid.uuid4())
                 request_start = time.perf_counter()
@@ -67,6 +70,7 @@ async def execute_workload(
                 )
 
                 async with session.post(endpoint, data=payload_json, headers=headers) as resp:
+                    request_reached_host = True
                     body = await resp.text()
                     duration_ms = int((time.perf_counter() - request_start) * 1000)
                     log.info(
@@ -81,6 +85,22 @@ async def execute_workload(
                 return {"ok": False, "error": "cancelled"}
             except asyncio.TimeoutError:
                 duration_ms = int((time.perf_counter() - request_start) * 1000)
+                if not request_reached_host:
+                    log_request(
+                        cluster_name="unknown",
+                        worker_node_name="unknown",
+                        success=False,
+                        latency_ms=duration_ms,
+                        cluster_load_w=0,
+                        renewable_fraction=0,
+                        blended_carbon_gco2_per_kwh=0,
+                        blended_cost_eur_per_kwh=0,
+                        question=question.question,
+                        answer="unknown",
+                        response_status_code=None,
+                        all_content="unknown",
+                        trace_id=trace_id,
+                    )
                 log.warning(
                     "strato.workload.request_timeout",
                     trace_id=trace_id,
@@ -90,6 +110,22 @@ async def execute_workload(
                 return {"ok": False, "error": f"request timeout after {request_timeout_s}s"}
             except Exception as e:
                 duration_ms = int((time.perf_counter() - request_start) * 1000)
+                if not request_reached_host:
+                    log_request(
+                        cluster_name="unknown",
+                        worker_node_name="unknown",
+                        success=False,
+                        latency_ms=duration_ms,
+                        cluster_load_w=0,
+                        renewable_fraction=0,
+                        blended_carbon_gco2_per_kwh=0,
+                        blended_cost_eur_per_kwh=0,
+                        question=question.question,
+                        answer="unknown",
+                        response_status_code=None,
+                        all_content="unknown",
+                        trace_id=trace_id,
+                    )
                 log.warning(
                     "strato.workload.request_failed",
                     trace_id=trace_id,
@@ -119,6 +155,16 @@ async def execute_workload(
     return results
 
 
+def _stop_global_test(host: str):
+    """Tell global API to stop the test after workload execution finishes."""
+    try:
+        response = requests.post(f"{host}/stop_test", timeout=500)
+        response.raise_for_status()
+        log.info("strato.workload.global_stop_requested", status_code=response.status_code)
+    except Exception as e:
+        log.warning("strato.workload.global_stop_failed", error=str(e))
+
+
 def run_workload(
     host: str,
     endpoint: str,
@@ -131,6 +177,9 @@ def run_workload(
     stop_check
 ):
     """Run workload executor."""
-    return asyncio.run(
-        execute_workload(host, endpoint, question, duration_s, rpm, pattern, seed, peakiness, stop_check)
-    )
+    try:
+        return asyncio.run(
+            execute_workload(host, endpoint, question, duration_s, rpm, pattern, seed, peakiness, stop_check)
+        )
+    finally:
+        _stop_global_test(host)

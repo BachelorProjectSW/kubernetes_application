@@ -50,7 +50,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
                 total=total,
             )
 
-            if len(ready) >= total:
+            if len(ready) == total:
                 log.info("ensure_nodes_ready.all_ready", cluster=cluster.name)
                 break
 

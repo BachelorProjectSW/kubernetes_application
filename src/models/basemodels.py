@@ -50,7 +50,7 @@ class WorkloadConfig(BaseModel):
 class QuestionConfig(BaseModel):
     """Question class."""
 
-    question: str  # TODO make it a list of question and add x new questions
+    question: str
     max_output_tokens: int
 
 
@@ -102,6 +102,7 @@ class ClusterRuntimeData(BaseModel):
     grid_carbon_intensity: float
     grid_electricity_price: float
     avg_latency_ms: float
+    all_nodes_powered_off: bool
 
 
 class ClusterInformation(BaseModel):

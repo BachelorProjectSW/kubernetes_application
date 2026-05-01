@@ -51,8 +51,6 @@ def start_test(config: Config):
                 cluster_name=cluster.name,
                 status_code=response.status_code,
             )
-            # ensure that all nodes + pods are on and ready to recieve requests
-            # TODO VIRKER IKKE NÅR WORKER NODES ER SLUKKET TIL AT STARTE MED:D pga timeout
             ensure_nodes_ready(cluster, timeout_s=400)
 
         if config.power_scheduler.start:
@@ -76,23 +74,7 @@ def start_test(config: Config):
         raise Exception(f"test failed: {e}")
 
 
-# TODO stop test is not called when the workload scheduler is done.
 def stop_test():
     """Stop the test."""
-    config = config_store.get()
     config_store.stop_power_scheduler()
-    if config:
-        for cluster in config.clusters:
-            try:
-                # All pods are deleted (recreated automatically).
-                # Because when the test is stopped --> possibility of inflight-requests
-                # These needs to be deleted, such that the next test can run deterministcally
-                requests.post(
-                    f"http://{cluster.ip}:{cluster.port}/cancel_all_llama_pods",
-                    timeout=300
-                )
-                log.info("global.stop_test.pods_deleted", cluster=cluster.name)
-            except Exception as e:
-                log.warning("global.stop_test.pods_delete_failed", cluster=cluster.name, error=str(e))
-    log.info("global.stop_test.done")
     return {"message": "Test stopped"}

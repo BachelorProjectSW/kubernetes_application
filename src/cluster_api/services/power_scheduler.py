@@ -14,9 +14,6 @@ from ...custom_logging.logger import log_node_status_snapshot
 log = structlog.get_logger()
 
 
-# TODO tjek hvad der sker hvis alle nodes bliver slukket pga idle time?
-# TODO når en node er slukket modtager de stadigvæk request.
-# TODO noglegange bliver status ikke opdateret når de er slukket.
 def run_cmd(cmd):
     """Run bash command."""
     result = subprocess.run(
@@ -173,7 +170,7 @@ def check_if_llama_pod_is_ready(
 def wait_for_nodes_to_be_ready(
         worker_nodes: list[WorkerNode],
         cluster_name: str,
-        timeout_s: int = 120,
+        timeout_s: int = 300,
         poll_interval_s: int = 2
         ) -> bool:
     """Wait until each selected node has a Running+Ready llama pod."""
@@ -191,11 +188,16 @@ def wait_for_nodes_to_be_ready(
             log_node_status_snapshot(cluster_name, node)
 
         if len(ready_nodes) == len(worker_nodes):
-            return True
+            return
 
         time.sleep(poll_interval_s)
 
-    return False
+    # Deadline reached, marking remaining nodes as OFF
+    for node in worker_nodes:
+        if node.status != WorkerStatus.IDLE or node.status != WorkerStatus.WORKING:
+            node.status = WorkerStatus.OFF
+            log_node_status_snapshot(cluster_name, node)
+            log.warning("cluster_api.power.pod_not_ready", cluster=cluster_name, node=node)
 
 
 def change_node_status(number_of_nodes: int, status: str):
@@ -213,14 +215,7 @@ def change_node_status(number_of_nodes: int, status: str):
             for future in futures:
                 future.result()
 
-        all_ready = wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
-        if not all_ready:
-            log.warning(
-                "cluster_api.power.nodes_not_ready_before_timeout",
-                cluster_name=cluster_name,
-                worker_node=None,
-                nodes=[node.name for node in nodes_to_change],
-            )
+        wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
 
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, nodes)

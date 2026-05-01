@@ -92,32 +92,3 @@ def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
 
     assert result.cluster_load_w == 1000.0
     mock_dk.assert_not_called()
-
-
-@pytest.mark.unit
-def test_runtime_data_returns_none_when_all_nodes_are_off():
-    """Clusters with only OFF nodes should be skipped by the scheduler."""
-    cluster = _make_cluster("PT")
-
-    with (
-        patch("src.global_api.services.cluster_data.market_data_store.get_power", return_value=[]),
-        patch("src.global_api.services.cluster_data.market_data_store.get_carbon", return_value=[]),
-        patch("src.global_api.services.cluster_data.market_data_store.get_price", return_value=[]),
-        patch("src.global_api.services.cluster_data.compute_cluster_load") as mock_cluster_load,
-        patch("src.global_api.services.cluster_data.get_avg_latency_for_cluster"),
-        patch("src.global_api.services.cluster_data.requests.get") as mock_requests_get,
-    ):
-        mock_response = MagicMock()
-        mock_response.json.return_value = _mock_worker_nodes("off", "off")
-        mock_response.raise_for_status.return_value = None
-        mock_requests_get.return_value = mock_response
-
-        result = get_cluster_runtime_data(
-            cluster,
-            datetime(2025, 1, 1, tzinfo=timezone.utc),
-            EnergyConfig(),
-            latency_window_s=300,
-        )
-
-    assert result is None
-    mock_cluster_load.assert_not_called()

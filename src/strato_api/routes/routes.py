@@ -9,9 +9,6 @@ router = APIRouter()
 # TODO Lav experiments tests med test om at det er "noglelunde deterministisk."
 # TODO Sørg for at alle logs gir mening og ikke bare spam.
 # TODO LAV DOCSTRINGS TIL ALLE FUNKTIONER!!!
-# TODO Sikre sig at CROM Data virker
-# TODO få harddrive data.
-# TODO få API til at kører hver klokkeslæt time og ikke hver time fra test start.
 # TODO calculate cost/gco2 if idle (Jeg tror ikke det er korrekt ift idle times)
 @router.post("/start_test")
 def start_test_endpoint(config: Config):

@@ -87,7 +87,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 blended_cost_eur_per_kwh=blended_cost,
                 question=question.question,
                 answer=None,
-                response_status_code=502,
+                response_status_code=500,
                 all_content=data,
                 trace_id=trace_id,
                 global_choose_cluster=choose_cluster_end,
@@ -138,4 +138,71 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=e)
+        log_request(
+            cluster_name=cluster.name if "cluster" in locals() else "unknown",
+            worker_node_name=(
+                worker_node.name
+                if "worker_node" in locals() and worker_node is not None
+                else "unknown"
+            ),
+            success=False,
+            latency_ms=(
+                global_total_time_ms
+                if "global_total_time_ms" in locals()
+                else 0
+            ),
+            cluster_load_w=(
+                cluster_energy_data.cluster_load_w
+                if "cluster_energy_data" in locals()
+                else 0
+            ),
+            renewable_fraction=(
+                renewable_fraction
+                if "renewable_fraction" in locals()
+                else 0
+            ),
+            blended_carbon_gco2_per_kwh=(
+                blended_carbon
+                if "blended_carbon" in locals()
+                else 0
+            ),
+            blended_cost_eur_per_kwh=(
+                blended_cost
+                if "blended_cost" in locals()
+                else 0
+            ),
+            question=question.question,
+            answer=answer if "answer" in locals() else None,
+            response_status_code=(
+                result.llama_response_status_code
+                if "result" in locals()
+                else 500
+            ),
+            all_content=(
+                llm_content
+                if "llm_content" in locals()
+                else None
+            ),
+            trace_id=trace_id,
+            global_choose_cluster=(
+                choose_cluster_end
+                if "choose_cluster_end" in locals()
+                else 0
+            ),
+            global_total_time_ms=(
+                global_total_time_ms
+                if "global_total_time_ms" in locals()
+                else 0
+            ),
+            cluster_queue_time_ms=(
+                result.cluster_queue_time_ms
+                if "result" in locals()
+                else None
+            ),
+            cluster_llama_inference_ms=(
+                result.cluster_llama_inference_ms
+                if "result" in locals()
+                else None
+            ),
+        )
+        raise HTTPException(status_code=500, detail=str(e))
