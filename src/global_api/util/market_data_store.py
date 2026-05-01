@@ -10,6 +10,7 @@ def _hour_floor(dt: datetime) -> datetime:
     """Strip minutes and seconds so that e.g. 14:23 and 14:59 map to the same key (14:00)."""
     return dt.replace(minute=0, second=0, microsecond=0)
 
+
 @dataclass
 class _CarbonCacheEntry:
     data: list[tuple[datetime, int]]
