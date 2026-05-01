@@ -5,7 +5,7 @@
 Run postgres:
 
 ```bash
-docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5432:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16
+docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5433:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16
 ```
 
 ### pgAdmin
@@ -35,6 +35,6 @@ After logging in:
 3. Connection
 
 - Hostname / address: IP where Postgres is hosted (local or strato ip)
-- Port: `5432`
+- Port: `5433`
 - Username: `admin`
 - Password: `admin`

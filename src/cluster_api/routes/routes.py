@@ -1,7 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from ..services.cancel_all_llama_pods import cancel_all_llama_pods
 from ..services.power_scheduler import change_node_status, turn_off_idle_nodes
 from ..services.llm import handle_llm
 from ...models.basemodels import ClusterInformation, QuestionConfig
+from ...custom_logging.logger import set_current_config_id
 from ..util.cluster_config import config_store
 router = APIRouter()
 
@@ -25,26 +27,35 @@ def turn_off_node_endpoint(number_of_nodes: int):
 
 
 @router.post("/turn_off_idle_nodes/")
-def turn_off_idle_nodes_endpoint(idle_time: int):
+def turn_off_idle_nodes_endpoint(idle_time: int, stay_one: bool = False):
     """Return status of turned off nodes."""
-    return turn_off_idle_nodes(idle_time)
+    return turn_off_idle_nodes(idle_time, stay_one=stay_one)
 
 
 @router.post("/set_config")
 def set_config(cluster_information: ClusterInformation):
     """Set the config in util."""
+    set_current_config_id(cluster_information.config_id)
     config_store.set(cluster_information)
     config_store.build_worker_nodes()
     return config_store.get()
 
 
 @router.post("/handle_llm_request")
-def handle_llm_request_endpoint(question: QuestionConfig):
+def handle_llm_request_endpoint(question: QuestionConfig, request: Request):
     """Handle llm request."""
-    return handle_llm(question)
+    trace_id = request.headers.get("X-Trace-Id")
+    return handle_llm(question, trace_id=trace_id)
 
 
 @router.get("/get_cluster_information")
 def get_cluster_information_endpoint():
     """Return cluster information."""
     return config_store.get()
+
+
+@router.post("/cancel_all_llama_pods")
+def cancel_all_llama_pods_endpoint():
+    """Delete all llama pods."""
+    cancel_all_llama_pods()
+    return {"message": "Llama pods deleted, restarting"}

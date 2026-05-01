@@ -4,7 +4,7 @@ import structlog
 import requests
 from dotenv import load_dotenv
 
-log = structlog.getLogger()
+log = structlog.get_logger()
 
 load_dotenv()
 
@@ -43,7 +43,7 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
         requests.HTTPError: If the Electricity Maps API returns an error response.
 
     """
-    log.info("prices.fetching", zone=zone, start=str(start), end=str(end))
+    log.info("global_api.market.price_fetch_started", zone=zone, start=str(start), end=str(end))
     try:
         response = requests.get(
             f"{BASE_URL}/price-day-ahead/past-range",
@@ -54,19 +54,19 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
                 "end": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "temporalGranularity": "hourly",
             },
-            timeout=60,
+            timeout=120,
         )
         response.raise_for_status()
     except requests.HTTPError as e:
-        log.error("prices.api_error", status=e.response.status_code, zone=zone)
+        log.error("global_api.market.price_fetch_api_error", status_code=e.response.status_code, zone=zone)
         raise
 
     except Exception:
-        log.error("prices.unexpected_error", zone=zone)
+        log.error("global_api.market.price_fetch_unexpected_error", zone=zone)
         raise
 
     entries = response.json().get("data", [])
-    log.info("prices.fetched", count=len(entries))
+    log.info("global_api.market.price_fetch_succeeded", entry_count=len(entries), zone=zone)
 
     return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]
 
@@ -87,7 +87,7 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
         requests.HTTPError: If the Electricity Maps API returns an error response.
 
     """
-    log.info("carbon_intensity.fetching", zone=zone, start=str(start), end=str(end))
+    log.info("global_api.market.carbon_fetch_started", zone=zone, start=str(start), end=str(end))
     try:
         response = requests.get(
             f"{BASE_URL}/carbon-intensity/past-range",
@@ -98,19 +98,19 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
                 "end": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "temporalGranularity": "hourly",
             },
-            timeout=60,
+            timeout=120,
         )
         response.raise_for_status()
 
     except requests.HTTPError as e:
-        log.error("carbon_intensity.api_error", status=e.response.status_code, zone=zone)
+        log.error("global_api.market.carbon_fetch_api_error", status_code=e.response.status_code, zone=zone)
         raise
 
     except Exception:
-        log.error("carbon_intensity.unexpected_error", zone=zone)
+        log.error("global_api.market.carbon_fetch_unexpected_error", zone=zone)
         raise
 
     entries = response.json().get("data", [])
-    log.info("carbon_intensity.fetched", count=len(entries))
+    log.info("global_api.market.carbon_fetch_succeeded", entry_count=len(entries), zone=zone)
 
     return [(datetime.fromisoformat(e["datetime"]), e["carbonIntensity"]) for e in entries]

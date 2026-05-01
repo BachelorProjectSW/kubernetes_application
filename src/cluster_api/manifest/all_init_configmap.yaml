@@ -25,5 +25,5 @@ data:
     fi
 
     find /models -maxdepth 1 -type f -name '*.gguf' ! -name "${MODEL_FILE}" -delete 
-    ln -sf "$DEST" /models/model.gguf
+    ln -sf "${MODEL_FILE}" /models/model.gguf
 

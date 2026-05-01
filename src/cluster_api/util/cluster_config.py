@@ -1,5 +1,6 @@
 import structlog
 from ...models.basemodels import ClusterInformation, WorkerNode
+from ...models.enum import WorkerStatus
 from .client_setup import get_api_client
 import requests
 
@@ -35,7 +36,12 @@ class ConfigStore:
             labels = node.metadata.labels or {}
             # skip control plane nodes
             if labels.get("node-role.kubernetes.io/control-plane") == "true":
-                log.debug("node.skipped", name=node.metadata.name, reason="control-plane")
+                log.debug(
+                    "cluster_api.config.control_plane_node_skipped",
+                    cluster_name=self.config.cluster_config.name,
+                    worker_node=node.metadata.name,
+                    reason="control-plane",
+                )
                 continue
 
             name = node.metadata.name
@@ -48,11 +54,11 @@ class ConfigStore:
                 if not ip:
                     ip = node.status.addresses[0].address
 
-            status = "unknown"
+            status = WorkerStatus.OFF
             if getattr(node.status, "conditions", None):
                 for condition in node.status.conditions:
                     if condition.type == "Ready":
-                        status = "idle" if condition.status == "True" else "off"
+                        status = WorkerStatus.IDLE if condition.status == "True" else WorkerStatus.OFF
                         break
             worker_node = WorkerNode(
                 name=name,
@@ -84,7 +90,12 @@ class ConfigStore:
 
         for node, gpio in zip(self.config.worker_nodes, gpios):
             node.gpio = gpio
-            log.debug("node.gpio_assigned", node=node)
+            log.debug(
+                "cluster_api.config.worker_gpio_assigned",
+                cluster_name=self.config.cluster_config.name,
+                worker_node=node.name,
+                gpio=node.gpio,
+            )
 
     def get_worker_nodes_dict(self):
         """Return worker nodes only, as list of dicts."""
@@ -104,14 +115,18 @@ class ConfigStore:
         for index, worker in enumerate(workers):
             worker.forwarded_port = base_port + index
             log.debug(
-                "cluster.worker_forwarded_port_assigned",
-                worker_name=worker.name,
+                "cluster_api.config.worker_forwarded_port_assigned",
+                cluster_name=self.config.cluster_config.name,
+                worker_node=worker.name,
                 worker_ip=worker.ip,
                 forwarded_port=worker.forwarded_port,
             )
 
     def populate_host_port(self):
-        """Fetch hostPort from running llama pods and save it in cluster config."""
+        """Fetch hostPort from running llama pods and save it in cluster config.
+
+        If no suitable pod is found, keep existing config value and continue.
+        """
         if self.config is None:
             raise Exception("Config is not set yet")
 
@@ -144,7 +159,14 @@ class ConfigStore:
                         found_ports.add(port.host_port)
 
         if not found_ports:
-            raise ValueError("No running llama pod with hostPort found")
+            log.warning(
+                "cluster_api.config.llama_hostport_not_found",
+                cluster_name=self.config.cluster_config.name,
+                worker_node=None,
+                reason="no_running_ready_llama_pod_with_hostport",
+                fallback_llama_hostport=self.config.cluster_config.llama_hostport,
+            )
+            return
 
         if len(found_ports) > 1:
             raise ValueError(f"Inconsistent llama hostPorts found: {sorted(found_ports)}")
@@ -152,7 +174,9 @@ class ConfigStore:
         self.config.cluster_config.llama_hostport = found_ports.pop()  # Returns the removed value
 
         log.debug(
-            "cluster.hostport_discovered",
+            "cluster_api.config.llama_hostport_discovered",
+            cluster_name=self.config.cluster_config.name,
+            worker_node=None,
             llama_hostport=self.config.cluster_config.llama_hostport,
         )
 
@@ -169,7 +193,7 @@ class ConfigStore:
         for worker in self.config.worker_nodes:
             if not worker.ip:
                 worker.max_slots = 0
-                worker.status = "off"
+                worker.status = WorkerStatus.OFF
                 continue
 
             try:
@@ -179,36 +203,50 @@ class ConfigStore:
                     url = f"http://{worker.ip}:{self.config.cluster_config.llama_hostport}/props"
 
                 log.debug(
-                    "cluster.worker_props_request",
-                    worker_name=worker.name,
+                    "cluster_api.config.worker_props_request_started",
+                    cluster_name=self.config.cluster_config.name,
+                    worker_node=worker.name,
                     worker_ip=worker.ip,
                     url=url,
                 )
 
-                response = requests.get(url, timeout=60)
+                response = requests.get(url, timeout=120)
                 response.raise_for_status()
 
                 props = response.json()
 
                 log.debug(
-                    "cluster.worker_props_response",
-                    worker_name=worker.name,
+                    "cluster_api.config.worker_props_request_succeeded",
+                    cluster_name=self.config.cluster_config.name,
+                    worker_node=worker.name,
                     worker_ip=worker.ip,
                     props=props,
                 )
 
                 worker.max_slots = props.get("total_slots", 0)
-                worker.status = "idle" if worker.max_slots > 0 else "off"
+                worker.status = WorkerStatus.IDLE if worker.max_slots > 0 else WorkerStatus.OFF
 
             except Exception as e:
                 log.debug(
-                    "cluster.worker_populate_capacity_failed",
-                    worker_name=worker.name,
+                    "cluster_api.config.worker_capacity_probe_failed",
+                    cluster_name=self.config.cluster_config.name,
+                    worker_node=worker.name,
                     worker_ip=worker.ip,
                     error=str(e),
                 )
-                worker.max_slots = 0
-                worker.status = "off"
+                # In k3d mode, use default capacity when probe fails (pods may be starting)
+                if self.config.cluster_config.k3d:
+                    worker.max_slots = 1  # Default capacity for k3d testing
+                    worker.status = WorkerStatus.IDLE
+                    log.debug(
+                        "cluster_api.config.worker_capacity_probe_k3d_fallback",
+                        cluster_name=self.config.cluster_config.name,
+                        worker_node=worker.name,
+                        max_slots=worker.max_slots,
+                    )
+                else:
+                    worker.max_slots = 0
+                    worker.status = WorkerStatus.OFF
 
 
 config_store = ConfigStore()

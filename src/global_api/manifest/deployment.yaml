@@ -16,7 +16,6 @@ spec:
         app: global-api
 
     spec:
-      serviceAccountName: global-api-sa
 
       nodeSelector:
         node-role.kubernetes.io/control-plane: "true"
@@ -28,35 +27,9 @@ spec:
 
       containers:
         - name: global-api
-          image: ghcr.io/bachelorprojectsw/global-api:af73be79514f8632dcdd6e0dc9eb7ca30f891a0c
+          image: ghcr.io/bachelorprojectsw/global-api:463215be57156fda64988762e349b2cd0e74acda
           imagePullPolicy: IfNotPresent
-
-        - name: tailscale
-          image: tailscale/tailscale:v1.94.2
-          imagePullPolicy: Always
-
-          env:
-          #Auth key to join the tailnet
-            - name: TS_AUTHKEY
-              valueFrom:
-                secretKeyRef:
-                  name: tailscale-auth
-                  key: TS_AUTHKEY
-
-          #Serve config
-            - name: TS_SERVE_CONFIG
-              value: /config/serve.json
-    
-            - name: TS_HOSTNAME
-              value: global-api
-
-          #Where the storage is at in the container
-          volumeMounts:
-            - name: tailscale-config
-              mountPath: /config
-
-    #What storage/config sources the pod have available
-      volumes:
-        - name: tailscale-config
-          configMap:
-            name: global-api-tailscale-config
+          ports:
+            - containerPort: 8020
+              hostPort: 8020
+              protocol: TCP

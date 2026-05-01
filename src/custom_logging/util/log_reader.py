@@ -1,6 +1,30 @@
 from datetime import datetime, timezone
 from ..logger import get_logs, get_terminal_debug_logs
 from ..models.log_models import NodeStatusLog, RequestLog, TerminalDebugLog
+from ...db.postgres import read_all_request_logs
+
+
+def get_avg_latency_for_cluster(cluster_name: str, time_interval_s: int) -> float:
+    """Return average latency (ms) for a specific cluster over the last time_interval_s seconds.
+
+    Args:
+        cluster_name: Name of the cluster to filter logs by.
+        time_interval_s: How far back to look, in seconds.
+
+    Returns:
+        Average latency in milliseconds, or 0.0 if no data in the window.
+
+    """
+    now = datetime.now(timezone.utc)
+
+    latencies = [
+        entry.latency_ms
+        for entry in get_logs(RequestLog)
+        if entry.cluster == cluster_name
+        and (now - entry.timestamp).total_seconds() <= time_interval_s
+    ]
+
+    return round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
 
 def get_avg_latency(time_interval_s: int) -> float:
@@ -24,14 +48,14 @@ def get_avg_latency(time_interval_s: int) -> float:
     return round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
 
-def get_request_logs() -> list[RequestLog]:
-    """Return all request log entries as RequestLog objects."""
-    return get_logs(RequestLog)
+def get_request_logs(config_id: str) -> list[RequestLog]:
+    """Return request log entries for a specific config id."""
+    return read_all_request_logs(config_id)
 
 
-def get_worker_nodes_logs() -> list[NodeStatusLog]:
+def get_worker_nodes_logs(config_id: str | None = None) -> list[NodeStatusLog]:
     """Return all node status snapshot entries as NodeStatusLog objects."""
-    return get_logs(NodeStatusLog)
+    return get_logs(NodeStatusLog, config_id)
 
 
 def get_terminal_debug_log_entries() -> list[TerminalDebugLog]:

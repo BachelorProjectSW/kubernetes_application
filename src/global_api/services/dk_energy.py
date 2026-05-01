@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 log = structlog.get_logger()
 
-ORIN_BASE_URL = "http://100.72.251.69:5050"
+ORIN_BASE_URL = "http://100.74.156.93:5050"
 
 
 def _ms_to_iso(ms: int) -> str:
@@ -37,7 +37,7 @@ def get_dk_hourly(start: datetime, end: datetime) -> list[dict]:
     start_ms = int(start.timestamp() * 1000)
     end_ms = int(end.timestamp() * 1000)
 
-    log.info("dk_energy.fetching_hourly", start=str(start), end=str(end))
+    log.info("global_api.dk_energy.hourly_fetch_started", start=str(start), end=str(end))
 
     try:
         response = requests.get(
@@ -47,15 +47,15 @@ def get_dk_hourly(start: datetime, end: datetime) -> list[dict]:
         )
         response.raise_for_status()
     except requests.HTTPError as e:
-        log.error("dk_energy.api_error", status=e.response.status_code)
+        log.error("global_api.dk_energy.api_error", status_code=e.response.status_code)
         raise
     except Exception:
-        log.error("dk_energy.connection_error", url=ORIN_BASE_URL)
+        log.error("global_api.dk_energy.connection_error", base_url=ORIN_BASE_URL)
         raise
 
     data = response.json()
     for reading in data:
         reading["timestamp"] = _ms_to_iso(reading["timestamp_ms"])
         del reading["timestamp_ms"]
-    log.info("dk_energy.hourly_fetched", count=len(data))
+    log.info("global_api.dk_energy.hourly_fetch_succeeded", reading_count=len(data))
     return data

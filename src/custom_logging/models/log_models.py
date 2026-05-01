@@ -1,11 +1,12 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Any
 
 
 class RequestLog(BaseModel):
     """Model for a single completed request log entry."""
 
-    request_id: str
+    trace_id: str | None = None
     timestamp: datetime
     cluster: str
     node: str
@@ -15,17 +16,14 @@ class RequestLog(BaseModel):
     renewable_fraction: float
     blended_carbon_gco2_per_kwh: float
     blended_cost_eur_per_kwh: float
-
-
-class PowerDecisionLog(BaseModel):
-    """Model for a single power decision log entry."""
-
-    timestamp: datetime
-    action: str
-    cluster: str
-    node: str
-    reason: str
-    system_avg_latency_ms: float
+    question: str | None = None
+    answer: str | None = None
+    response_status_code: int | None = None
+    all_content: Any | None = None
+    global_choose_cluster: int | None = None
+    global_total_time_ms: int | None = None
+    cluster_queue_time_ms: int | None = None
+    cluster_llama_inference_ms: int | None = None
 
 
 class NodeStatusLog(BaseModel):

@@ -9,8 +9,74 @@ from ..util.all_configuration import config_store
 from ...custom_logging.util.log_reader import get_avg_latency, get_request_logs
 from datetime import datetime, timezone
 from .cluster_data import get_cluster_runtime_data
+from ..util.time_utils import compute_simulated_now
 
 log = structlog.get_logger()
+
+
+def _get_simulated_time(config: Config) -> datetime:
+    try:
+        return compute_simulated_now(
+            config.start.start_time_simulated,
+            config.start.start_time_real,
+        )
+    except Exception as e:
+        log.warning("global_api.power.simulated_time_fallback_to_now", error=str(e))
+        return datetime.now(timezone.utc)
+
+
+def _get_scored_clusters(
+    config: Config,
+    clusters: list[ClusterInformation],
+    simulated_time: datetime,
+) -> list[tuple[float, ClusterInformation, ClusterRuntimeData]]:
+    scored_clusters = []
+    for cluster in clusters:
+        runtime_data = get_cluster_runtime_data(
+            cluster.cluster_config,
+            simulated_time,
+            config.energy,
+            config.power_scheduler.timeout_s,
+        )
+        if runtime_data is None:
+            log.debug(
+                "global_api.power.cluster_skipped_no_active_nodes",
+                cluster_name=cluster.cluster_config.name,
+            )
+            continue
+
+        cluster_score = score_cluster(
+            runtime_data.renewable_output_w,
+            0.0,
+            runtime_data.grid_carbon_intensity,
+            runtime_data.grid_electricity_price,
+            config.weights.gco2,
+            config.weights.cost,
+            config.weights.latency,
+            runtime_data.avg_latency_ms,
+            float(config.latency.max_ms),
+            config.energy,
+        )
+
+        active_or_idle_nodes = 0
+        off_nodes = 0
+        for worker_node in cluster.worker_nodes:
+            if worker_node.status in {WorkerStatus.WORKING, WorkerStatus.IDLE}:
+                active_or_idle_nodes += 1
+            else:
+                off_nodes += 1
+
+        log.debug(
+            "global_api.power.cluster_scored",
+            cluster_name=cluster.cluster_config.name,
+            score=cluster_score,
+            active_or_idle_nodes=active_or_idle_nodes,
+            off_nodes=off_nodes,
+            cluster_avg_latency_ms=runtime_data.avg_latency_ms,
+        )
+        scored_clusters.append((cluster_score, cluster, runtime_data))
+
+    return scored_clusters
 
 
 def get_current_active_nodes(clusters: list[ClusterInformation]):
@@ -21,23 +87,27 @@ def get_current_active_nodes(clusters: list[ClusterInformation]):
             status = worker_node.status
             if status == WorkerStatus.WORKING or status == WorkerStatus.IDLE:
                 active_nodes_counter += 1
-    log.info("get.current.active.nodes", active_nodes=active_nodes_counter)
+    log.info("global_api.power.active_nodes_counted", active_nodes=active_nodes_counter)
     return active_nodes_counter
 
 
-def get_current_rps(time_interval_s: int) -> float:
+def get_current_rps(time_interval_s: int, config_id: str | None) -> float:
     """Return requests per second (RPS) in the last time_interval_s seconds.
 
     Args:
         time_interval_s: How far back to look, in seconds.
+        config_id: Config id.
 
     Returns:
         Requests per second as a float. Returns 0.0 if no requests.
 
     """
+    if not config_id:
+        return 0.0
+
     now = datetime.now(timezone.utc)
     count = 0
-    all_request = get_request_logs()
+    all_request = get_request_logs(config_id)
     for request_log in all_request:
         age_s = (now - request_log.timestamp).total_seconds()
         if age_s <= time_interval_s:
@@ -56,14 +126,35 @@ def estimate_nodes_to_add(
 
     to keep latency under max_latency_s.
     """
-    # how many nodes needed in total
-    required_nodes = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
-    log.debug("required nodes", number=required_nodes)
+    if current_active_nodes <= 0:
+        return 1
+
+    if max_latency_ms <= 0:
+        return 0
+
+    # Throughput-based estimate.
+    required_by_rps = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
+
+    # Latency-pressure estimate.
+    # If observed latency is above SLO while requests are flowing, scale current
+    # active capacity by the latency ratio to force additional nodes.
+    required_by_latency = current_active_nodes
+    if current_rps > 0 and avg_latency_per_node_ms > max_latency_ms:
+        latency_ratio = avg_latency_per_node_ms / max_latency_ms
+        required_by_latency = math.ceil(current_active_nodes * latency_ratio)
+
+    required_nodes = max(required_by_rps, required_by_latency)
+    log.debug(
+        "global_api.power.required_nodes_estimated",
+        required_nodes=required_nodes,
+        required_by_rps=required_by_rps,
+        required_by_latency=required_by_latency,
+    )
 
     # how many more to add
     nodes_to_add = max(0, required_nodes - current_active_nodes)
 
-    log.info("estimated.nodes.to.add", number_of_nodes=nodes_to_add)
+    log.info("global_api.power.nodes_to_add_estimated", nodes_to_add=nodes_to_add)
     return nodes_to_add
 
 
@@ -71,35 +162,18 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     """Turn nodes on."""
     # Sort clusters by score (highest first)
 
-    # TODO: compute actual simulated time from (datetime.now() - start_time_real + start_time_simulated)
-    simulated_time = datetime.now(timezone.utc)
-    scored_clusters = []
-    for cluster in clusters:
-        runtime_data: ClusterRuntimeData = get_cluster_runtime_data(
-            cluster.cluster_config,
-            simulated_time,
-            config.energy
-        )
-        cluster_score = score_cluster(
-            runtime_data.renewable_output_w,
-            runtime_data.cluster_load_w,
-            runtime_data.grid_carbon_intensity,
-            runtime_data.grid_electricity_price,
-            config.weights.gco2,
-            config.weights.cost,
-            config.energy,
-        )
-        scored_clusters.append((cluster_score, cluster))
+    simulated_time = _get_simulated_time(config)
+    scored_clusters = _get_scored_clusters(config, clusters, simulated_time)
 
     sorted_clusters = [
         cluster
-        for _, cluster in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
+        for _, cluster, _ in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
     ]
 
-    avg_latency_ms = get_avg_latency(config.power_scheduler.timeout_s)
+    avg_latency_ms = get_avg_latency(config.latency.latency_window_s)
     max_latency_ms = config.latency.max_ms
     current_active_nodes = get_current_active_nodes(clusters)
-    current_rps = get_current_rps(config.power_scheduler.timeout_s)
+    current_rps = get_current_rps(config.latency.latency_window_s, config.id)
 
     nodes_to_add = estimate_nodes_to_add(
         avg_latency_ms,
@@ -107,6 +181,15 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         current_active_nodes,
         current_rps
     )
+    log.info(
+        "global_api.power.turn_on",
+        nodes_to_add=nodes_to_add,
+        max_user_latency=max_latency_ms,
+        avg_latency=avg_latency_ms,
+        current_active_nodes=current_active_nodes,
+        current_rps=current_rps
+    )
+
     for cluster in sorted_clusters:
         if nodes_to_add <= 0:
             break
@@ -116,7 +199,8 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
                 powered_off_nodes += 1
 
         log.debug(
-            "cluster.capacity",
+            "global_api.power.cluster_capacity_evaluated",
+            cluster_name=cluster.cluster_config.name,
             cluster_ip=cluster.cluster_config.ip,
             cluster_port=cluster.cluster_config.port,
             powered_off_nodes=powered_off_nodes,
@@ -128,33 +212,78 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
 
         try:
             url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_on_nodes/"
-            response = requests.post(url, params={"number_of_nodes": amount}, timeout=10)
-            turned_on = response.json().get("turned_on", amount)
+            response = requests.post(url, params={"number_of_nodes": amount}, timeout=500)
+            response.raise_for_status()
+            payload = response.json() if response.content else {}
+            turned_on = payload.get("node_changed", amount)
             nodes_to_add -= turned_on
+            log.info(
+                "global_api.power.turn_on_nodes_requested",
+                cluster_name=cluster.cluster_config.name,
+                requested=amount,
+                turned_on=turned_on,
+                nodes_remaining_to_add=nodes_to_add,
+            )
         except Exception as e:
-            log.error("Power.On", error=e)
+            log.error(
+                "global_api.power.turn_on_request_failed",
+                cluster_name=cluster.cluster_config.name,
+                target_url=url,
+                error=str(e),
+            )
 
 
 def turn_off_idle_nodes(config: Config):
     """Turn nodes off."""
-    for cluster in config.clusters:
+    simulated_time = _get_simulated_time(config)
+    scored_clusters = _get_scored_clusters(config, config_store.get_cluster_information(), simulated_time)
+    sorted_clusters = [
+        cluster
+        for _, cluster, _ in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
+    ]
+
+    top_cluster_name = sorted_clusters[0].cluster_config.name if sorted_clusters else None
+
+    for cluster in sorted_clusters:
         try:
-            url = f"http://{cluster.ip}:{cluster.port}/turn_off_idle_nodes/"
+            url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_off_idle_nodes/"
             idle_time = config.power_scheduler.idle_time_for_turn_off_s
-            response = requests.post(url, params={"idle_time": idle_time}, timeout=20)
+            log.debug(
+                "global_api.power.turn_off_idle_requested",
+                cluster_name=cluster.cluster_config.name,
+                idle_time_s=idle_time,
+            )
+            response = requests.post(
+                url,
+                params={"idle_time": idle_time, "stay_one": cluster.cluster_config.name == top_cluster_name},
+                timeout=500,
+            )
             response.raise_for_status()
         except Exception as e:
-            log.error("Power.Off", error=e)
+            log.error(
+                "global_api.power.turn_off_idle_request_failed",
+                cluster_name=cluster.cluster_config.name,
+                target_url=url,
+                error=str(e),
+            )
 
 
 async def power_scheduler_loop():
     """Check every x seconds whether more working nodes should be turn on or off."""
-    log.info("Global Power Scheduler Running")
-    config = config_store.get()
-    timeout = config.power_scheduler.timeout_s
-    while config_store.get().power_scheduler.start:
-        log.info("Global Power Scheduler Running Again")
+    log.info("global_api.power.scheduler_started")
+    while True:
+        config = config_store.get()
+        if config is None:
+            log.warning("global_api.power.scheduler_missing_config")
+            break
+
+        timeout = config.power_scheduler.timeout_s
+        log.info("global_api.power.scheduler_iteration_started", timeout_s=timeout)
         await asyncio.sleep(timeout)
+        latest_config = config_store.get()
+        if latest_config is None or not latest_config.power_scheduler.start:
+            break
         all_clusters = config_store.get_cluster_information()
-        turn_nodes_on(config, all_clusters)
-        turn_off_idle_nodes(config)
+        turn_nodes_on(latest_config, all_clusters)
+        turn_off_idle_nodes(latest_config)
+    log.info("global_api.power.scheduler_ended")
