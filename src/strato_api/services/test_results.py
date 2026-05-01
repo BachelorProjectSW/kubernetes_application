@@ -3,6 +3,7 @@ from collections import Counter, defaultdict
 from fastapi import HTTPException
 
 from ...custom_logging.models.log_models import NodeStatusLog, RequestLog
+from ...custom_logging.util.log_reader import compute_cluster_energy_wh
 from ...db.postgres import read_all_node_status_logs, read_all_request_logs, read_config_by_id
 
 
@@ -58,6 +59,7 @@ def get_test_results(config_id: str) -> dict:
             "cluster_usage_over_time": [],
             "node_status_over_time": [],
             "cluster_distribution": {},
+            "cluster_energy_wh": {},
         }
 
     sorted_requests = sorted(request_logs, key=lambda entry: (entry.timestamp, entry.cluster, entry.node))
@@ -145,6 +147,18 @@ def get_test_results(config_id: str) -> dict:
     started_at = min((entry.timestamp for entry in sorted_requests), default=None)
     ended_at = max((entry.timestamp for entry in sorted_requests), default=None)
 
+    cluster_energy_wh: dict[str, float] = {}
+    if started_at and ended_at:
+        cluster_names = {log.cluster for log in node_logs}
+        for cluster_name in cluster_names:
+            cluster_energy_wh[cluster_name] = compute_cluster_energy_wh(
+                cluster_name,
+                started_at,
+                ended_at,
+                config.energy,
+                logs=node_logs,
+            )
+
     return {
         "config_id": config_id,
         "test_name": config.name,
@@ -159,6 +173,7 @@ def get_test_results(config_id: str) -> dict:
         "total_cost_eur": round(total_cost_eur, 6),
         "avg_renewable_pct": avg_renewable_pct,
         "cluster_distribution": dict(cluster_distribution),
+        "cluster_energy_wh": cluster_energy_wh,
         "gco2_over_time": gco2_over_time,
         "cost_over_time": cost_over_time,
         "request_over_time": request_over_time,

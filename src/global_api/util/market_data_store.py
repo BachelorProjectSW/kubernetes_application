@@ -1,68 +1,79 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from ..services.dk_energy import get_dk_hourly
 from ..services.pv_power import get_power
 from ..services.price_and_carbon_intensity import fetch_carbon_intensity, fetch_price_data
 
 
+def _hour_floor(dt: datetime) -> datetime:
+    """Strip minutes and seconds so that e.g. 14:23 and 14:59 map to the same key (14:00)."""
+    return dt.replace(minute=0, second=0, microsecond=0)
+
 @dataclass
 class _CarbonCacheEntry:
     data: list[tuple[datetime, int]]
-    last_updated: datetime
 
 
 @dataclass
 class _PriceCacheEntry:
     data: list[tuple[datetime, float]]
-    last_updated: datetime
 
 
 @dataclass
-class _PvCacheEntry:
+class _PowerCacheEntry:
     data: list[tuple[datetime, float]]
-    last_updated: datetime
 
 
 class MarketDataStore:
-    """In-memory store for hourly market data."""
+    """In-memory store for hourly market data, keyed on simulated time."""
 
     def __init__(self):
         """Init."""
-        self._carbon_by_zone: dict[str, _CarbonCacheEntry] = {}
-        self._price_by_zone: dict[str, _PriceCacheEntry] = {}
-        self._pv_by_zone_and_capacity: dict[tuple[str, float], _PvCacheEntry] = {}
-        self._ttl = timedelta(hours=1)
+        self._carbon: dict[tuple[str, datetime], _CarbonCacheEntry] = {}
+        self._price: dict[tuple[str, datetime], _PriceCacheEntry] = {}
+        self._power: dict[tuple[str, float, datetime], _PowerCacheEntry] = {}
 
-    # Time to live (TTL)
-    def _is_stale(self, last_updated: datetime, now: datetime) -> bool:
-        """Check if the data is cached more than the accepted hour."""
-        return now - last_updated >= self._ttl
+    def get_carbon(
+        self,
+        start: datetime,
+        end: datetime,
+        zone: str,
+    ) -> list[tuple[datetime, int]]:
+        """Return grid carbon intensity for the simulated hour.
 
-    def get_carbon(self, start: datetime, end: datetime, zone: str) -> list[tuple[datetime, int]]:
-        """Return carbon data from memory unless older than one hour."""
-        zone_key = zone.upper()
-        now = datetime.now(timezone.utc)
+        Fetches from the Electricity Maps API only when the simulated hour
+        changes; subsequent calls within the same hour return cached data.
+        """
+        key = (zone.upper(), _hour_floor(start))
 
-        entry = self._carbon_by_zone.get(zone_key)
-        if entry is not None and not self._is_stale(entry.last_updated, now):
+        entry = self._carbon.get(key)
+        if entry is not None:
             return entry.data
 
         data = fetch_carbon_intensity(start, end, zone)
-        self._carbon_by_zone[zone_key] = _CarbonCacheEntry(data=data, last_updated=now)
+        self._carbon[key] = _CarbonCacheEntry(data=data)
         return data
 
-    def get_price(self, start: datetime, end: datetime, zone: str) -> list[tuple[datetime, float]]:
-        """Return price data from memory unless older than one hour."""
-        zone_key = zone.upper()
-        now = datetime.now(timezone.utc)
+    def get_price(
+        self,
+        start: datetime,
+        end: datetime,
+        zone: str,
+    ) -> list[tuple[datetime, float]]:
+        """Return day-ahead electricity price for the simulated hour.
 
-        entry = self._price_by_zone.get(zone_key)
-        if entry is not None and not self._is_stale(entry.last_updated, now):
+        Fetches from the Electricity Maps API only when the simulated hour
+        changes; subsequent calls within the same hour return cached data.
+        """
+        key = (zone.upper(), _hour_floor(start))
+
+        entry = self._price.get(key)
+        if entry is not None:
             return entry.data
 
         data = fetch_price_data(start, end, zone)
-        self._price_by_zone[zone_key] = _PriceCacheEntry(data=data, last_updated=now)
+        self._price[key] = _PriceCacheEntry(data=data)
         return data
 
     def get_power(
@@ -72,17 +83,22 @@ class MarketDataStore:
         zone: str,
         pv_capacity_w: float,
     ) -> list[tuple[datetime, float]]:
-        """Return PV power from memory unless older than one hour.
+        """Return solar generation in watts for the simulated hour.
 
-        For DK zones the real measured generation is fetched from the AAU Orin
+        For DK zones, real measured generation is fetched from the AAU Orin
         proxy (CrateDB) instead of the static CSV capacity-factor table.
+
+        For all other zones, generation is estimated from a static CSV of
+        historical PV capacity factors multiplied by the installed capacity.
+
+        Fetches only when the simulated hour changes; subsequent calls within
+        the same hour return cached data.
         """
         zone_key = zone.upper()
-        cache_key = (zone_key, float(pv_capacity_w))
-        now = datetime.now(timezone.utc)
+        key = (zone_key, float(pv_capacity_w), _hour_floor(start))
 
-        entry = self._pv_by_zone_and_capacity.get(cache_key)
-        if entry is not None and not self._is_stale(entry.last_updated, now):
+        entry = self._power.get(key)
+        if entry is not None:
             return entry.data
 
         if zone_key.startswith("DK"):
@@ -97,7 +113,7 @@ class MarketDataStore:
         else:
             data = get_power(start, end, zone, pv_capacity_w)
 
-        self._pv_by_zone_and_capacity[cache_key] = _PvCacheEntry(data=data, last_updated=now)
+        self._power[key] = _PowerCacheEntry(data=data)
         return data
 
 
