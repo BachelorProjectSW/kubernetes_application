@@ -77,8 +77,6 @@ def get_test_results(config_id: str) -> dict:
     service_timeout_over_time: list[dict] = []
     cluster_usage_over_time: list[dict] = []
     cluster_distribution = Counter()
-    total_gco2_g = 0.0
-    total_cost_eur = 0.0
     cumulative_gco2_g = 0.0
     cumulative_cost_eur = 0.0
 
@@ -88,8 +86,6 @@ def get_test_results(config_id: str) -> dict:
         request_cost_eur = energy_kwh * entry.blended_cost_eur_per_kwh
         cumulative_gco2_g += request_gco2_g
         cumulative_cost_eur += request_cost_eur
-        total_gco2_g += request_gco2_g
-        total_cost_eur += request_cost_eur
         cluster_distribution[entry.cluster] += 1
 
         point = {
@@ -158,6 +154,26 @@ def get_test_results(config_id: str) -> dict:
                 config.energy,
                 logs=node_logs,
             )
+
+    requests_by_cluster: dict[str, list[RequestLog]] = defaultdict(list)
+    for entry in sorted_requests:
+        requests_by_cluster[entry.cluster].append(entry)
+
+    total_gco2_g = 0.0
+    total_cost_eur = 0.0
+
+    for cluster_name, energy_wh in cluster_energy_wh.items():
+        cluster_reqs = requests_by_cluster.get(cluster_name, [])
+        if not cluster_reqs:
+            continue
+
+        energy_kwh = energy_wh / 1000.0
+
+        avg_carbon_gco2_per_kwh = sum(e.blended_carbon_gco2_per_kwh for e in cluster_reqs) / len(cluster_reqs)
+        avg_cost_eur_per_kwh = sum(e.blended_cost_eur_per_kwh for e in cluster_reqs) / len(cluster_reqs)
+
+        total_gco2_g += energy_kwh * avg_carbon_gco2_per_kwh
+        total_cost_eur += energy_kwh * avg_cost_eur_per_kwh
 
     return {
         "config_id": config_id,
