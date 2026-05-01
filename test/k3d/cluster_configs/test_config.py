@@ -15,23 +15,25 @@ from src.models.basemodels import (
 def get_test_config():
     """Start test test."""
     test_config = Config(
-        id="5555",
-        name="first_end_to_end",
+        id=None,
+        name="k3d_test!",
         start=StartConfig(
-            duration_time_s=30,
-            start_time_simulated="01/10/2021",
+            duration_time_s=60,
+            start_time_simulated="01/10/2021 10:21:00",
             start_time_real=None
         ),
         weights=WeightsConfig(
-            gco2=0.1,
-            cost=0.9
+            gco2=0.3,
+            cost=0.1,
+            latency=0.6
         ),
         power_scheduler=PowerSchedulerConfig(
-            start=True,
-            timeout_s=5,
-            idle_time_for_turn_off_s=1
+            start=False,
+            timeout_s=10,
+            idle_time_for_turn_off_s=20
         ),
         latency=LatencyConfig(
+            latency_window_s=60,
             max_ms=12000
         ),
         workload=WorkloadConfig(
@@ -41,46 +43,36 @@ def get_test_config():
             peakiness=0
         ),
         question=QuestionConfig(
-            question="hey",
-            max_output_tokens=200,
-            context_window=200
+            question="What is the best programming language?",
+            max_output_tokens=30,
         ),
         clusters=[
             ClusterConfig(
                 name="dk",
-                ip="100.76.22.120",
-                port="8040",
-                gpio_list=[21, 22],
-                simulated_country_code="dk-dk1",
-                llama_service_port="8083",
-                renewable_output_w=200,
-                cluster_load_w=1000,
-                grid_carbon_intensity=100,
-                grid_electricity_price=0.12,
-                k3d=False
-
+                ip="127.0.0.1",
+                port="8073",
+                gpio_list=[1, 2],
+                simulated_country_code="ES",
+                llama_service_port="8075",
+                k3d=True
             ),
             ClusterConfig(
                 name="pt",
-                ip="100.120.12.39",
-                port="8040",
-                gpio_list=[16],
-                simulated_country_code="pt",
-                llama_service_port="8082",
-                renewable_output_w=400,
-                cluster_load_w=1000,
-                grid_carbon_intensity=300,
-                grid_electricity_price=0.14,
-                k3d=False
+                ip="127.0.0.1",
+                port="8074",
+                gpio_list=[1],
+                simulated_country_code="PT",
+                llama_service_port="8076",
+                k3d=True
             ),
         ],
         global_scheduler=GlobalSchedulerConfig(
-            ip="100.65.249.75",
-            port="8020"
+            ip="127.0.0.1",
+            port="8072"
         ),
         strato=StratoConfig(
-            ip="100.109.95.2",
-            port="8090"
+            ip="127.0.0.1",
+            port="8071"
         )
     )
     return test_config

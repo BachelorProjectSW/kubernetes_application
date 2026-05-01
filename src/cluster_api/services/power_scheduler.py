@@ -5,8 +5,7 @@ from ...models.basemodels import WorkerNode
 from ..util.cluster_config import config_store
 from ..util.client_setup import get_api_client
 from ...models.enum import WorkerStatus
-from ...custom_logging.util.log_reader import get_request_logs
-from ...custom_logging.models.log_models import RequestLog
+from ...custom_logging.util.log_reader import get_worker_nodes_logs
 from datetime import datetime, timezone
 import subprocess
 import time
@@ -15,6 +14,9 @@ from ...custom_logging.logger import log_node_status_snapshot
 log = structlog.get_logger()
 
 
+# TODO tjek hvad der sker hvis alle nodes bliver slukket pga idle time?
+# TODO når en node er slukket modtager de stadigvæk request.
+# TODO noglegange bliver status ikke opdateret når de er slukket.
 def run_cmd(cmd):
     """Run bash command."""
     result = subprocess.run(
@@ -30,22 +32,53 @@ def turn_on_node(worker_node: WorkerNode, cluster_name: str):
     """Turn on the node via GPIO."""
     try:
         gpio = worker_node.gpio
-        log.debug("gpio to turn on", gpio=gpio)
+        log.debug(
+            "cluster_api.power.turn_on_gpio_pulse_started",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            gpio=gpio,
+        )
         run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
         time.sleep(0.5)
         run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
-        log.debug("turning node on", node=worker_node.name)
+        log.debug(
+            "cluster_api.power.turn_on_gpio_pulse_completed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            gpio=gpio,
+        )
         worker_node.status = WorkerStatus.TURNING_ON
         log_node_status_snapshot(cluster_name, worker_node)
         return True
     except Exception as e:
-        log.debug(f"failed to turn on node: {e}")
+        log.warning(
+            "cluster_api.power.turn_on_failed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            error=str(e),
+        )
         return False
 
 
 def turn_off_node(worker_node: WorkerNode, cluster_name: str):
     """Turn of node with SSH."""
     try:
+        log.info("cluster_api.power.turning_off_node", cluster=cluster_name, node=worker_node)
+        worker_node.status = WorkerStatus.TURNING_OFF
+        log_node_status_snapshot(cluster_name, worker_node)
+        time.sleep(10)
+
+        if worker_node.inflight_requests > 0:
+            worker_node.status = WorkerStatus.IDLE
+            log_node_status_snapshot(cluster_name, worker_node)
+            log.warning(
+                "cluster_api.power.turn_off_aborted_inflight_requests",
+                cluster_name=cluster_name,
+                worker_node=worker_node.name,
+                inflight_requests=worker_node.inflight_requests,
+            )
+            return False
+
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -68,8 +101,18 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         out = stdout.read().decode()
         err = stderr.read().decode()
 
-        log.debug("power.turn.off", STDOUT=out)
-        log.debug("power.turn.off", STDERR=err)
+        log.debug(
+            "cluster_api.power.turn_off_shutdown_stdout",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            stdout=out,
+        )
+        log.debug(
+            "cluster_api.power.turn_off_shutdown_stderr",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            stderr=err,
+        )
 
         client.close()
 
@@ -77,11 +120,23 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         log_node_status_snapshot(cluster_name, worker_node)
         return True
     except Exception as e:
-        log.debug("power.error", error=e)
+        worker_node.status = WorkerStatus.IDLE
+        log_node_status_snapshot(cluster_name, worker_node)
+        log.warning(
+            "cluster_api.power.turn_off_failed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            error=str(e),
+        )
         return False
 
 
-def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: str = "default") -> bool:
+def check_if_llama_pod_is_ready(
+    worker_node: WorkerNode,
+    api_client,
+    cluster_name: str,
+    namespace: str = "default"
+    ) -> bool:
     """Return True when a llama pod on this node is Running and Ready."""
     try:
         pods = api_client.list_namespaced_pod(
@@ -106,7 +161,12 @@ def check_if_llama_pod_is_ready(worker_node: WorkerNode, api_client, namespace: 
         return False
 
     except Exception as e:
-        log.debug("power.pod_readiness_check_failed", node=worker_node.name, error=str(e))
+        log.warning(
+            "cluster_api.power.pod_readiness_check_failed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            error=str(e),
+        )
         return False
 
 
@@ -121,11 +181,14 @@ def wait_for_nodes_to_be_ready(
     api_client = get_api_client()
 
     while time.time() < deadline:
-        ready_nodes = [node for node in worker_nodes if check_if_llama_pod_is_ready(node, api_client)]
+        ready_nodes = [
+            node for node in worker_nodes
+            if check_if_llama_pod_is_ready(node, api_client, cluster_name)
+        ]
 
         for node in ready_nodes:
             node.status = WorkerStatus.IDLE
-            log_node_status_snapshot(node, cluster_name)
+            log_node_status_snapshot(cluster_name, node)
 
         if len(ready_nodes) == len(worker_nodes):
             return True
@@ -141,17 +204,23 @@ def change_node_status(number_of_nodes: int, status: str):
     status: 'on' or 'off'.
     """
     cluster_config = config_store.get()
+    cluster_name = cluster_config.cluster_config.name
     nodes = cluster_config.worker_nodes
     if status == "on":
         nodes_to_change = select_nodes_to_turn_on(number_of_nodes, nodes)
         with ThreadPoolExecutor(max_workers=max(1, len(nodes_to_change))) as executor:
-            futures = [executor.submit(turn_on_node, node) for node in nodes_to_change]
+            futures = [executor.submit(turn_on_node, node, cluster_name) for node in nodes_to_change]
             for future in futures:
                 future.result()
 
-        all_ready = wait_for_nodes_to_be_ready(nodes_to_change)
+        all_ready = wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
         if not all_ready:
-            log.warning("power.nodes_not_ready_before_timeout", nodes=[node.name for node in nodes_to_change])
+            log.warning(
+                "cluster_api.power.nodes_not_ready_before_timeout",
+                cluster_name=cluster_name,
+                worker_node=None,
+                nodes=[node.name for node in nodes_to_change],
+            )
 
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, nodes)
@@ -190,45 +259,128 @@ def select_nodes_to_turn_off(number_of_nodes: int, worker_nodes: list[WorkerNode
     return nodes_to_turn_off
 
 
-def get_idle_time(request_logs: list[RequestLog], node_name: str, cluster_name: str) -> float:
+def get_idle_time(node_name: str, cluster_name: str) -> float:
     """Return the idle time in seconds for a given node in a cluster.
 
+    Checks the most recent NodeStatusLog entry for this node. If it shows status==IDLE,
+    returns the seconds since that transition. Otherwise returns 0 (node not currently idle).
+
     Args:
-        request_logs: List of RequestLog entries.
         node_name: Name of the node to check.
         cluster_name: Name of the cluster the node belongs to.
 
     Returns:
-        Time in seconds since the last request handled by this node.
-        Returns a very large number if the node has never handled a request.
+        Time in seconds since the node transitioned to IDLE.
+        Returns 0 if the most recent status is not IDLE.
 
     """
     now = datetime.now(timezone.utc)
 
-    # Iterate in reverse to find the latest request first
-    for request in reversed(request_logs):
-        if request.cluster == cluster_name and request.node == node_name:
-            return (now - request.timestamp).total_seconds()
+    try:
+        config = config_store.get()
+        config_id = config.config_id
+        node_status_logs = get_worker_nodes_logs(config_id)
+    except Exception as e:
+        log.debug("cluster_api.power.get_worker_nodes_logs", error=e)
+        return 0
 
-    # If no requests found
-    return float('inf')
+    # Find the most recent entry for this node/cluster
+    for entry in reversed(node_status_logs or []):
+        log.debug("cluster_api.power.entry_debug", entry=entry)
+        if entry.cluster == cluster_name and entry.node == node_name:
+            # Found most recent entry for this node
+            log.debug("cluster_api.power.latest_node_change", status=entry.status)
+            if str(entry.status).lower() == WorkerStatus.IDLE.value:
+                # Node is currently idle; return seconds since transition
+                log.debug("cluster_api.power.latest_node_change", changed=True)
+
+                return (now - entry.timestamp).total_seconds()
+            else:
+                log.debug("cluster_api.power.latest_node_change", changed=False)
+                # Node's most recent status is not IDLE (e.g., WORKING), so not idle
+                return 0
+
+    # No log entry found for this node; conservatively return 0 (don't turn off)
+    log.debug("cluster_api.power.gggggggggggggggg")
+    return 0
 
 
-def turn_off_idle_nodes(idle_time: int):
+def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
     """Turn off all nodes that have been idle for longer than `idle_time` seconds.
 
     Args:
         idle_time: Number of seconds a node must be idle before being turned off.
+        stay_one: If its the best cluster after running scoring algorithm then at least stay one up.
 
     """
     config = config_store.get()
     cluster_name = config.cluster_config.name
-    request_logs = get_request_logs()
+    config_id = config.config_id
+    if not config_id:
+        log.warning(
+            "cluster_api.power.turn_off_idle_skipped_missing_config_id",
+            cluster_name=cluster_name,
+            worker_node=None,
+        )
+        return
+
     nodes = config.worker_nodes
 
+    if stay_one:
+        active_or_idle_nodes = 0
+        for node in nodes:
+            if node.status in {WorkerStatus.WORKING, WorkerStatus.IDLE}:
+                active_or_idle_nodes += 1
+        if active_or_idle_nodes <= 1:
+            log.debug(
+                "cluster_api.power.turn_off_idle_stay_one_protected",
+                cluster_name=cluster_name,
+                active_or_idle_nodes=active_or_idle_nodes,
+            )
+            return {
+                "requested": 0,
+                "status": "off",
+                "node_changed": 0,
+                "nodes": [],
+            }
+
     for node in nodes:
+        # Only true idle nodes are eligible for automatic power-off.
         if node.status != WorkerStatus.IDLE:
+            log.debug(
+                "cluster_api.power.turn_off_idle_skipped_status",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                status=node.status,
+            )
             continue
-        last_request = get_idle_time(request_logs, node.name, cluster_name)
+
+        # Never power off a node while requests are still inflight.
+        if node.inflight_requests > 0:
+            log.debug(
+                "cluster_api.power.turn_off_idle_skipped_inflight",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                inflight_requests=node.inflight_requests,
+            )
+            continue
+
+        last_request = get_idle_time(node.name, cluster_name)
+
         if last_request > idle_time:
+            log.info(
+                "cluster_api.power.turn_off_idle_node_selected",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                last_request_age_s=last_request,
+                idle_time_s=idle_time,
+            )
             turn_off_node(node, cluster_name)
+        else:
+            log.debug(
+                "cluster_api.power.turn_off_idle_skipped_recent_request",
+                cluster_name=cluster_name,
+                worker_node=node.name,
+                last_request_age_s=last_request,
+                idle_time_s=idle_time,
+            )

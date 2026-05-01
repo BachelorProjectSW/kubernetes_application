@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch, mock_open
-from src.global_api.services.pv_power import get_power_factor_by_time
+from src.global_api.services.pv_power import floor_to_hour, get_power_factor_by_time
 
 CSV_CONTENT = """time,PT
 2010-06-01 10:00:00,0.6989
@@ -26,6 +26,14 @@ def test_get_power_returns_only_rows_within_range():
         (dt(11), 0.7994),
         (dt(12), 0.8415),
     ]
+
+
+@pytest.mark.unit
+def test_floor_to_hour_strips_minutes_seconds_and_microseconds():
+    """Datetime values should be rounded down to the top of the hour."""
+    floored = floor_to_hour(datetime(2026, 4, 30, 10, 27, 45, 123456, tzinfo=timezone.utc))
+
+    assert floored == datetime(2026, 4, 30, 10, 0, 0, tzinfo=timezone.utc)
 
 
 @pytest.mark.unit

@@ -8,7 +8,9 @@ class StartConfig(BaseModel):
     """Basic."""
 
     duration_time_s: int
+    # Supports DD/MM/YYYY HH:MM[:SS], DD/MM/YYYY, or ISO-8601.
     start_time_simulated: str
+    # Set by global API when a test starts (ISO-8601 UTC).
     start_time_real: str | None = None
 
 
@@ -17,6 +19,7 @@ class WeightsConfig(BaseModel):
 
     gco2: float
     cost: float
+    latency: float
 
 
 class PowerSchedulerConfig(BaseModel):
@@ -30,6 +33,7 @@ class PowerSchedulerConfig(BaseModel):
 class LatencyConfig(BaseModel):
     """Max Latency pr request."""
 
+    latency_window_s: int
     max_ms: int
 
 
@@ -39,7 +43,7 @@ class WorkloadConfig(BaseModel):
     request_per_minute: int
     pattern: Literal["steady", "peaks"]
     seed: int
-    peakiness: int
+    peakiness: float
 
 
 # --- Advanced user input
@@ -48,7 +52,6 @@ class QuestionConfig(BaseModel):
 
     question: str  # TODO make it a list of question and add x new questions
     max_output_tokens: int
-    context_window: int
 
 
 class WorkerNode(BaseModel):
@@ -98,11 +101,13 @@ class ClusterRuntimeData(BaseModel):
     cluster_load_w: float
     grid_carbon_intensity: float
     grid_electricity_price: float
+    avg_latency_ms: float
 
 
 class ClusterInformation(BaseModel):
     """All information the clusters need."""
 
+    config_id: str | None = None
     cluster_config: ClusterConfig
     question_config: QuestionConfig
     worker_nodes: list[WorkerNode]
@@ -144,7 +149,7 @@ class EnergyConfig(BaseModel):
 class Config(BaseModel):
     """Config."""
 
-    id: str
+    id: str | None = None
     name: str
     start: StartConfig
     weights: WeightsConfig
@@ -167,3 +172,6 @@ class LLMResponse(BaseModel):
     active_requests_at_selection: int
     queued_requests_at_selection: int
     max_slots: int
+    cluster_queue_time_ms: int | None = None
+    cluster_llama_inference_ms: int | None = None
+    llama_response_status_code: int | None = None

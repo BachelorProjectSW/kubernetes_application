@@ -11,3 +11,5 @@ paramiko
 python-dotenv
 sqlmodel
 psycopg[binary]
+numpy
+matplotlib
