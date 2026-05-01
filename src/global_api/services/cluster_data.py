@@ -101,7 +101,7 @@ def get_cluster_runtime_data(
             active_nodes=active_nodes,
             idle_nodes=idle_nodes,
         )
-        all_nodes_powered_off= active_nodes == 0 and idle_nodes == 0
+        all_nodes_powered_off = active_nodes == 0 and idle_nodes == 0
 
         return ClusterRuntimeData(
             renewable_output_w=renewable_output_w,

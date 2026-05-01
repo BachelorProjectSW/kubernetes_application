@@ -92,6 +92,3 @@ def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
 
     assert result.cluster_load_w == 1000.0
     mock_dk.assert_not_called()
-
-
-

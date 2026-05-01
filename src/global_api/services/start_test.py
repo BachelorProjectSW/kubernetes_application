@@ -76,6 +76,5 @@ def start_test(config: Config):
 
 def stop_test():
     """Stop the test."""
-    config = config_store.get()
     config_store.stop_power_scheduler()
     return {"message": "Test stopped"}

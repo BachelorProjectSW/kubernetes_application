@@ -217,7 +217,6 @@ def change_node_status(number_of_nodes: int, status: str):
 
         wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
 
-
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, nodes)
         for node in nodes_to_change:

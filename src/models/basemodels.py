@@ -50,7 +50,7 @@ class WorkloadConfig(BaseModel):
 class QuestionConfig(BaseModel):
     """Question class."""
 
-    question: str 
+    question: str
     max_output_tokens: int
 
 

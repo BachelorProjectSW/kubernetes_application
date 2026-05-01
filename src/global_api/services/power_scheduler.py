@@ -39,7 +39,6 @@ def _get_scored_clusters(
             config.power_scheduler.timeout_s,
         )
 
-
         cluster_score = score_cluster(
             runtime_data.renewable_output_w,
             0.0,
@@ -187,9 +186,9 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
 
         amount = min(nodes_to_add, powered_off_nodes)
         if best_cluster_flag and powered_off_nodes == len(cluster.worker_nodes) and amount <= 0:
-            #Always have at least one node on on the best cluster.
+            # Always have at least one node on on the best cluster.
             amount = 1
-        
+
         best_cluster_flag = False
         if amount <= 0:
             continue
