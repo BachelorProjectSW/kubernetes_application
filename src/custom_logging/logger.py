@@ -16,8 +16,7 @@ import os
 log = structlog.get_logger()
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
-SAVE_LOGS_IN_DB = os.getenv("SAVE_LOGS_IN_DB", False)
-
+SAVE_LOGS_IN_DB = os.getenv("SAVE_LOGS_IN_DB", "false").upper() == "TRUE"
 _LOGGER_CONFIG_ID: str | None = None
 
 
