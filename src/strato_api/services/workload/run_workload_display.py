@@ -8,7 +8,7 @@ wave1 = 0.8 * np.sin(0.03 * t)
 wave2 = 0.5 * np.sin(0.09 * t + 1.4)
 wave3 = 0.3 * np.sin(0.2 * t + 0.7)
 
-intensity = np.maximum(1 + wave1 + wave2 + wave3, -20)
+intensity = np.maximum(1 + wave1 + wave2 + wave3, 0)
 
 probability = intensity / intensity.sum()
 
