@@ -107,7 +107,7 @@ class MarketDataStore:
             data = [
                 (
                     datetime.strptime(r["timestamp"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc),
-                    float(r["generation_w"]),
+                    float(r["avg_generation_w"]),
                 )
                 for r in dk_hourly
             ]
