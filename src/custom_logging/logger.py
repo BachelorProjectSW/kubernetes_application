@@ -16,7 +16,7 @@ import os
 log = structlog.get_logger()
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
-
+SAVE_LOGS_IN_DB = os.getenv("SAVE_LOGS_IN_DB", False)
 
 _LOGGER_CONFIG_ID: str | None = None
 
@@ -36,7 +36,8 @@ def _get_terminal_logs(_, __, event_dict):
     level = str(event_dict.get("level", "info"))
     message = str(event_dict.get("event", ""))
     config_id = _current_config_id()
-    save_terminal_debug(config_id, message, level, dict(event_dict))
+    if SAVE_LOGS_IN_DB:
+        save_terminal_debug(config_id, message, level, dict(event_dict))
     return event_dict
 
 
