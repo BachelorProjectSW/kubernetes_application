@@ -94,14 +94,12 @@ def get_cluster_runtime_data(
         )
         grid_carbon_intensity = float(carbon_data[0][1]) if carbon_data else 0.0
 
-        # fetch_price_data returns EUR/MWh; scoring expects EUR/kWh so we divide by 1000.
         price_data = market_data_store.get_price(
             simulated_time_start, simulated_time_end, cluster.simulated_country_code
         )
         grid_electricity_price = (price_data[0][1] / 1000) if price_data else 0.0
 
-        # Write a market snapshot once per simulated hour so test_results can
-        # pair the accurate hourly rate with the continuous energy reconstruction.
+        
         simulated_hour = simulated_time_start.replace(minute=0, second=0, microsecond=0)
         _log_market_snapshot_if_new(
             cluster.name,
