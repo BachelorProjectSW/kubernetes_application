@@ -22,7 +22,7 @@ def get_power_factor_by_time(start: datetime, end: datetime, country: str) -> li
         List of (timestamp, capacity_factor) tuples where capacity_factor is 0.0-1.0.
 
     """
-    if country.startswith("DK").upper():
+    if country.upper().startswith("DK"):
         country = "DK"
 
     results = []
