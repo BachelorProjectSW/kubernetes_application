@@ -32,6 +32,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 simulated_time,
                 config.energy,
                 config.latency.latency_window_s,
+                config.id,
             )
             for cluster in config.clusters
         ]

@@ -6,7 +6,7 @@ from ...models.basemodels import Config, ClusterInformation, ClusterRuntimeData
 from ...models.enum import WorkerStatus
 from .scoring import score_cluster
 from ..util.all_configuration import config_store
-from ...custom_logging.util.log_reader import get_avg_latency, get_request_logs
+from ...custom_logging.util.log_reader import get_avg_latency, get_sent_logs
 from datetime import datetime, timezone
 from .cluster_data import get_cluster_runtime_data
 from ..util.time_utils import compute_simulated_now
@@ -37,6 +37,7 @@ def _get_scored_clusters(
             simulated_time,
             config.energy,
             config.power_scheduler.timeout_s,
+            config.id,
         )
 
         cluster_score = score_cluster(
@@ -80,18 +81,13 @@ def get_current_rps(time_interval_s: int, config_id: str | None) -> float:
         Requests per second as a float. Returns 0.0 if no requests.
 
     """
-    if not config_id:
+    if not config_id or time_interval_s <= 0:
         return 0.0
 
-    now = datetime.now(timezone.utc)
-    count = 0
-    all_request = get_request_logs(config_id)
-    for request_log in all_request:
-        age_s = (now - request_log.timestamp).total_seconds()
-        if age_s <= time_interval_s:
-            count += 1
+    sent = get_sent_logs(config_id, time_interval_s)
+    count = len(sent) if sent else 0
 
-    return round(count / time_interval_s, 2) if time_interval_s > 0 else 0.0
+    return round(count / time_interval_s, 2)
 
 
 def estimate_nodes_to_add(
@@ -111,22 +107,14 @@ def estimate_nodes_to_add(
         return 0
 
     # Throughput-based estimate.
-    required_by_rps = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
+    required_nodes = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
 
-    # Latency-pressure estimate.
-    # If observed latency is above SLO while requests are flowing, scale current
-    # active capacity by the latency ratio to force additional nodes.
-    required_by_latency = current_active_nodes
-    if current_rps > 0 and avg_latency_per_node_ms > max_latency_ms:
-        latency_ratio = avg_latency_per_node_ms / max_latency_ms
-        required_by_latency = math.ceil(current_active_nodes * latency_ratio)
-
-    required_nodes = max(required_by_rps, required_by_latency)
     log.debug(
         "global_api.power.required_nodes_estimated",
         required_nodes=required_nodes,
-        required_by_rps=required_by_rps,
-        required_by_latency=required_by_latency,
+        avg_latency_per_node_ms=avg_latency_per_node_ms,
+        current_rps=current_rps,
+        max_latency_ms=max_latency_ms
     )
 
     # how many more to add
@@ -148,7 +136,7 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         for _, cluster, _ in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
     ]
 
-    avg_latency_ms = get_avg_latency(config.latency.latency_window_s)
+    avg_latency_ms = get_avg_latency(config.id, config.latency.latency_window_s)
     max_latency_ms = config.latency.max_ms
     current_active_nodes = get_current_active_nodes(clusters)
     current_rps = get_current_rps(config.latency.latency_window_s, config.id)
