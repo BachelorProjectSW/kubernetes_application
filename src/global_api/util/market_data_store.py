@@ -35,6 +35,12 @@ class MarketDataStore:
         self._price: dict[tuple[str, datetime], _PriceCacheEntry] = {}
         self._power: dict[tuple[str, float, datetime], _PowerCacheEntry] = {}
 
+    def reset(self):
+        """Clear all cached market data (call when starting a new test)."""
+        self._carbon.clear()
+        self._price.clear()
+        self._power.clear()
+
     def get_carbon(
         self,
         start: datetime,
