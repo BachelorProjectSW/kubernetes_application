@@ -55,9 +55,46 @@ function App() {
         answer: r.answer,
         cluster: r.cluster,
         node: r.node,
-        status: r.response_status_code
+        status: r.response_status_code,
+        ok: r.ok
       }))
     : [];
+
+  const sentRawData = data ? (data.sent_over_time || []) : [];
+  const sentStartMs = data?.started_at
+    ? new Date(data.started_at).getTime()
+    : sentRawData.length
+      ? new Date(sentRawData[0].timestamp).getTime()
+      : Date.now();
+  const sentEndMs = data?.ended_at
+    ? new Date(data.ended_at).getTime()
+    : sentRawData.length
+      ? new Date(sentRawData[sentRawData.length - 1].timestamp).getTime()
+      : sentStartMs;
+
+  const sentDurationS = Math.max(1, Math.floor((sentEndMs - sentStartMs) / 1000));
+
+  // Dynamic bucketing for readability:
+  // - Always at least 60s buckets.
+  // - For longer tests, increase bucket size to keep point count manageable.
+  const targetPoints = 80;
+  const dynamicBucketS = Math.max(60, Math.ceil(sentDurationS / targetPoints));
+  const sentBucketS = Math.ceil(dynamicBucketS / 60) * 60;
+
+  const sentBuckets = sentRawData.reduce((acc, s) => {
+    const tsMs = new Date(s.timestamp).getTime();
+    const elapsedS = Math.max(0, Math.floor((tsMs - sentStartMs) / 1000));
+    const bucketStartS = Math.floor(elapsedS / sentBucketS) * sentBucketS;
+    acc[bucketStartS] = (acc[bucketStartS] || 0) + 1;
+    return acc;
+  }, {});
+
+  const sentData = Object.entries(sentBuckets)
+    .map(([elapsedS, count]) => ({
+      elapsed_s: Number(elapsedS),
+      sent_count: count
+    }))
+    .sort((a, b) => a.elapsed_s - b.elapsed_s);
 
   // Worker node timeline data
   const groupedNodes = {};
@@ -149,6 +186,36 @@ function App() {
             />
           </div>
 
+          {/* SENT OVER TIME */}
+          <ChartCard title="Sent Over Time">
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={sentData}>
+                <XAxis
+                  dataKey="elapsed_s"
+                  tickFormatter={(v) => `${v}s`}
+                  label={{ value: "Elapsed time (s)", position: "insideBottom", offset: -5 }}
+                />
+
+                <YAxis
+                  allowDecimals={false}
+                  label={{ value: "Sent count", angle: -90, position: "insideLeft" }}
+                />
+
+                <Tooltip
+                  labelFormatter={(label) => `t+${label}s`}
+                  formatter={(value) => [value, `Sent in ${sentBucketS}s bucket`]}
+                />
+
+                <Line
+                  type="stepAfter"
+                  dataKey="sent_count"
+                  stroke="#3b82f6"
+                  dot={{ r: 4, fill: "#3b82f6" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
           {/* REQUEST OVER TIME */}
           <ChartCard title="Requests Over Time (Latency)">
             <ResponsiveContainer width="100%" height={300}>
@@ -182,7 +249,7 @@ function App() {
                   dot={(props) => {
                     const { cx, cy, payload } = props;
 
-                    const isSuccess = payload.success === true;
+                    const isSuccess = payload.ok === true;
 
                     return (
                       <circle
