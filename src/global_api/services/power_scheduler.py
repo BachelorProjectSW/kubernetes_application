@@ -55,7 +55,7 @@ def _get_scored_clusters(
             config.energy,
             config.power_scheduler.timeout_s,
             config.id,
-            avg_latency_ms=avg_latency_by_cluster.get(cluster.name),
+            avg_latency_ms=avg_latency_by_cluster.get(cluster.cluster_config.name),
         )
 
         cluster_score = score_cluster(
