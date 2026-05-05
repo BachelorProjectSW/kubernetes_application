@@ -6,10 +6,14 @@ from ...models.basemodels import Config, ClusterInformation, ClusterRuntimeData
 from ...models.enum import WorkerStatus
 from .scoring import score_cluster
 from ..util.all_configuration import config_store
+from ...custom_logging.models.log_models import RequestLog
 from ...custom_logging.util.log_reader import get_avg_latency, get_sent_logs
 from datetime import datetime, timezone
 from .cluster_data import get_cluster_runtime_data
 from ..util.time_utils import compute_simulated_now
+from datetime import datetime, timedelta, timezone
+from ...db.postgres import read_model_logs
+
 
 log = structlog.get_logger()
 
@@ -30,6 +34,19 @@ def _get_scored_clusters(
     clusters: list[ClusterInformation],
     simulated_time: datetime,
 ) -> list[tuple[float, ClusterInformation, ClusterRuntimeData]]:
+    
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(seconds=config.latency.latency_window_s)
+    try:
+        recent_requests = read_model_logs(RequestLog, config.id, since=start)
+    except Exception:
+        recent_requests = []
+
+    avg_latency_by_cluster: dict[str, float] = {}
+    for cluster in config.clusters:
+        latencies = [r.latency_ms for r in recent_requests if r.cluster == cluster.name]
+        avg_latency_by_cluster[cluster.name] = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
+    
     scored_clusters = []
     for cluster in clusters:
         runtime_data = get_cluster_runtime_data(
@@ -38,6 +55,7 @@ def _get_scored_clusters(
             config.energy,
             config.power_scheduler.timeout_s,
             config.id,
+            avg_latency_ms=avg_latency_by_cluster.get(cluster.name),
         )
 
         cluster_score = score_cluster(
