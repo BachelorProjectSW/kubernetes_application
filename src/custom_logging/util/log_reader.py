@@ -64,6 +64,17 @@ def get_sent_logs(config_id: str, time_interval_s: int) -> list[LogSent]:
         return []
 
 
+def read_all_sent_logs(config_id: str) -> list[LogSent]:
+    """Return all sent logs by config_id."""
+    if not config_id:
+        return []
+
+    try:
+        return read_model_logs(log_model_class=LogSent, config_id=config_id)
+    except Exception:
+        return []
+
+
 def get_worker_nodes_logs(
     config_id: str,
     cluster_name: str,

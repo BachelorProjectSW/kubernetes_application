@@ -2,10 +2,10 @@ from collections import Counter, defaultdict
 
 from fastapi import HTTPException
 from datetime import datetime
-from ...custom_logging.models.log_models import MarketSnapshotLog, NodeStatusLog, RequestLog
+from ...custom_logging.models.log_models import LogSent, MarketSnapshotLog, NodeStatusLog, RequestLog
 from ...models.enum import WorkerStatus
 from ...models.basemodels import EnergyConfig
-from ...custom_logging.util.log_reader import read_all_request_logs, get_config_by_id, read_all_market_snapshot_logs, read_all_node_status_logs
+from ...custom_logging.util.log_reader import read_all_request_logs, get_config_by_id, read_all_market_snapshot_logs, read_all_node_status_logs, read_all_sent_logs
 
 
 def _request_energy_kwh(request: RequestLog) -> float:
@@ -106,6 +106,7 @@ def get_test_results(config_id: str) -> dict:
 
     request_logs = read_all_request_logs(config_id)
     node_logs = read_all_node_status_logs(config_id)
+    sent_logs = read_all_sent_logs(config_id)
 
     if not request_logs and not node_logs:
         return {
@@ -124,6 +125,8 @@ def get_test_results(config_id: str) -> dict:
             "service_timeout_over_time": [],
             "cluster_usage_over_time": [],
             "node_status_over_time": [],
+            "sent_count": 0,
+            "sent_over_time": [],
             "cluster_distribution": {},
             "cluster_energy_wh": {},
         }
@@ -206,6 +209,15 @@ def get_test_results(config_id: str) -> dict:
     ) if total_requests else 0.0
 
     node_status_over_time = _build_node_status_timeline(node_logs)
+    sent_over_time = [
+        {
+            "timestamp": entry.timestamp.isoformat(),
+            "cluster": entry.cluster,
+            "trace_id": entry.trace_id,
+            "payload": entry.payload,
+        }
+        for entry in sorted(sent_logs, key=lambda entry: (entry.timestamp, entry.cluster))
+    ]
 
     started_at = min((entry.timestamp for entry in sorted_requests), default=None)
     ended_at = max((entry.timestamp for entry in sorted_requests), default=None)
@@ -271,4 +283,6 @@ def get_test_results(config_id: str) -> dict:
         "service_timeout_over_time": service_timeout_over_time,
         "cluster_usage_over_time": cluster_usage_over_time,
         "node_status_over_time": node_status_over_time,
+        "sent_count": len(sent_over_time),
+        "sent_over_time": sent_over_time,
     }
