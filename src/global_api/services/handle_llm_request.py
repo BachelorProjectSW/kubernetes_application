@@ -41,7 +41,12 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         avg_latency_by_cluster: dict[str, float] = {}
         for cluster in config.clusters:
             latencies = [r.latency_ms for r in recent_requests if r.cluster == cluster.name]
-            avg_latency_by_cluster[cluster.name] = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
+            if latencies:
+                avg = round(sum(latencies) / len(latencies), 2)
+            else:
+                avg = 0.0
+
+            avg_latency_by_cluster[cluster.name] = avg
 
         all_cluster_energy_data = [
             get_cluster_runtime_data(

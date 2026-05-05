@@ -7,7 +7,9 @@ def get_avg_latency(config_id: str, time_interval_s: int, cluster_name: str | No
     """Return avg latency (ms) across requests in the last time_interval_s seconds.
 
     Args:
+        config_id: Config id.
         time_interval_s: How far back to look, in seconds.
+        cluster_name: The cluster name.
 
     Returns:
         Average latency in milliseconds, or 0.0 if no requests in the window.
@@ -41,6 +43,7 @@ def read_all_request_logs(config_id: str) -> list[RequestLog]:
 
 
 def get_config_by_id(config_id: str):
+    """Get config by id."""
     try:
         return read_config_by_id(config_id)
     except Exception:

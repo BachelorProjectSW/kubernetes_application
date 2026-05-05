@@ -7,7 +7,6 @@ from ...models.enum import WorkerStatus
 from .dk_energy import get_dk_hourly
 from .scoring import compute_cluster_load
 from ...custom_logging.models.log_models import MarketSnapshotLog
-from ...custom_logging.util.log_reader import get_avg_latency
 from ...db.postgres import save_model_log
 from ..util.all_configuration import config_store
 from ..util.market_data_store import market_data_store
@@ -65,8 +64,6 @@ def get_cluster_runtime_data(
     cluster: ClusterConfig,
     simulated_time_start: datetime,
     energy: EnergyConfig,
-    latency_window_s: int,
-    config_id: str,
     avg_latency_ms: float | None = None,
 ) -> ClusterRuntimeData:
     """Fetch all runtime values for a cluster at the given simulated time.
@@ -75,8 +72,7 @@ def get_cluster_runtime_data(
         cluster: Static cluster configuration.
         simulated_time_start: Start time for the simulation window.
         energy: Energy configuration constants.
-        latency_window_s: How far back to look when computing the average latency
-                          for this cluster (seconds).
+        avg_latency_ms: Clusters avg latency.
 
     Returns:
         ClusterRuntimeData with renewable_output_w, cluster_load_w,
@@ -132,7 +128,6 @@ def get_cluster_runtime_data(
             simulated_time_end,
         )
         cluster_load_w += microgrid_base_load_w
-
 
         log.info(
             "global_api.cluster.runtime_data_timing",
