@@ -2,10 +2,16 @@ from collections import Counter, defaultdict
 
 from fastapi import HTTPException
 from datetime import datetime
-from ...custom_logging.models.log_models import LogSent, MarketSnapshotLog, NodeStatusLog, RequestLog
+from ...custom_logging.models.log_models import MarketSnapshotLog, NodeStatusLog, RequestLog
 from ...models.enum import WorkerStatus
 from ...models.basemodels import EnergyConfig
-from ...custom_logging.util.log_reader import read_all_request_logs, get_config_by_id, read_all_market_snapshot_logs, read_all_node_status_logs, read_all_sent_logs
+from ...custom_logging.util.log_reader import (
+    read_all_request_logs,
+    get_config_by_id,
+    read_all_market_snapshot_logs,
+    read_all_node_status_logs,
+    read_all_sent_logs
+)
 
 
 def _request_energy_kwh(request: RequestLog) -> float:

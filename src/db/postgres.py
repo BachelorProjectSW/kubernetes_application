@@ -148,7 +148,11 @@ def save_terminal_debug(config_id: str | None, message: str, level: str, payload
         session.commit()
 
 
-def read_model_logs(log_model_class: type[TModel], config_id: str | None = None, since: datetime | None = None) -> list[TModel]:
+def read_model_logs(
+        log_model_class: type[TModel],
+        config_id: str | None = None,
+        since: datetime | None = None
+    ) -> list[TModel]:
     """Read model logs from DB and parse as Pydantic objects."""
     query = select(AppLogRecord).where(AppLogRecord.log_type == log_model_class.__name__)
     if config_id is not None:

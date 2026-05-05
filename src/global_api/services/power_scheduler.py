@@ -11,7 +11,7 @@ from ...custom_logging.util.log_reader import get_avg_latency, get_sent_logs
 from datetime import datetime, timezone
 from .cluster_data import get_cluster_runtime_data
 from ..util.time_utils import compute_simulated_now
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from ...db.postgres import read_model_logs
 
 
@@ -34,7 +34,7 @@ def _get_scored_clusters(
     clusters: list[ClusterInformation],
     simulated_time: datetime,
 ) -> list[tuple[float, ClusterInformation, ClusterRuntimeData]]:
-    
+
     now = datetime.now(timezone.utc)
     start = now - timedelta(seconds=config.latency.latency_window_s)
     try:
@@ -46,7 +46,7 @@ def _get_scored_clusters(
     for cluster in config.clusters:
         latencies = [r.latency_ms for r in recent_requests if r.cluster == cluster.name]
         avg_latency_by_cluster[cluster.name] = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
-    
+
     scored_clusters = []
     for cluster in clusters:
         runtime_data = get_cluster_runtime_data(
