@@ -67,6 +67,7 @@ def get_cluster_runtime_data(
     energy: EnergyConfig,
     latency_window_s: int,
     config_id: str,
+    avg_latency_ms: float | None = None,
 ) -> ClusterRuntimeData:
     """Fetch all runtime values for a cluster at the given simulated time.
 
@@ -134,7 +135,6 @@ def get_cluster_runtime_data(
         )
         cluster_load_w += microgrid_base_load_w
 
-        avg_latency_ms = get_avg_latency(config_id, latency_window_s, cluster.name)
 
         log.info(
             "global_api.cluster.runtime_data_timing",

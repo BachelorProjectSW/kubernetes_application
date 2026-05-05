@@ -5,6 +5,9 @@ import structlog
 from fastapi import HTTPException
 
 from ...custom_logging.logger import log_request
+from ...db.postgres import read_model_logs
+from ...custom_logging.models.log_models import RequestLog
+from datetime import datetime, timezone, timedelta
 from ...models.basemodels import LLMResponse, QuestionConfig
 from ..util.all_configuration import config_store
 from ..util.time_utils import compute_simulated_now
@@ -26,6 +29,20 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             config.start.start_time_real,
         )
 
+        # Prefetch recent RequestLog entries once and compute per-cluster
+        # average latencies to avoid one DB query per cluster.
+        now = datetime.now(timezone.utc)
+        start = now - timedelta(seconds=config.latency.latency_window_s)
+        try:
+            recent_requests = read_model_logs(RequestLog, config.id, since=start)
+        except Exception:
+            recent_requests = []
+
+        avg_latency_by_cluster: dict[str, float] = {}
+        for cluster in config.clusters:
+            latencies = [r.latency_ms for r in recent_requests if r.cluster == cluster.name]
+            avg_latency_by_cluster[cluster.name] = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
+
         all_cluster_energy_data = [
             get_cluster_runtime_data(
                 cluster,
@@ -33,6 +50,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 config.energy,
                 config.latency.latency_window_s,
                 config.id,
+                avg_latency_ms=avg_latency_by_cluster.get(cluster.name),
             )
             for cluster in config.clusters
         ]
