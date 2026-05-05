@@ -10,7 +10,6 @@ router = APIRouter()
 # TODO Sørg for at alle logs gir mening og ikke bare spam.
 # TODO LAV DOCSTRINGS TIL ALLE FUNKTIONER!!!
 # TODO calculate cost/gco2 if idle (Jeg tror ikke det er korrekt ift idle times)
-# TODO removed cached market data when start new test. 
 @router.post("/start_test")
 def start_test_endpoint(config: Config):
     """Start the test."""
