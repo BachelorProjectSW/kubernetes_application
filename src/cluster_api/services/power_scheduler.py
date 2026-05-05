@@ -354,7 +354,7 @@ def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
             continue
 
         last_request = get_idle_time(node.name, cluster_name)
-
+        log.debug("cluster_api.power.last_request", last_request=last_request)
         if last_request > idle_time:
             log.info(
                 "cluster_api.power.turn_off_idle_node_selected",
