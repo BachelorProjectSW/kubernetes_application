@@ -18,6 +18,8 @@ def get_avg_latency(config_id: str, time_interval_s: int, cluster_name: str | No
     latencies = []
 
     for request_log in read_model_logs(log_model_class=RequestLog, config_id=config_id, since=start):
+        if not request_log.success:
+            continue
         if cluster_name is not None:
             if request_log.cluster == cluster_name:
                 latencies.append(request_log.latency_ms)
