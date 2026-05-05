@@ -132,10 +132,11 @@ def get_test_results(config_id: str) -> dict:
     total_requests = len(sorted_requests)
     successful_requests = sum(1 for entry in sorted_requests if entry.success)
     failed_requests = total_requests - successful_requests
+    successful_request_logs = [entry for entry in sorted_requests if entry.success]
     avg_latency_ms = round(
-        sum(entry.latency_ms for entry in sorted_requests)
-        / total_requests, 2
-        ) if total_requests else 0.0
+        sum(entry.latency_ms for entry in successful_request_logs)
+        / successful_requests, 2
+        ) if successful_requests else 0.0
 
     gco2_over_time: list[dict] = []
     request_over_time: list[dict] = []
