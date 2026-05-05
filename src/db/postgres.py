@@ -13,10 +13,7 @@ from sqlalchemy.engine import URL, make_url
 from sqlmodel import Field, SQLModel, Session, select
 
 from ..custom_logging.models.log_models import (
-    MarketSnapshotLog,
     NodeStatusLog,
-    RequestLog,
-    TerminalDebugLog,
 )
 from ..models.basemodels import Config
 
@@ -151,11 +148,13 @@ def save_terminal_debug(config_id: str | None, message: str, level: str, payload
         session.commit()
 
 
-def read_model_logs(log_model_class: type[TModel], config_id: str | None = None) -> list[TModel]:
+def read_model_logs(log_model_class: type[TModel], config_id: str | None = None, since: datetime | None = None) -> list[TModel]:
     """Read model logs from DB and parse as Pydantic objects."""
     query = select(AppLogRecord).where(AppLogRecord.log_type == log_model_class.__name__)
     if config_id is not None:
         query = query.where(AppLogRecord.config_id == config_id)
+    if since is not None:
+        query = query.where(AppLogRecord.created_at >= since)
     query = query.order_by(AppLogRecord.created_at)
 
     with Session(_engine()) as session:
@@ -175,32 +174,43 @@ def read_model_logs(log_model_class: type[TModel], config_id: str | None = None)
     return logs
 
 
-def read_terminal_debug_logs(config_id: str | None = None) -> list[dict[str, Any]]:
-    """Read terminal debug log rows from DB as typed models."""
-    query = select(AppLogRecord).where(AppLogRecord.terminal_debug.is_not(None))
-    if config_id is not None:
-        query = query.where(AppLogRecord.config_id == config_id)
-    query = query.order_by(AppLogRecord.created_at)
+def read_latest_node_status_log(
+    config_id: str,
+    cluster_name: str,
+    node_name: str,
+) -> NodeStatusLog | None:
+    """Return the most recent NodeStatusLog for one node in one cluster."""
+    query = select(AppLogRecord).where(AppLogRecord.log_type == NodeStatusLog.__name__)
+    query = query.where(AppLogRecord.config_id == config_id)
+    query = query.order_by(AppLogRecord.created_at.desc())
 
     with Session(_engine()) as session:
         rows = session.exec(query).all()
 
-    logs = [
-        TerminalDebugLog(
-            config_id=row.config_id,
-            message=row.terminal_debug or "",
-            payload=row.payload_json,
-            created_at=row.created_at,
-        )
-        for row in rows
-    ]
-    log.info("db.read_terminal_debug_logs", config_id=config_id, count=len(logs))
-    return logs
+    for row in rows:
+        if row.payload_json is None:
+            continue
+        try:
+            entry = NodeStatusLog(**row.payload_json)
+        except Exception:
+            continue
+        if entry.cluster == cluster_name and entry.node == node_name:
+            log.info(
+                "db.read_latest_node_status_log",
+                config_id=config_id,
+                cluster_name=cluster_name,
+                node_name=node_name,
+            )
+            return entry
 
-
-def read_all_request_logs(config_id: str | None = None) -> list[RequestLog]:
-    """Read request logs for a config as RequestLog models."""
-    return read_model_logs(RequestLog, config_id)
+    log.info(
+        "db.read_latest_node_status_log",
+        config_id=config_id,
+        cluster_name=cluster_name,
+        node_name=node_name,
+        found=False,
+    )
+    return None
 
 
 def read_config_by_id(config_id: str) -> Config | None:
@@ -235,13 +245,3 @@ def read_all_configs() -> list[Config]:
 
     with Session(_engine()) as session:
         return session.exec(query).all()
-
-
-def read_all_node_status_logs(config_id: str | None = None) -> list[NodeStatusLog]:
-    """Read node status logs for a config as NodeStatusLog models."""
-    return read_model_logs(NodeStatusLog, config_id)
-
-
-def read_all_market_snapshot_logs(config_id: str | None = None) -> list[MarketSnapshotLog]:
-    """Read market snapshot logs for a config as MarketSnapshotLog models."""
-    return read_model_logs(MarketSnapshotLog, config_id)

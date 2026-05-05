@@ -274,29 +274,22 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
     try:
         config = config_store.get()
         config_id = config.config_id
-        node_status_logs = get_worker_nodes_logs(config_id)
+        entry = get_worker_nodes_logs(config_id, cluster_name, node_name)
     except Exception as e:
-        log.debug("cluster_api.power.get_worker_nodes_logs", error=e)
+        log.debug("cluster_api.power.get_worker_nodes_logs", error=str(e))
         return 0
 
-    # Find the most recent entry for this node/cluster
-    for entry in reversed(node_status_logs or []):
-        log.debug("cluster_api.power.entry_debug", entry=entry)
-        if entry.cluster == cluster_name and entry.node == node_name:
-            # Found most recent entry for this node
-            log.debug("cluster_api.power.latest_node_change", status=entry.status)
-            if str(entry.status).lower() == WorkerStatus.IDLE.value:
-                # Node is currently idle; return seconds since transition
-                log.debug("cluster_api.power.latest_node_change", changed=True)
+    if entry is None:
+        # No log entry found for this node; conservatively return 0 (don't turn off)
+        return 0
 
-                return (now - entry.timestamp).total_seconds()
-            else:
-                log.debug("cluster_api.power.latest_node_change", changed=False)
-                # Node's most recent status is not IDLE (e.g., WORKING), so not idle
-                return 0
+    log.debug("cluster_api.power.entry_debug", entry=entry)
+    log.debug("cluster_api.power.latest_node_change", status=entry.status)
+    if str(entry.status).lower() == WorkerStatus.IDLE.value:
+        log.debug("cluster_api.power.latest_node_change", changed=True)
+        return (now - entry.timestamp).total_seconds()
 
-    # No log entry found for this node; conservatively return 0 (don't turn off)
-    log.debug("cluster_api.power.gggggggggggggggg")
+    log.debug("cluster_api.power.latest_node_change", changed=False)
     return 0
 
 
