@@ -53,8 +53,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 cluster,
                 simulated_time,
                 config.energy,
-                config.latency.latency_window_s,
-                config.id,
                 avg_latency_ms=avg_latency_by_cluster.get(cluster.name),
             )
             for cluster in config.clusters
