@@ -112,6 +112,11 @@ def get_cluster_runtime_data(
         response = requests.get(url, timeout=180)
         response.raise_for_status()
         worker_nodes_payload = response.json()
+        log.debug(
+            "global_api.cluster.worker_payload",
+            cluster_name=cluster.name,
+            worker_nodes_payload=worker_nodes_payload,
+        )
         active_nodes = 0
         idle_nodes = 0
 
@@ -123,6 +128,14 @@ def get_cluster_runtime_data(
                 idle_nodes += 1
 
         cluster_load_w = compute_cluster_load(active_nodes, idle_nodes, energy)
+
+        log.info(
+            "global_api.cluster.load_computed",
+            cluster_name=cluster.name,
+            active_nodes=active_nodes,
+            idle_nodes=idle_nodes,
+            cluster_load_w=cluster_load_w,
+        )
 
         microgrid_base_load_w = _get_microgrid_base_load_w(
             cluster,
