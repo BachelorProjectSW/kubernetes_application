@@ -60,7 +60,7 @@ def _get_scored_clusters(
 
         cluster_score = score_cluster(
             runtime_data.renewable_output_w,
-            0.0,
+            runtime_data.cluster_load_w,
             runtime_data.grid_carbon_intensity,
             runtime_data.grid_electricity_price,
             config.weights.gco2,
@@ -89,16 +89,7 @@ def get_current_active_nodes(clusters: list[ClusterInformation]):
 
 
 def get_current_rps(time_interval_s: int, config_id: str | None) -> float:
-    """Return requests per second (RPS) in the last time_interval_s seconds.
-
-    Args:
-        time_interval_s: How far back to look, in seconds.
-        config_id: Config id.
-
-    Returns:
-        Requests per second as a float. Returns 0.0 if no requests.
-
-    """
+    """Return requests per second (RPS) in the last time_interval_s seconds."""
     if not config_id or time_interval_s <= 0:
         return 0.0
 
@@ -108,37 +99,64 @@ def get_current_rps(time_interval_s: int, config_id: str | None) -> float:
     return round(count / time_interval_s, 2)
 
 
-def estimate_nodes_to_add(
+def estimate_required_nodes(
     avg_latency_per_node_ms: float,
-    max_latency_ms: float,
-    current_active_nodes: int,
     current_rps: float,
 ) -> int:
-    """Estimate how many more worker nodes are needed.
+    """Estimate required nodes from demand (lambda) and measured service rate (mu).
 
-    to keep latency under max_latency_s.
+    We model one node's service rate as:
+        mu = 1000 / avg_latency_per_node_ms   requests / second
+
+    Then the required number of nodes is:
+        required_nodes = ceil(lambda / mu)
+
+    where lambda is the current request arrival rate in requests / second.
     """
-    if current_active_nodes <= 0:
-        return 1
-
-    if max_latency_ms <= 0:
+    if avg_latency_per_node_ms <= 0:
         return 0
 
-    # Throughput-based estimate.
-    required_nodes = math.ceil((avg_latency_per_node_ms * current_rps) / max_latency_ms)
+    if current_rps <= 0:
+        return 0
+
+    service_rate_rps = 1000.0 / avg_latency_per_node_ms
+    required_nodes = math.ceil(current_rps / service_rate_rps)
 
     log.debug(
-        "global_api.power.required_nodes_estimated",
+        "global_api.power.required_nodes_estimated_from_lambda_mu",
         required_nodes=required_nodes,
         avg_latency_per_node_ms=avg_latency_per_node_ms,
         current_rps=current_rps,
-        max_latency_ms=max_latency_ms
+        service_rate_rps=service_rate_rps,
     )
 
-    # how many more to add
+    return required_nodes
+
+
+def estimate_nodes_to_add(
+    avg_latency_per_node_ms: float,
+    current_rps: float,
+    current_active_nodes: int,
+) -> int:
+    """Estimate how many more worker nodes are needed from lambda and mu."""
+    required_nodes = estimate_required_nodes(
+        avg_latency_per_node_ms,
+        current_rps,
+    )
+
+    if current_active_nodes <= 0:
+        return max(1, required_nodes)
+
     nodes_to_add = max(0, required_nodes - current_active_nodes)
 
-    log.info("global_api.power.nodes_to_add_estimated", nodes_to_add=nodes_to_add)
+    log.info(
+        "global_api.power.nodes_to_add_estimated",
+        nodes_to_add=nodes_to_add,
+        required_nodes=required_nodes,
+        current_active_nodes=current_active_nodes,
+        current_rps=current_rps,
+        avg_latency_per_node_ms=avg_latency_per_node_ms,
+    )
     return nodes_to_add
 
 
@@ -155,23 +173,20 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     ]
 
     avg_latency_ms = get_avg_latency(config.id, config.latency.latency_window_s)
-    max_latency_ms = config.latency.max_ms
     current_active_nodes = get_current_active_nodes(clusters)
     current_rps = get_current_rps(config.latency.latency_window_s, config.id)
 
     nodes_to_add = estimate_nodes_to_add(
         avg_latency_ms,
-        max_latency_ms,
+        current_rps,
         current_active_nodes,
-        current_rps
     )
     log.info(
         "global_api.power.turn_on",
         nodes_to_add=nodes_to_add,
-        max_user_latency=max_latency_ms,
         avg_latency=avg_latency_ms,
         current_active_nodes=current_active_nodes,
-        current_rps=current_rps
+        current_rps=current_rps,
     )
     best_cluster_flag = True
     for cluster in sorted_clusters:
