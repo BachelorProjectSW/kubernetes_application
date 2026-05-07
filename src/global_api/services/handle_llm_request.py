@@ -162,6 +162,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
 
         return result
     except Exception as e:
+        log.error("global.api.request.failed", error=e)
         log_request(
             cluster_name=cluster.name if "cluster" in locals() else "unknown",
             worker_node_name=(
