@@ -179,6 +179,27 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     avg_latency_ms = get_avg_latency(config.id, config.latency.latency_window_s)
     current_active_nodes = get_current_active_nodes(clusters)
     current_rps = get_current_rps(config.latency.latency_window_s, config.id)
+    if current_active_nodes == 0 and sorted_clusters:
+        best_cluster = sorted_clusters[0]
+        log.info(
+            "global_api.power.bootstrap_best_cluster_minimum_node",
+            cluster_name=best_cluster.cluster_config.name,
+        )
+        try:
+            url = f"http://{best_cluster.cluster_config.ip}:{best_cluster.cluster_config.port}/turn_on_nodes/"
+            response = requests.post(url, params={"number_of_nodes": 1}, timeout=500)
+            response.raise_for_status()
+            log.info(
+                "global_api.power.bootstrap_node_turned_on",
+                cluster_name=best_cluster.cluster_config.name,
+            )
+            current_active_nodes = 1
+        except Exception as e:
+            log.error(
+                "global_api.power.bootstrap_node_turn_on_failed",
+                cluster_name=best_cluster.cluster_config.name,
+                error=str(e),
+            )
     if current_rps <= 0:
         log.info(
             "global_api.power.skip_turn_on_no_rps",
