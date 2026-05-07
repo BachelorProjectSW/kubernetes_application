@@ -206,7 +206,7 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     )
     best_cluster_flag = True
     for cluster in sorted_clusters:
-        if nodes_to_add <= 0:
+        if nodes_to_add <= 0 and not best_cluster_flag:
             break
         powered_off_nodes = 0
         for worker_node in cluster.worker_nodes:
