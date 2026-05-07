@@ -143,7 +143,7 @@ class EnergyConfig(BaseModel):
     pv_capacity_w: float = 1500
 
     # Reference maximums for scoring normalization
-    carbon_ref_max: float = 800  # gCO2/kWh
+    carbon_ref_max: float = 670  # gCO2/kWh
     cost_ref_max: float = 0.30  # EUR/kWh
 
 
