@@ -18,6 +18,7 @@ from ...db.postgres import read_model_logs
 log = structlog.get_logger()
 
 
+
 def _get_simulated_time(config: Config) -> datetime:
     try:
         return compute_simulated_now(
@@ -111,10 +112,15 @@ def estimate_required_nodes(
 
     where lambda is the current request arrival rate in requests / second.
     """
-    if avg_latency_per_node_ms <= 0:
+    if current_rps <= 0:
         return 0
 
-    if current_rps <= 0:
+    # If we have no valid observed per-node latency, do not attempt to add nodes.
+    if avg_latency_per_node_ms <= 0:
+        log.info(
+            "global_api.power.estimate_missing_latency_no_scale",
+            avg_latency_per_node_ms=avg_latency_per_node_ms,
+        )
         return 0
 
     service_rate_rps = 1000.0 / avg_latency_per_node_ms
@@ -173,6 +179,18 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     avg_latency_ms = get_avg_latency(config.id, config.latency.latency_window_s)
     current_active_nodes = get_current_active_nodes(clusters)
     current_rps = get_current_rps(config.latency.latency_window_s, config.id)
+    if current_rps <= 0:
+        log.info(
+            "global_api.power.skip_turn_on_no_rps",
+            current_rps=current_rps,
+        )
+        return
+    if avg_latency_ms <= 0:
+        log.info(
+            "global_api.power.skip_turn_on_missing_latency",
+            avg_latency_ms=avg_latency_ms,
+        )
+        return
 
     nodes_to_add = estimate_nodes_to_add(
         avg_latency_ms,
