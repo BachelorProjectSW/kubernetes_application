@@ -86,6 +86,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
 
         headers = {"X-Trace-Id": trace_id}
+        data = None
 
         try:
             response = requests.post(
