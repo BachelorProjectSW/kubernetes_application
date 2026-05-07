@@ -52,7 +52,7 @@ spec:
             - name: LLAMA_ARG_ENDPOINT_METRICS
               value: "true"
             - name: LLAMA_ARG_N_PARALLEL
-              value: "3"
+              value: "4"
 
           ports:
             - containerPort: 8080
