@@ -31,6 +31,34 @@ def get_avg_latency(config_id: str, time_interval_s: int, cluster_name: str | No
     return round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
 
+def get_avg_llama_latency(config_id: str, time_interval_s: int, cluster_name: str | None = None) -> float:
+    """Return avg latency (ms) across requests in the last time_interval_s seconds.
+
+    Args:
+        config_id: Config id.
+        time_interval_s: How far back to look, in seconds.
+        cluster_name: The cluster name.
+
+    Returns:
+        Average latency in milliseconds, or 0.0 if no requests in the window.
+
+    """
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(seconds=time_interval_s)
+    latencies = []
+
+    for request_log in read_model_logs(log_model_class=RequestLog, config_id=config_id, since=start):
+        if not request_log.success:
+            continue
+        if cluster_name is not None:
+            if request_log.cluster == cluster_name:
+                latencies.append(request_log.cluster_llama_inference_ms)
+        else:
+            latencies.append(request_log.cluster_llama_inference_ms)
+
+    return round(sum(latencies) / len(latencies), 2) if latencies else 0.0
+
+
 def read_all_request_logs(config_id: str) -> list[RequestLog]:
     """Return all request logs by config_id."""
     if not config_id:
