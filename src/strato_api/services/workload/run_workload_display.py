@@ -151,8 +151,8 @@ def generate_workload_charts(duration_s, rpm, pattern="steady", seed=42, peakine
 
 
 generate_workload_charts(
-    duration_s=1200,
-    rpm=8,
+    duration_s=1500,
+    rpm=10,
     pattern="peaks",
     seed=15,
     peakiness=0.2,

@@ -7,7 +7,7 @@ from ...models.enum import WorkerStatus
 from .scoring import score_cluster
 from ..util.all_configuration import config_store
 from ...custom_logging.models.log_models import RequestLog
-from ...custom_logging.util.log_reader import get_avg_latency, get_sent_logs
+from ...custom_logging.util.log_reader import get_avg_latency, get_sent_logs, get_avg_llama_latency
 from datetime import datetime, timezone
 from .cluster_data import get_cluster_runtime_data
 from ..util.time_utils import compute_simulated_now
@@ -99,7 +99,7 @@ def get_current_rps(time_interval_s: int, config_id: str | None) -> float:
 
 
 def estimate_required_nodes(
-    avg_latency_per_node_ms: float,
+    avg_llama_latency_ms: float,
     current_rps: float,
 ) -> int:
     """Estimate required nodes from demand.
@@ -114,20 +114,20 @@ def estimate_required_nodes(
         return 0
 
     # If we have no valid observed per-node latency, do not attempt to add nodes.
-    if avg_latency_per_node_ms <= 0:
+    if avg_llama_latency_ms <= 0:
         log.info(
             "global_api.power.estimate_missing_latency_no_scale",
-            avg_latency_per_node_ms=avg_latency_per_node_ms,
+            avg_llama_latency_ms=avg_llama_latency_ms,
         )
         return 0
 
-    service_rate_rps = 1000.0 / avg_latency_per_node_ms
+    service_rate_rps = 1000.0 / avg_llama_latency_ms
     required_nodes = math.ceil(current_rps / service_rate_rps)
 
     return required_nodes
 
 
-def apply_proportional_scaling(
+def apply_lantecy_scaling(
     current_active_nodes: int,
     avg_latency_ms: float,
     max_latency_ms: float,
@@ -162,13 +162,13 @@ def apply_proportional_scaling(
 
 
 def estimate_nodes_to_add(
-    avg_latency_per_node_ms: float,
+    avg_llama_latency_ms: float,
     current_rps: float,
     current_active_nodes: int,
 ) -> int:
     """Estimate how many more worker nodes are needed from lambda and mu."""
     required_nodes = estimate_required_nodes(
-        avg_latency_per_node_ms,
+        avg_llama_latency_ms,
         current_rps,
     )
 
@@ -183,7 +183,7 @@ def estimate_nodes_to_add(
         required_nodes=required_nodes,
         current_active_nodes=current_active_nodes,
         current_rps=current_rps,
-        avg_latency_per_node_ms=avg_latency_per_node_ms,
+        avg_llama_latency_ms=avg_llama_latency_ms,
     )
     return nodes_to_add
 
@@ -200,13 +200,13 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         for _, cluster, _ in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
     ]
 
-    avg_latency_ms = get_avg_latency(config.id, config.latency.latency_window_s)
+    avg_llama_latency_ms = get_avg_llama_latency(config.id, config.latency.latency_window_s)
     current_active_nodes = get_current_active_nodes(clusters)
     current_rps = get_current_rps(config.latency.latency_window_s, config.id)
     log.debug(
         "global_api.power.math.variables", 
         current_nodes=current_active_nodes,
-        avg_latency_ms=avg_latency_ms,
+        avg_llama_latency_ms=avg_llama_latency_ms,
         current_rps=current_rps,
         max_latency=config.latency.max_ms,
     )
@@ -216,23 +216,23 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
             current_rps=current_rps,
         )
         return
-    if avg_latency_ms <= 0:
+    if avg_llama_latency_ms <= 0:
         log.info(
             "global_api.power.skip_turn_on_missing_latency",
-            avg_latency_ms=avg_latency_ms,
+            avg_llama_latency_ms=avg_llama_latency_ms,
         )
         return
 
     nodes_to_add = estimate_nodes_to_add(
-        avg_latency_ms,
+        avg_llama_latency_ms,
         current_rps,
         current_active_nodes,
     )
     
     # Also calculate nodes needed from latency scaling, use the max of both approaches
-    latency_scaling_nodes = apply_proportional_scaling(
+    latency_scaling_nodes = apply_lantecy_scaling(
         current_active_nodes,
-        avg_latency_ms,
+        avg_llama_latency_ms,
         config.latency.max_ms,
     )
     
