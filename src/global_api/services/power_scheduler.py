@@ -242,6 +242,15 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
 
 def turn_off_idle_nodes(config: Config):
     """Turn nodes off."""
+    avg_latency_ms = get_avg_latency(config.id, config.latency.latency_window_s)
+    if avg_latency_ms > config.latency.max_ms:
+        log.info(
+            "global_api.power.skip_turn_off_latency_above_slo",
+            avg_latency_ms=avg_latency_ms,
+            max_latency=config.latency.max_ms,
+        )
+        return
+
     simulated_time = _get_simulated_time(config)
     scored_clusters = _get_scored_clusters(config, config_store.get_cluster_information(), simulated_time)
     sorted_clusters = [
