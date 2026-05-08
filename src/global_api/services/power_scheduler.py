@@ -113,6 +113,7 @@ def estimate_required_nodes(
     where lambda is the current request arrival rate in requests / second.
     """
     if current_rps <= 0:
+        log.info("global_api.power.no_current_rps", current_rps=current_rps)
         return 0
 
     # If we have no valid observed per-node latency, do not attempt to add nodes.
@@ -125,14 +126,6 @@ def estimate_required_nodes(
 
     service_rate_rps = 1000.0 / avg_latency_per_node_ms
     required_nodes = math.ceil(current_rps / service_rate_rps)
-
-    log.debug(
-        "global_api.power.required_nodes_estimated_from_lambda_mu",
-        required_nodes=required_nodes,
-        avg_latency_per_node_ms=avg_latency_per_node_ms,
-        current_rps=current_rps,
-        service_rate_rps=service_rate_rps,
-    )
 
     return required_nodes
 
@@ -179,27 +172,13 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     avg_latency_ms = get_avg_latency(config.id, config.latency.latency_window_s)
     current_active_nodes = get_current_active_nodes(clusters)
     current_rps = get_current_rps(config.latency.latency_window_s, config.id)
-    if current_active_nodes == 0 and sorted_clusters:
-        best_cluster = sorted_clusters[0]
-        log.info(
-            "global_api.power.bootstrap_best_cluster_minimum_node",
-            cluster_name=best_cluster.cluster_config.name,
-        )
-        try:
-            url = f"http://{best_cluster.cluster_config.ip}:{best_cluster.cluster_config.port}/turn_on_nodes/"
-            response = requests.post(url, params={"number_of_nodes": 1}, timeout=500)
-            response.raise_for_status()
-            log.info(
-                "global_api.power.bootstrap_node_turned_on",
-                cluster_name=best_cluster.cluster_config.name,
-            )
-            current_active_nodes = 1
-        except Exception as e:
-            log.error(
-                "global_api.power.bootstrap_node_turn_on_failed",
-                cluster_name=best_cluster.cluster_config.name,
-                error=str(e),
-            )
+    log.debug(
+        "global_api.power.math.variables", 
+        current_nodes=current_active_nodes,
+        avg_latency_ms=avg_latency_ms,
+        current_rps=current_rps,
+        max_latency=config.latency.max_ms,
+    )
     if current_rps <= 0:
         log.info(
             "global_api.power.skip_turn_on_no_rps",
@@ -218,13 +197,8 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         current_rps,
         current_active_nodes,
     )
-    log.info(
-        "global_api.power.turn_on",
-        nodes_to_add=nodes_to_add,
-        avg_latency=avg_latency_ms,
-        current_active_nodes=current_active_nodes,
-        current_rps=current_rps,
-    )
+
+
     best_cluster_flag = True
     for cluster in sorted_clusters:
         if nodes_to_add <= 0 and not best_cluster_flag:
@@ -233,14 +207,6 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         for worker_node in cluster.worker_nodes:
             if worker_node.status == WorkerStatus.OFF:
                 powered_off_nodes += 1
-
-        log.debug(
-            "global_api.power.cluster_capacity_evaluated",
-            cluster_name=cluster.cluster_config.name,
-            cluster_ip=cluster.cluster_config.ip,
-            cluster_port=cluster.cluster_config.port,
-            powered_off_nodes=powered_off_nodes,
-        )
 
         amount = min(nodes_to_add, powered_off_nodes)
         if best_cluster_flag and powered_off_nodes == len(cluster.worker_nodes) and amount <= 0:
