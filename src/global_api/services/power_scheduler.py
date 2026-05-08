@@ -102,16 +102,13 @@ def estimate_required_nodes(
     avg_latency_per_node_ms: float,
     current_rps: float,
 ) -> int:
-    """Estimate required nodes from demand (lambda) and measured service rate (mu).
+    """Estimate required nodes from demand.
 
-    We model one node's service rate as:
-        mu = 1000 / avg_latency_per_node_ms   requests / second
-
-    Then the required number of nodes is:
-        required_nodes = ceil(lambda / mu)
-
-    where lambda is the current request arrival rate in requests / second.
+    If avg latency per node is 8000 and the request pr second is 1 (60 request pr minute)
+    Then a worker nodes handle 1000/8000=0.125 request pr second.
+    Therefore to handle 1 request pr second the required nodes is 1/0.125=8
     """
+
     if current_rps <= 0:
         log.info("global_api.power.no_current_rps", current_rps=current_rps)
         return 0
@@ -128,6 +125,40 @@ def estimate_required_nodes(
     required_nodes = math.ceil(current_rps / service_rate_rps)
 
     return required_nodes
+
+
+def apply_proportional_scaling(
+    current_active_nodes: int,
+    avg_latency_ms: float,
+    max_latency_ms: float,
+) -> int:
+    """Calculate nodes to add based on latency scaling alone.
+
+    When avg_latency > max_latency, scale current nodes proportionally.
+    Scale factor = avg_latency / max_latency, then subtract current active nodes.
+    
+    Example: If current=2, avg_latency=16000ms, max_latency=8000ms,
+    scale_factor=2, scaled_needed=4, nodes_to_add=4-2=2.
+    """
+    if max_latency_ms <= 0 or avg_latency_ms <= 0 or current_active_nodes <= 0:
+        return 0
+    
+    if avg_latency_ms > max_latency_ms:
+        scale_factor = avg_latency_ms / max_latency_ms
+        scaled_nodes_needed = int(math.ceil(current_active_nodes * scale_factor))
+        nodes_to_add = scaled_nodes_needed - current_active_nodes
+        log.info(
+            "global_api.power.proportional_scaling_applied",
+            avg_latency_ms=avg_latency_ms,
+            max_latency_ms=max_latency_ms,
+            scale_factor=round(scale_factor, 2),
+            current_active_nodes=current_active_nodes,
+            scaled_nodes_needed=scaled_nodes_needed,
+            nodes_to_add=nodes_to_add,
+        )
+        return nodes_to_add
+    
+    return 0
 
 
 def estimate_nodes_to_add(
@@ -197,7 +228,15 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         current_rps,
         current_active_nodes,
     )
-
+    
+    # Also calculate nodes needed from latency scaling, use the max of both approaches
+    latency_scaling_nodes = apply_proportional_scaling(
+        current_active_nodes,
+        avg_latency_ms,
+        config.latency.max_ms,
+    )
+    
+    nodes_to_add = max(nodes_to_add, latency_scaling_nodes)
 
     best_cluster_flag = True
     for cluster in sorted_clusters:

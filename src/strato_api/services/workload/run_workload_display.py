@@ -117,9 +117,9 @@ def generate_workload_charts(duration_s, rpm, pattern="steady", seed=42, peakine
     plt.show()
 
     # -------------------------------------------probability-------------------------------------
-
+    sum_intensity = sum(intensity)
     probability = [
-        value / sum(intensity)
+        value / sum_intensity
         for value in intensity
     ]
     plt.figure(figsize=(12, 4))
@@ -155,5 +155,5 @@ generate_workload_charts(
     rpm=8,
     pattern="peaks",
     seed=15,
-    peakiness=1,
+    peakiness=0.2,
 )
