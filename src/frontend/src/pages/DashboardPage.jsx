@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -16,6 +17,7 @@ import "./App.css"
 const COLORS = ["#3b82f6", "#22c55e", "#f59e0b"];
 
 function DashboardPage() {
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [configId, setConfigId] = useState("");
   const [configs, setConfigs] = useState([]);
@@ -58,6 +60,29 @@ function DashboardPage() {
 
     return res.json();
   };
+
+    useEffect(() => {
+    const configIdFromUrl = searchParams.get("config_id");
+
+    if (!configIdFromUrl) return;
+
+    const loadConfigFromUrl = async () => {
+      try {
+        setConfigId(configIdFromUrl);
+
+        const json = await fetchOneConfig(configIdFromUrl);
+        setData(json);
+
+        setCompareConfigId("");
+        setCompareData(null);
+      } catch (err) {
+        console.error("Error loading config from URL:", err);
+        alert(String(err));
+      }
+    };
+
+    loadConfigFromUrl();
+  }, [searchParams]);
 
   const fetchData = async () => {
     if (!configId) return;

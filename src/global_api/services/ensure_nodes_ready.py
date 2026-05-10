@@ -33,6 +33,15 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
         )
     except Exception as e:
         log.warning("ensure_nodes_ready.turn_on_failed", cluster=cluster.name, error=str(e))
+    
+    try:
+        requests.post(
+            f"{base}/turn_on_nodes/",
+            params={"number_of_nodes": total},
+            timeout=300,
+        )
+    except Exception as e:
+        log.warning("ensure_nodes_ready.turn_on_failed", cluster=cluster.name, error=str(e))
 
     # Step 3: Contiously check that the pods are up and running
     deadline = time.time() + timeout_s

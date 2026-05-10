@@ -142,7 +142,18 @@ def get_test_status() -> dict:
     """Return current test status."""
     with test_state_lock:
         if not test_running:
-            return {"status": "idle"}
+            return {
+                "status": "idle",
+                "current_config_id": None,
+            }
+
         if stop_requested:
-            return {"status": "stopping"}
-        return {"status": "running"}
+            return {
+                "status": "stopping",
+                "current_config_id": current_config.id if current_config else None,
+            }
+
+        return {
+            "status": "running",
+            "current_config_id": current_config.id if current_config else None,
+        }
