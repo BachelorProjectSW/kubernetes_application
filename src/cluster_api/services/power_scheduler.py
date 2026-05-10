@@ -129,14 +129,15 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         return False
 
 
-def check_if_llama_pod_is_ready(
-    worker_node: WorkerNode,
-    api_client,
-    cluster_name: str,
-    namespace: str = "default"
-    ) -> bool:
-    """Return True when a llama pod on this node is Running and Ready."""
+def check_if_llama_pod_is_ready(worker_node, api_client, cluster_name, namespace="default"):
     try:
+        # Verify the Kubernetes Node is actually Ready before trusting any pod on it
+        node = api_client.read_node(name=worker_node.name)
+        node_conditions = (node.status.conditions or [])
+        node_ready = any(c.type == "Ready" and c.status == "True" for c in node_conditions)
+        if not node_ready:
+            return False
+
         pods = api_client.list_namespaced_pod(
             namespace=namespace,
             field_selector=f"spec.nodeName={worker_node.name}",
@@ -167,44 +168,27 @@ def check_if_llama_pod_is_ready(
         )
         return False
 
-def refresh_worker_capacity(worker_node: WorkerNode, cluster_name: str) -> bool:
-    """Fetch /props from the worker and refresh max_slots."""
+def refresh_worker_capacity(worker_node, cluster_name):
     try:
-        url = f"http://{worker_node.ip}:8080/props"
-
-        log.debug(
-            "cluster_api.power.worker_capacity_refresh_started",
-            cluster_name=cluster_name,
-            worker_node=worker_node.name,
-            url=url,
-        )
-
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        props = response.json()
-
-        total_slots = props.get("total_slots", 0)
-
-        if total_slots <= 0:
-            log.warning(
-                "cluster_api.power.worker_capacity_refresh_invalid",
+        # /health is the readiness gate. It returns 503 while loading and 200 only when ready.
+        health = requests.get(f"http://{worker_node.ip}:8080/health", timeout=10)
+        if health.status_code != 200:
+            log.debug(
+                "cluster_api.power.worker_health_not_ready",
                 cluster_name=cluster_name,
                 worker_node=worker_node.name,
-                total_slots=total_slots,
+                status_code=health.status_code,
             )
             return False
 
+        # Then fetch capacity
+        props_resp = requests.get(f"http://{worker_node.ip}:8080/props", timeout=10)
+        props_resp.raise_for_status()
+        total_slots = props_resp.json().get("total_slots", 0)
+        if total_slots <= 0:
+            return False
         worker_node.max_slots = total_slots
-
-        log.debug(
-            "cluster_api.power.worker_capacity_refresh_succeeded",
-            cluster_name=cluster_name,
-            worker_node=worker_node.name,
-            max_slots=worker_node.max_slots,
-        )
-
         return True
-
     except Exception as e:
         log.warning(
             "cluster_api.power.worker_capacity_refresh_failed",
@@ -213,7 +197,7 @@ def refresh_worker_capacity(worker_node: WorkerNode, cluster_name: str) -> bool:
             error=str(e),
         )
         return False
-
+    
 def wait_for_nodes_to_be_ready(
         worker_nodes: list[WorkerNode],
         cluster_name: str,
