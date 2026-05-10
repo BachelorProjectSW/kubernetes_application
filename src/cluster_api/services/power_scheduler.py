@@ -1,4 +1,5 @@
 import paramiko
+import requests
 import structlog
 from concurrent.futures import ThreadPoolExecutor
 from ...models.basemodels import WorkerNode
@@ -166,6 +167,52 @@ def check_if_llama_pod_is_ready(
         )
         return False
 
+def refresh_worker_capacity(worker_node: WorkerNode, cluster_name: str) -> bool:
+    """Fetch /props from the worker and refresh max_slots."""
+    try:
+        url = f"http://{worker_node.ip}:8080/props"
+
+        log.debug(
+            "cluster_api.power.worker_capacity_refresh_started",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            url=url,
+        )
+
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        props = response.json()
+
+        total_slots = props.get("total_slots", 0)
+
+        if total_slots <= 0:
+            log.warning(
+                "cluster_api.power.worker_capacity_refresh_invalid",
+                cluster_name=cluster_name,
+                worker_node=worker_node.name,
+                total_slots=total_slots,
+            )
+            return False
+
+        worker_node.max_slots = total_slots
+
+        log.debug(
+            "cluster_api.power.worker_capacity_refresh_succeeded",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            max_slots=worker_node.max_slots,
+        )
+
+        return True
+
+    except Exception as e:
+        log.warning(
+            "cluster_api.power.worker_capacity_refresh_failed",
+            cluster_name=cluster_name,
+            worker_node=worker_node.name,
+            error=str(e),
+        )
+        return False
 
 def wait_for_nodes_to_be_ready(
         worker_nodes: list[WorkerNode],
@@ -178,14 +225,21 @@ def wait_for_nodes_to_be_ready(
     api_client = get_api_client()
 
     while time.time() < deadline:
-        ready_nodes = [
-            node for node in worker_nodes
-            if check_if_llama_pod_is_ready(node, api_client, cluster_name)
-        ]
+        ready_nodes = []
+        for node in worker_nodes:
+            pod_ready = check_if_llama_pod_is_ready(node, api_client, cluster_name)
 
-        for node in ready_nodes:
+            if not pod_ready:
+                continue
+
+            capacity_ready = refresh_worker_capacity(node, cluster_name)
+
+            if not capacity_ready:
+                continue
+
             node.status = WorkerStatus.IDLE
             log_node_status_snapshot(cluster_name, node)
+            ready_nodes.append(node)
 
         if len(ready_nodes) == len(worker_nodes):
             return True
