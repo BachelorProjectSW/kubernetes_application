@@ -597,4 +597,62 @@ br { display: none; }
 .inline-fields > label > input {
   margin-top: 0;
 }
- 
+
+/* ── Top Navigation ────────────────────────────────────────── */
+.top-nav {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 1000;
+
+  width: fit-content;
+  margin: 0 auto 2rem;
+  padding: 0.45rem;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+
+  background: rgba(23, 32, 48, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+
+  color: var(--text-label);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+
+  transition:
+    color var(--transition),
+    background var(--transition),
+    box-shadow var(--transition);
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-link.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(0, 230, 180, 0.28);
+}
+
+.nav-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+

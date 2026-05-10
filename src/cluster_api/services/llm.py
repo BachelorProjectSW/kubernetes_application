@@ -1,3 +1,4 @@
+import math
 import time
 import requests
 import structlog
@@ -15,6 +16,8 @@ logger = structlog.get_logger()
 
 rr_index = 0
 
+WAVE_TIMEOUT_S = 120
+SAFETY_BUFFER_S = 30
 
 def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
     """Pick a worker in round-robin order."""
@@ -81,6 +84,22 @@ def sync_worker_status(worker: WorkerNode) -> None:
     cluster_name = cluster.cluster_config.name
     worker.status = WorkerStatus.IDLE if worker.inflight_requests == 0 else WorkerStatus.WORKING
     log_node_status_snapshot(cluster_name, worker)
+
+def _compute_request_timeout(
+    inflight_at_selection: int,
+    active_at_selection: int,
+    queued_at_selection: int,
+    max_slots: int,
+) -> int:
+    """
+    Estimate how long this request might take based on the worker's load.
+    """
+    load = max(inflight_at_selection, active_at_selection + queued_at_selection)
+    requests_ahead = max(0, load - 1)
+    waves_ahead = math.ceil(requests_ahead / max(1, max_slots))
+    my_wave = 1
+    return (waves_ahead + my_wave) * WAVE_TIMEOUT_S + SAFETY_BUFFER_S
+
 
 
 def handle_llm(question: QuestionConfig, trace_id: str | None = None):
@@ -158,6 +177,15 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
 
         cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()
+        
+        timeout = _compute_request_timeout(
+            inflight_at_selection=inflight_at_selection,
+            active_at_selection=active_at_selection,
+            queued_at_selection=queued_at_selection,
+            max_slots=max_slots_at_selection,
+        )
+
+
         logger.info(
             "cluster_api.llm.llama_inference_started",
             service="cluster_api",
@@ -166,7 +194,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             trace_id=trace_id,
             target_url=url,
         )
-        timeout = 180 + (queued_at_selection * 90)
+        
 
         response = requests.post(
             url,

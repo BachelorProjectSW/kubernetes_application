@@ -23,7 +23,7 @@ function App() {
 
     try {
       const res = await fetch(
-        `http://100.109.95.2:8015/test_results?config_id=${configId}`
+        `http://100.109.95.2:8099/test_results?config_id=${configId}`
       );
 
       const json = await res.json();
