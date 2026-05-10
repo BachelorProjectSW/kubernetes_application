@@ -35,15 +35,21 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
         log.warning("ensure_nodes_ready.turn_on_failed", cluster=cluster.name, error=str(e))
 
 
-    # Step 3: Contiously check that the pods are up and running
+   # Step 3: Continuously check that the pods are up and running
+    all_ready = False
     deadline = time.time() + timeout_s
+
     while time.time() < deadline:
         try:
             response = requests.get(f"{base}/get_cluster_working_nodes", timeout=300)
             response.raise_for_status()
             worker_nodes = response.json()
 
-            ready = [n for n in worker_nodes if n["status"] == WorkerStatus.IDLE and n["max_slots"] > 0]
+            ready = [
+                n for n in worker_nodes
+                if n["status"] == WorkerStatus.IDLE.value and n["max_slots"] > 0
+            ]
+
             log.info(
                 "ensure_nodes_ready.polling",
                 cluster=cluster.name,
@@ -53,12 +59,18 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
 
             if len(ready) == total:
                 log.info("ensure_nodes_ready.all_ready", cluster=cluster.name)
+                all_ready = True
                 break
 
         except Exception as e:
             log.warning("ensure_nodes_ready.poll_failed", cluster=cluster.name, error=str(e))
 
         time.sleep(poll_interval_s)
+
+    if not all_ready:
+        raise RuntimeError(
+            f"Not all nodes became ready in cluster {cluster.name} within {timeout_s}s"
+        )
 
     # Step 4: Contiously check that the pods have no inflight requests
     deadline = time.time() + timeout_s
