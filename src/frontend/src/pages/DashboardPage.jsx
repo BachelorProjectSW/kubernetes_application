@@ -151,7 +151,20 @@ const latencyComparisonData =
         "primaryLatency",
         "compareLatency",
         (r) => r.latency_ms
-      )
+      ).map((point, index) => {
+        const primary = data.request_over_time[index];
+        const comparison = compareData.request_over_time[index];
+
+        return {
+          ...point,
+
+          primaryCluster: primary?.cluster,
+          primaryAnswer: primary?.answer,
+
+          compareCluster: comparison?.cluster,
+          compareAnswer: comparison?.answer
+        };
+      })
     : [];
 
 const gco2ComparisonData =
@@ -334,23 +347,52 @@ const maxTime = allNodeTimestamps.length
 
               <YAxis />
 
-              <Tooltip
-                formatter={(value, name) => {
-                  if (compareData) {
-                    return [
-                      `${value} ms`,
-                      name === "primaryLatency"
-                        ? `Primary: ${data.test_name}`
-                        : `Comparison: ${compareData.test_name}`
-                    ];
-                  }
+         <Tooltip
+  content={(props) =>
+    compareData ? (
+      <div className="customTooltip">
+        <p><strong>Request #{props.label}</strong></p>
 
-                  return [`${value} ms`, "Latency"];
-                }}
-                labelFormatter={(label) =>
-                  compareData ? `Request #${label}` : formatTime(label)
-                }
-              />
+        {props.payload?.map((entry) => {
+          const point = entry.payload;
+          const isPrimary = entry.dataKey === "primaryLatency";
+
+          return (
+            <div key={entry.dataKey}>
+              <p>
+                <strong>
+                  {isPrimary
+                    ? `Primary: ${data.test_name}`
+                    : `Comparison: ${compareData.test_name}`}
+                </strong>
+              </p>
+
+              <p>
+                <strong>Cluster:</strong>{" "}
+                {isPrimary
+                  ? point.primaryCluster ?? "N/A"
+                  : point.compareCluster ?? "N/A"}
+              </p>
+
+              <p>
+                <strong>Answer:</strong>{" "}
+                {isPrimary
+                  ? point.primaryAnswer ?? "N/A"
+                  : point.compareAnswer ?? "N/A"}
+              </p>
+
+              <p>
+                <strong>Latency:</strong> {entry.value ?? "N/A"} ms
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    ) : (
+      <LatencyTooltip {...props} formatTime={formatTime} />
+    )
+  }
+/>
               {compareData && <Legend />}
               {compareData ? (
                 <>
@@ -760,6 +802,21 @@ const WorkerNodeStatusComparison = ({
         </div>
       ))}
     </ChartCard>
+  );
+};
+
+const LatencyTooltip = ({ active, payload, label, formatTime }) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const point = payload[0].payload;
+
+  return (
+    <div className="customTooltip">
+      <p><strong>{formatTime(label)}</strong></p>
+      <p><strong>Cluster:</strong> {point.cluster ?? "N/A"}</p>
+      <p><strong>Answer:</strong> {point.answer ?? "N/A"}</p>
+      <p><strong>Latency:</strong> {point.latency ?? "N/A"} ms</p>
+    </div>
   );
 };
 

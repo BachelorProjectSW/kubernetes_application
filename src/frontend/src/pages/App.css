@@ -444,3 +444,17 @@ button {
 .relativeTimelineBlock:last-child {
   border-right: none;
 }
+
+.customTooltip {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  font-size: 14px;
+  max-width: 320px;
+}
+
+.customTooltip p {
+  margin: 4px 0;
+}
