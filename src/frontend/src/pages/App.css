@@ -447,6 +447,7 @@ button {
 
 .customTooltip {
   background: white;
+  color: black;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 10px 12px;
@@ -457,4 +458,8 @@ button {
 
 .customTooltip p {
   margin: 4px 0;
+  color: black;
+}
+.recharts-legend-item {
+  margin-right: 16px !important;
 }

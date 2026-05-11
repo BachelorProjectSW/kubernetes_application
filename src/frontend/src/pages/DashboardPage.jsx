@@ -393,7 +393,6 @@ const maxTime = allNodeTimestamps.length
     )
   }
 />
-              {compareData && <Legend />}
               {compareData ? (
                 <>
                   <Line
@@ -458,7 +457,6 @@ const maxTime = allNodeTimestamps.length
                   compareData ? `Point #${label}` : formatTime(label)
                 }
               />
-              {compareData && <Legend />}
 
               {compareData ? (
                 <>
@@ -523,7 +521,6 @@ const maxTime = allNodeTimestamps.length
                   compareData ? `Point #${label}` : formatTime(label)
                 }
               />
-              {compareData && <Legend />}
 
               {compareData ? (
                 <>
