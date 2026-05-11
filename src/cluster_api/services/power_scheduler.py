@@ -112,7 +112,7 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         )
 
         client.close()
-
+        time.sleep(20)
         worker_node.status = WorkerStatus.OFF
         log_node_status_snapshot(cluster_name, worker_node)
         return True
