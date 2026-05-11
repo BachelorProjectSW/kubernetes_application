@@ -188,13 +188,13 @@ def wait_for_nodes_to_be_ready(
             log_node_status_snapshot(cluster_name, node)
 
         if len(ready_nodes) == len(worker_nodes):
-            return
+            return True
 
         time.sleep(poll_interval_s)
 
     # Deadline reached, marking remaining nodes as OFF
     for node in worker_nodes:
-        if node.status != WorkerStatus.IDLE or node.status != WorkerStatus.WORKING:
+        if node.status not in {WorkerStatus.IDLE, WorkerStatus.WORKING}:
             node.status = WorkerStatus.OFF
             log_node_status_snapshot(cluster_name, node)
             log.warning("cluster_api.power.pod_not_ready", cluster=cluster_name, node=node)
