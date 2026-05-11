@@ -56,3 +56,12 @@ class TerminalDebugLog(BaseModel):
     message: str
     payload: dict | None = None
     created_at: datetime
+
+
+class LogSent(BaseModel):
+    """Model for a sent request event (before response arrives)."""
+
+    timestamp: datetime
+    cluster: str
+    trace_id: str | None = None
+    payload: Any | None = None

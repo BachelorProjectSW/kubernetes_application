@@ -36,7 +36,6 @@ def get_dk_hourly(start: datetime, end: datetime) -> list[dict]:
     """
     start_ms = int(start.timestamp() * 1000)
     end_ms = int(end.timestamp() * 1000)
-
     log.info("global_api.dk_energy.hourly_fetch_started", start=str(start), end=str(end))
 
     try:

@@ -227,11 +227,12 @@ class ConfigStore:
                 worker.status = WorkerStatus.IDLE if worker.max_slots > 0 else WorkerStatus.OFF
 
             except Exception as e:
-                log.debug(
+                log.warning(
                     "cluster_api.config.worker_capacity_probe_failed",
                     cluster_name=self.config.cluster_config.name,
                     worker_node=worker.name,
                     worker_ip=worker.ip,
+                    url=url,
                     error=str(e),
                 )
                 # In k3d mode, use default capacity when probe fails (pods may be starting)

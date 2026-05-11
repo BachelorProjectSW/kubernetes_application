@@ -1,6 +1,7 @@
 from ...models.basemodels import Config, ClusterInformation
 from ..util.all_configuration import config_store
 from ...custom_logging.logger import set_current_config_id
+from ..util.market_data_store import market_data_store
 import requests
 import structlog
 from .power_scheduler import power_scheduler_loop
@@ -24,6 +25,7 @@ def start_test(config: Config):
     try:
         global _power_scheduler_thread
         config.start.start_time_real = datetime.now(timezone.utc).isoformat()
+        market_data_store.reset()
         set_current_config_id(config.id)
         config_store.set(config)
         log.info("global_api.test.start_requested", config_id=config.id, test_name=config.name)

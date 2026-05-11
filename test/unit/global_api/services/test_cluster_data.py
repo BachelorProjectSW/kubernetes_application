@@ -58,6 +58,9 @@ def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
             datetime(2025, 1, 1, tzinfo=timezone.utc),
             EnergyConfig(),
             latency_window_s=300,
+            config_id="123",
+            avg_latency_ms=7000.2,
+
         )
 
     assert result.cluster_load_w == 1250.0
@@ -88,6 +91,8 @@ def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
             datetime(2025, 1, 1, tzinfo=timezone.utc),
             EnergyConfig(),
             latency_window_s=300,
+            config_id="123",
+            avg_latency_ms=7000.2,
         )
 
     assert result.cluster_load_w == 1000.0

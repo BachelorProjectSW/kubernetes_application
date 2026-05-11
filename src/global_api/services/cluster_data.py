@@ -7,7 +7,6 @@ from ...models.enum import WorkerStatus
 from .dk_energy import get_dk_hourly
 from .scoring import compute_cluster_load
 from ...custom_logging.models.log_models import MarketSnapshotLog
-from ...custom_logging.util.log_reader import get_avg_latency_for_cluster
 from ...db.postgres import save_model_log
 from ..util.all_configuration import config_store
 from ..util.market_data_store import market_data_store
@@ -56,7 +55,7 @@ def _get_microgrid_base_load_w(
     match country_code:
         case code if code.startswith("DK"):
             dk_hourly = get_dk_hourly(simulated_time_start, simulated_time_end)
-            return float(dk_hourly[0]["consumption_w"])
+            return float(dk_hourly[0]["avg_consumption_w"])
         case _:
             return 0.0
 
@@ -65,7 +64,7 @@ def get_cluster_runtime_data(
     cluster: ClusterConfig,
     simulated_time_start: datetime,
     energy: EnergyConfig,
-    latency_window_s: int,
+    avg_latency_ms: float | None = None,
 ) -> ClusterRuntimeData:
     """Fetch all runtime values for a cluster at the given simulated time.
 
@@ -73,8 +72,7 @@ def get_cluster_runtime_data(
         cluster: Static cluster configuration.
         simulated_time_start: Start time for the simulation window.
         energy: Energy configuration constants.
-        latency_window_s: How far back to look when computing the average latency
-                          for this cluster (seconds).
+        avg_latency_ms: Clusters avg latency.
 
     Returns:
         ClusterRuntimeData with renewable_output_w, cluster_load_w,
@@ -112,6 +110,11 @@ def get_cluster_runtime_data(
         response = requests.get(url, timeout=180)
         response.raise_for_status()
         worker_nodes_payload = response.json()
+        log.debug(
+            "global_api.cluster.worker_payload",
+            cluster_name=cluster.name,
+            worker_nodes_payload=worker_nodes_payload,
+        )
         active_nodes = 0
         idle_nodes = 0
 
@@ -124,14 +127,20 @@ def get_cluster_runtime_data(
 
         cluster_load_w = compute_cluster_load(active_nodes, idle_nodes, energy)
 
+        log.info(
+            "global_api.cluster.load_computed",
+            cluster_name=cluster.name,
+            active_nodes=active_nodes,
+            idle_nodes=idle_nodes,
+            cluster_load_w=cluster_load_w,
+        )
+
         microgrid_base_load_w = _get_microgrid_base_load_w(
             cluster,
             simulated_time_start,
             simulated_time_end,
         )
         cluster_load_w += microgrid_base_load_w
-
-        avg_latency_ms = get_avg_latency_for_cluster(cluster.name, latency_window_s)
 
         log.info(
             "global_api.cluster.runtime_data_timing",

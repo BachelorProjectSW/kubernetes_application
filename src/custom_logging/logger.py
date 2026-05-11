@@ -1,13 +1,9 @@
 import structlog
 from datetime import datetime, timezone
-from typing import TypeVar, Type
-from .models.log_models import NodeStatusLog, RequestLog, TerminalDebugLog
+from typing import TypeVar
+from .models.log_models import NodeStatusLog, RequestLog, LogSent
 from ..models.basemodels import WorkerNode
 from ..db.postgres import (
-    read_all_node_status_logs,
-    read_all_request_logs,
-    read_terminal_debug_logs,
-    read_model_logs,
     save_model_log,
     save_terminal_debug,
 )
@@ -16,8 +12,7 @@ import os
 log = structlog.get_logger()
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
-
-
+SAVE_LOGS_IN_DB = os.getenv("SAVE_LOGS_IN_DB", "false").upper() == "TRUE"
 _LOGGER_CONFIG_ID: str | None = None
 
 
@@ -36,7 +31,8 @@ def _get_terminal_logs(_, __, event_dict):
     level = str(event_dict.get("level", "info"))
     message = str(event_dict.get("event", ""))
     config_id = _current_config_id()
-    save_terminal_debug(config_id, message, level, dict(event_dict))
+    if SAVE_LOGS_IN_DB:
+        save_terminal_debug(config_id, message, level, dict(event_dict))
     return event_dict
 
 
@@ -44,7 +40,7 @@ structlog.configure(
     processors=[
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
-        # _get_terminal_logs,
+        _get_terminal_logs,
         structlog.dev.ConsoleRenderer(),
     ],
     wrapper_class=structlog.make_filtering_bound_logger(LOG_LEVEL),
@@ -55,34 +51,6 @@ structlog.configure(
 
 
 T = TypeVar("T")
-
-
-def get_logs(log_class: Type[T], config_id: str | None = None) -> list[T]:
-    """Return typed logs from DB for the requested model class."""
-    try:
-        effective_config_id = _current_config_id() if config_id is None else config_id
-        if log_class is RequestLog:
-            return read_all_request_logs(effective_config_id)  # type: ignore[return-value]
-        if log_class is NodeStatusLog:
-            return read_all_node_status_logs(effective_config_id)  # type: ignore[return-value]
-        return read_model_logs(log_class, effective_config_id)
-    except Exception as e:
-        log.warning(
-            "custom_logging.db.read_logs_failed",
-            error=str(e),
-            log_class=log_class.__name__,
-            config_id=config_id,
-        )
-        return []
-
-
-def get_terminal_debug_logs() -> list[TerminalDebugLog]:
-    """Return terminal debug log entries from DB as models."""
-    try:
-        return read_terminal_debug_logs(_current_config_id())
-    except Exception as e:
-        log.warning("custom_logging.db.read_terminal_debug_failed", error=str(e))
-        return []
 
 
 def log_request(
@@ -134,6 +102,24 @@ def log_request(
         log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="RequestLog")
 
     log.info("custom_logging.request.logged", **row)
+
+
+def log_sent(cluster_name: str, trace_id: str | None = None, payload: dict | None = None):
+    """Log a sent request (before response) so RPS can be measured from sent events."""
+    entry = LogSent(
+        timestamp=datetime.now(timezone.utc),
+        cluster=cluster_name,
+        trace_id=trace_id,
+        payload=payload,
+    )
+
+    try:
+        save_model_log(_current_config_id(), entry)
+    except Exception as e:
+        log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="LogSent")
+
+    row = entry.model_dump(mode="json")
+    log.info("custom_logging.sent.logged", **row)
 
 
 def log_node_status_snapshot(cluster_name: str, node: WorkerNode):

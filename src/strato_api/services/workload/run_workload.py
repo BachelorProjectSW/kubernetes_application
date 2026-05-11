@@ -6,7 +6,7 @@ import requests
 import structlog
 import uuid
 from .generator import generate_workload
-from ....custom_logging.logger import log_request
+from ....custom_logging.logger import log_request, log_sent
 from ....models.basemodels import QuestionConfig
 
 
@@ -68,6 +68,12 @@ async def execute_workload(
                     trace_id=trace_id,
                     target=f"{host}{endpoint}",
                 )
+
+                # Record that this request is being sent (used by global power scheduler for RPS)
+                try:
+                    log_sent(host, trace_id=trace_id, payload={"question": question.question})
+                except Exception:
+                    pass
 
                 async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                     request_reached_host = True
