@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import subprocess
 import time
 from ...custom_logging.logger import log_node_status_snapshot
+import requests
 
 log = structlog.get_logger()
 
@@ -112,7 +113,7 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         )
 
         client.close()
-
+        time.sleep(20)
         worker_node.status = WorkerStatus.OFF
         log_node_status_snapshot(cluster_name, worker_node)
         return True
@@ -147,12 +148,10 @@ def check_if_llama_pod_is_ready(
                 continue
 
             conditions = getattr(pod.status, "conditions", None) or []
+            #Is the pod ready, this uses readiness probe (so the container is also ready)
             pod_ready = any(c.type == "Ready" and c.status == "True" for c in conditions)
 
-            container_statuses = getattr(pod.status, "container_statuses", None) or []
-            containers_ready = bool(container_statuses) and all(cs.ready for cs in container_statuses)
-
-            if pod_ready and containers_ready:
+            if pod_ready:
                 return True
 
         return False
@@ -166,6 +165,50 @@ def check_if_llama_pod_is_ready(
         )
         return False
 
+def refresh_worker_capacity(worker_node: WorkerNode, cluster_config) -> bool:
+    """Refresh max_slots for a single worker from its llama /props endpoint."""
+    try:
+        if cluster_config.cluster_config.k3d:
+            url = f"http://localhost:{worker_node.forwarded_port}/props"
+        else:
+            url = f"http://{worker_node.ip}:{cluster_config.cluster_config.llama_hostport}/props"
+
+        log.debug(
+            "cluster_api.power.worker_capacity_refresh_started",
+            cluster_name=cluster_config.cluster_config.name,
+            worker_node=worker_node.name,
+            url=url,
+        )
+
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        props = response.json()
+
+        #Sets the max_slot, by getting it from the max_slots dict, if no "total_slots" exists, set it to 0
+        worker_node.max_slots = props.get("total_slots", 0)
+
+        if worker_node.max_slots > 0:
+            worker_node.status = WorkerStatus.IDLE
+            log_node_status_snapshot(cluster_config.cluster_config.name, worker_node)
+            return True
+
+        log.warning(
+            "cluster_api.power.worker_capacity_refresh_zero_slots",
+            cluster_name=cluster_config.cluster_config.name,
+            worker_node=worker_node.name,
+            props=props,
+        )
+        return False
+
+    except Exception as e:
+        log.warning(
+            "cluster_api.power.worker_capacity_refresh_failed",
+            cluster_name=cluster_config.cluster_config.name,
+            worker_node=worker_node.name,
+            error=str(e),
+        )
+        return False
+
 
 def wait_for_nodes_to_be_ready(
         worker_nodes: list[WorkerNode],
@@ -173,32 +216,42 @@ def wait_for_nodes_to_be_ready(
         timeout_s: int = 300,
         poll_interval_s: int = 2
         ) -> bool:
-    """Wait until each selected node has a Running+Ready llama pod."""
+    """Wait until each selected node has a Running+Ready llama pod and valid capacity."""
     deadline = time.time() + timeout_s
     api_client = get_api_client()
+    cluster_config = config_store.get()
 
     while time.time() < deadline:
-        ready_nodes = [
-            node for node in worker_nodes
-            if check_if_llama_pod_is_ready(node, api_client, cluster_name)
-        ]
+        ready_nodes = []
 
-        for node in ready_nodes:
-            node.status = WorkerStatus.IDLE
-            log_node_status_snapshot(cluster_name, node)
+        for node in worker_nodes:
+            pod_ready = check_if_llama_pod_is_ready(node, api_client, cluster_name)
+
+            if not pod_ready:
+                continue
+
+            if node.max_slots > 0:
+                ready_nodes.append(node)
+                continue
+        
+            capacity_ready = refresh_worker_capacity(node, cluster_config) #Valid capacity >0
+
+            if capacity_ready:
+                ready_nodes.append(node)
 
         if len(ready_nodes) == len(worker_nodes):
-            return
+            return True
 
         time.sleep(poll_interval_s)
 
-    # Deadline reached, marking remaining nodes as OFF
     for node in worker_nodes:
-        if node.status != WorkerStatus.IDLE or node.status != WorkerStatus.WORKING:
+        if node.status not in {WorkerStatus.IDLE, WorkerStatus.WORKING}:
             node.status = WorkerStatus.OFF
+            node.max_slots = 0
             log_node_status_snapshot(cluster_name, node)
             log.warning("cluster_api.power.pod_not_ready", cluster=cluster_name, node=node)
 
+    return False
 
 def change_node_status(number_of_nodes: int, status: str):
     """Change status of up to number_of_nodes in the cluster.
@@ -215,7 +268,14 @@ def change_node_status(number_of_nodes: int, status: str):
             for future in futures:
                 future.result()
 
-        wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
+        ready = wait_for_nodes_to_be_ready(nodes_to_change, cluster_name)
+
+        if not ready:
+            log.warning(
+                "cluster_api.power.turn_on_nodes_not_all_ready",
+                cluster_name=cluster_name,
+                nodes=[node.name for node in nodes_to_change],
+            )
 
     elif status == "off":
         nodes_to_change = select_nodes_to_turn_off(number_of_nodes, nodes)
@@ -240,6 +300,12 @@ def select_nodes_to_turn_on(number_of_nodes: int, worker_nodes: list[WorkerNode]
             break
         if node.status == WorkerStatus.OFF:
             nodes_to_turn_on.append(node)
+            continue
+        #A node can remain stuck in TURNING_ON if the previous boot attempt did not
+        #produce a ready llama pod or valid slots. Select it again so it can be retried.
+        if node.status == WorkerStatus.TURNING_ON and node.max_slots == 0:
+            nodes_to_turn_on.append(node)
+            continue
     return nodes_to_turn_on
 
 

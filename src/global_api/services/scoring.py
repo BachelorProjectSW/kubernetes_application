@@ -141,7 +141,7 @@ def score_cluster(
 
     norm_carbon = normalize_value(blended_carbon, energy.carbon_ref_max)
     norm_cost = normalize_value(blended_cost, energy.cost_ref_max)
-    norm_latency = normalize_value(estimated_latency_ms, max_latency_ms)
+    norm_latency = normalize_value(estimated_latency_ms, energy.latency_ref_max)
 
     return round(
         (carbon_weight * norm_carbon)

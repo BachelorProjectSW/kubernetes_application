@@ -9,7 +9,7 @@ function Ids({ inputs, setInputs, handleChange }) {
         const fetchConfigs = async () => {
             setLoading(true);
             try {
-                const response = await fetch('http://100.109.95.2:8095/get_configs');
+                const response = await fetch('http://100.109.95.2:8015/get_configs');
                 if (!response.ok) throw new Error("Failed to fetch configs");
                 const data = await response.json();
                 setEarlierExpIds(data);
