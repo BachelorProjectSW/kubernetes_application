@@ -230,14 +230,14 @@ def wait_for_nodes_to_be_ready(
             if not pod_ready:
                 continue
 
+            if node.max_slots > 0:
+                ready_nodes.append(node)
+                continue
+        
             capacity_ready = refresh_worker_capacity(node, cluster_config) #Valid capacity >0
 
             if capacity_ready:
                 ready_nodes.append(node)
-            else:   
-                #The pod is ready, but the capacity is still 0
-                node.status = WorkerStatus.TURNING_ON
-                log_node_status_snapshot(cluster_name, node)
 
         if len(ready_nodes) == len(worker_nodes):
             return True
