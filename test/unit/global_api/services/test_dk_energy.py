@@ -10,12 +10,12 @@ pytestmark = pytest.mark.unit
 
 
 def test_ms_to_iso_converts_epoch_milliseconds_to_utc_string():
-    """Milliseconds should be converted into a UTC timestamp string."""
+    """Epoch milliseconds should be turned into a readable UTC time."""
     assert _ms_to_iso(0) == "1970-01-01 00:00:00"
 
 
 def test_get_dk_hourly_normalizes_timestamp_fields():
-    """The DK hourly fetch should replace timestamp_ms with timestamp strings."""
+    """DK energy rows should expose `timestamp` instead of `timestamp_ms`."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
     mock_response.json.return_value = [
