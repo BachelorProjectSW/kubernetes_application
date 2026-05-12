@@ -41,7 +41,6 @@ def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
         patch("src.global_api.services.cluster_data.market_data_store.get_carbon", return_value=[]),
         patch("src.global_api.services.cluster_data.market_data_store.get_price", return_value=[]),
         patch("src.global_api.services.cluster_data.compute_cluster_load", return_value=1000.0),
-        patch("src.global_api.services.cluster_data.get_avg_latency", return_value=0.0),
         patch(
             "src.global_api.services.cluster_data.get_dk_hourly",
             return_value=[{"avg_consumption_w": 250.0}],
@@ -57,8 +56,6 @@ def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
             cluster,
             datetime(2025, 1, 1, tzinfo=timezone.utc),
             EnergyConfig(),
-            latency_window_s=300,
-            config_id="123",
             avg_latency_ms=7000.2,
 
         )
@@ -77,7 +74,6 @@ def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
         patch("src.global_api.services.cluster_data.market_data_store.get_carbon", return_value=[]),
         patch("src.global_api.services.cluster_data.market_data_store.get_price", return_value=[]),
         patch("src.global_api.services.cluster_data.compute_cluster_load", return_value=1000.0),
-        patch("src.global_api.services.cluster_data.get_avg_latency", return_value=0.0),
         patch("src.global_api.services.cluster_data.get_dk_hourly") as mock_dk,
         patch("src.global_api.services.cluster_data.requests.get") as mock_requests_get,
     ):
@@ -90,8 +86,6 @@ def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
             cluster,
             datetime(2025, 1, 1, tzinfo=timezone.utc),
             EnergyConfig(),
-            latency_window_s=300,
-            config_id="123",
             avg_latency_ms=7000.2,
         )
 

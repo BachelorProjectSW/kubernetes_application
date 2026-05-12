@@ -23,12 +23,10 @@ def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
     - Keep a global index and return the worker at `index % len(workers)`.
     - This gives a fair, predictable rotation when all other selection rules don't apply.
 
-    Parameters
-    ----------
-        workers: List of available `WorkerNode` objects.
+    Args:
+        workers: List of available `WorkerNode` objects to rotate through.
 
-    Returns
-    -------
+    Returns:
         A `WorkerNode` chosen by round-robin, or `None` if the input list is empty.
 
     """
@@ -51,12 +49,10 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
     4. If multiple nodes tie on free slots, pick deterministically by name.
     5. If all tied nodes have zero free slots (all busy), fall back to round-robin.
 
-    Parameters
-    ----------
-        worker_node_list: Full list of `WorkerNode` objects for this cluster.
+    Args:
+        worker_node_list: Full list of `WorkerNode` objects for this cluster to choose from.
 
-    Returns
-    -------
+    Returns:
         The selected `WorkerNode`, or `None` when no eligible worker exists.
 
     """
@@ -110,12 +106,10 @@ def sync_worker_status(worker: WorkerNode) -> None:
     - Do not override power-transition states (OFF, TURNING_ON, TURNING_OFF).
     - If the node has zero inflight requests set it to `IDLE`, otherwise `WORKING`.
 
-    Parameters
-    ----------
-        worker: The `WorkerNode` to update in-place.
+    Args:
+        worker: The `WorkerNode` to update in-place based on inflight request count.
 
-    Returns
-    -------
+    Returns:
         None. The function mutates the `worker` object and logs the status snapshot.
 
     """
@@ -144,17 +138,14 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     - Timeouts are computed conservatively based on queued requests so long-running
       model calls don't block forever.
 
-    Parameters
-    ----------
+    Args:
         question: `QuestionConfig` containing the question text and max output tokens.
         trace_id: Optional trace id extracted from the HTTP request headers for logging.
 
-    Returns
-    -------
+    Returns:
         An `LLMResponse` object containing the raw LLM result plus selection/timing metadata.
 
-    Raises
-    ------
+    Raises:
         `HTTPException(503)` if no worker is available, or
         `HTTPException(502)` if the LLM request failed for other reasons.
 
