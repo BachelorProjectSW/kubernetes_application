@@ -17,7 +17,19 @@ rr_index = 0
 
 
 def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
-    """Pick a worker in round-robin order."""
+    """
+    Pick a worker using simple round-robin selection.
+
+    Simple explanation:
+    - Keep a global index and return the worker at `index % len(workers)`.
+    - This gives a fair, predictable rotation when all other selection rules don't apply.
+
+    Parameters:
+        workers: List of available `WorkerNode` objects.
+
+    Returns:
+        A `WorkerNode` chosen by round-robin, or `None` if the input list is empty.
+    """
     global rr_index
     if not workers:
         return None
@@ -29,7 +41,23 @@ def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
 
 
 def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
-    """Choose a node based on the slots available."""
+    """
+    Choose the best worker node to handle a request.
+
+    1. Ignore nodes that are powered off or otherwise unavailable.
+    2. Prefer an idle node (zero inflight requests) to keep others ready for power scheduling.
+    3. If no idle node, pick the node with the most free slots.
+    4. If multiple nodes tie on free slots, pick deterministically by name.
+    5. If all tied nodes have zero free slots (all busy), fall back to round-robin.
+
+    Parameters:
+        worker_node_list: Full list of `WorkerNode` objects for this cluster.
+
+    Returns:
+        The selected `WorkerNode`, or `None` when no eligible worker exists.
+    """
+    # Note: keeping selection deterministic (sorted by name) helps debugging and reduces
+    # unnecessary churn between workers which can interfere with power/latency decisions.
     if not worker_node_list:
         return None
 
@@ -72,8 +100,19 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
 
 
 def sync_worker_status(worker: WorkerNode) -> None:
-    """Sync the status of the worker."""
-    # Preserve power-state transitions managed by power_scheduler.
+    """
+    Update a worker's `status` to reflect its current inflight requests.
+
+    Simple explanation:
+    - Do not override power-transition states (OFF, TURNING_ON, TURNING_OFF).
+    - If the node has zero inflight requests set it to `IDLE`, otherwise `WORKING`.
+
+    Parameters:
+        worker: The `WorkerNode` to update in-place.
+
+    Returns:
+        None. The function mutates the `worker` object and logs the status snapshot.
+    """
     if worker.status in {WorkerStatus.OFF, WorkerStatus.TURNING_ON, WorkerStatus.TURNING_OFF}:
         return
 
@@ -84,7 +123,34 @@ def sync_worker_status(worker: WorkerNode) -> None:
 
 
 def handle_llm(question: QuestionConfig, trace_id: str | None = None):
-    """Send the request to the correct working node and log."""
+    """
+    Send a single LLM question to a selected worker and return the response.
+
+    Purpose:
+    - Pick a worker using the selection rules, increment its inflight counter,
+    - Call the worker's Llama `/completion` endpoint, gather timings and logs,
+    - Return an `LLMResponse` wrapper with metadata about the selected worker and timings.
+
+    Important operational notes for readers:
+    - A `worker_lock` is used to avoid races when selecting and updating worker counters.
+    - The selected worker's `inflight_requests` is incremented before the external call
+      and always decremented in the `finally` block so slots are never leaked.
+    - The code distinguishes `k3d` (local test) vs production by using forwarded ports.
+    - Timeouts are computed conservatively based on queued requests so long-running
+      model calls don't block forever.
+
+    Parameters:
+        question: `QuestionConfig` containing the question text and max output tokens.
+        trace_id: Optional trace id extracted from the HTTP request headers for logging.
+
+    Returns:
+        An `LLMResponse` object containing the raw LLM result plus selection/timing metadata.
+
+    Raises:
+        `HTTPException(503)` if no worker is available, or
+        `HTTPException(502)` if the LLM request failed for other reasons.
+    """
+    # Keep local variables initialized for clear error logging below.
     try:
         config = None
         cluster_name = None
