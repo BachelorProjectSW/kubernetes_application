@@ -52,9 +52,9 @@ class AssertionRegistry:
 
     def __init__(self):
         """Initialize empty assertion list."""
-        self.assertions: list[tuple[str, Callable[[TestResult], None]]] = []
+        self.assertions: list[tuple[str, Callable[[ValidationResult], None]]] = []
 
-    def add(self, name: str, check: Callable[[TestResult], None]) -> "AssertionRegistry":
+    def add(self, name: str, check: Callable[[ValidationResult], None]) -> "AssertionRegistry":
         """Register a new assertion check.
 
         Args:
