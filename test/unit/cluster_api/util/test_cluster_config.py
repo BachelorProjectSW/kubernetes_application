@@ -10,7 +10,6 @@ pytestmark = pytest.mark.unit
 
 def test_assign_gpios_assigns_values():
     """Assigns GPIOs from cluster_config.gpio_list to worker nodes."""
-
     workers = [
         UnitTestWorkerNodes.make("n1", WorkerStatus.IDLE, 0),
         UnitTestWorkerNodes.make("n2", WorkerStatus.OFF, 0),
@@ -30,7 +29,6 @@ def test_assign_gpios_assigns_values():
 
 def test_assign_gpios_mismatch_raises():
     """Raises when GPIO list length doesn't match worker count."""
-
     workers = UnitTestWorkerNodes.dk_workers()
     cluster_info = UnitTestWorkerNodes.cluster_information(workers)
     # Too few GPIOs
@@ -45,7 +43,6 @@ def test_assign_gpios_mismatch_raises():
 
 def test_assign_forwarded_ports_sets_ports_in_k3d():
     """Sets forwarded ports sequentially when k3d mode is enabled."""
-
     workers = [
         UnitTestWorkerNodes.make("a", WorkerStatus.IDLE, 0),
         UnitTestWorkerNodes.make("b", WorkerStatus.IDLE, 0),
@@ -68,7 +65,6 @@ def test_assign_forwarded_ports_sets_ports_in_k3d():
 
 def test_get_worker_nodes_dict_returns_dicts():
     """Returns list of worker node dicts with expected names."""
-
     workers = UnitTestWorkerNodes.dk_workers()
     cluster_info = UnitTestWorkerNodes.cluster_information(workers)
 
