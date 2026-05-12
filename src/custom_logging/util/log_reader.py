@@ -99,7 +99,7 @@ def get_sent_logs(config_id: str, time_interval_s: int) -> list[LogSent]:
     """Retrieve records of requests dispatched to global schedueler in a recent time window.
 
     Each LogSent entry marks when a request left the workload scheduler and
-    enter global scheduler. Used for calculate required nodes for power scheduler. 
+    enter global scheduler. Used for calculate required nodes for power scheduler.
     """
     if not config_id:
         return []
