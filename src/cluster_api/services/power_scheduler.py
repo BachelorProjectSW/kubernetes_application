@@ -16,7 +16,15 @@ log = structlog.get_logger()
 
 
 def run_cmd(cmd):
-    """Run bash command."""
+    """Run a shell command and return its standard output.
+
+    Args:
+        cmd: Command string or list passed to ``subprocess.run``.
+
+    Returns:
+        The captured stdout as a string.
+
+    """
     result = subprocess.run(
         cmd,
         shell=True,
@@ -27,7 +35,16 @@ def run_cmd(cmd):
 
 
 def turn_on_node(worker_node: WorkerNode, cluster_name: str):
-    """Turn on the node via GPIO."""
+    """Pulse the node's GPIO pin to power it on.
+
+    Args:
+        worker_node: Worker to power on.
+        cluster_name: Name of the cluster the worker belongs to.
+
+    Returns:
+        ``True`` when the GPIO pulse was sent successfully, otherwise ``False``.
+
+    """
     try:
         gpio = worker_node.gpio
         log.debug(
@@ -59,7 +76,16 @@ def turn_on_node(worker_node: WorkerNode, cluster_name: str):
 
 
 def turn_off_node(worker_node: WorkerNode, cluster_name: str):
-    """Turn of node with SSH."""
+    """Shut a worker down over SSH after checking it is safe to do so.
+
+    Args:
+        worker_node: Worker to power off.
+        cluster_name: Name of the cluster the worker belongs to.
+
+    Returns:
+        ``True`` when the shutdown request was sent, otherwise ``False``.
+
+    """
     try:
         log.info("cluster_api.power.turning_off_node", cluster=cluster_name, node=worker_node)
         worker_node.status = WorkerStatus.TURNING_OFF
@@ -100,19 +126,15 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         err = stderr.read().decode()
 
         log.debug(
-            "cluster_api.power.turn_off_shutdown_stdout",
+            "cluster_api.power.turn_off_shutdown_output",
             cluster_name=cluster_name,
             worker_node=worker_node.name,
             stdout=out,
-        )
-        log.debug(
-            "cluster_api.power.turn_off_shutdown_stderr",
-            cluster_name=cluster_name,
-            worker_node=worker_node.name,
             stderr=err,
         )
 
         client.close()
+        # Sleep 20 seconds to ensure its turned off.
         time.sleep(20)
         worker_node.status = WorkerStatus.OFF
         log_node_status_snapshot(cluster_name, worker_node)
@@ -135,7 +157,18 @@ def check_if_llama_pod_is_ready(
     cluster_name: str,
     namespace: str = "default"
     ) -> bool:
-    """Return True when a llama pod on this node is Running and Ready."""
+    """Check whether the worker currently has a running and ready llama pod.
+
+    Args:
+        worker_node: Worker node to inspect.
+        api_client: Kubernetes API client used to query pods.
+        cluster_name: Name of the cluster the worker belongs to.
+        namespace: Kubernetes namespace to inspect.
+
+    Returns:
+        ``True`` when at least one matching pod is running and ready, otherwise ``False``.
+
+    """
     try:
         pods = api_client.list_namespaced_pod(
             namespace=namespace,
@@ -167,7 +200,16 @@ def check_if_llama_pod_is_ready(
 
 
 def refresh_worker_capacity(worker_node: WorkerNode, cluster_config) -> bool:
-    """Refresh max_slots for a single worker from its llama /props endpoint."""
+    """Refresh a worker's slot capacity by calling its llama ``/props`` endpoint.
+
+    Args:
+        worker_node: Worker node to update.
+        cluster_config: Cluster information used to build the request URL.
+
+    Returns:
+        ``True`` when capacity could be read and is greater than zero, otherwise ``False``.
+
+    """
     try:
         if cluster_config.cluster_config.k3d:
             url = f"http://localhost:{worker_node.forwarded_port}/props"
@@ -217,7 +259,18 @@ def wait_for_nodes_to_be_ready(
         timeout_s: int = 300,
         poll_interval_s: int = 2
         ) -> bool:
-    """Wait until each selected node has a Running+Ready llama pod and valid capacity."""
+    """Wait until all selected nodes have a ready llama pod and valid capacity.
+
+    Args:
+        worker_nodes: Workers that should be confirmed ready.
+        cluster_name: Name of the cluster these workers belong to.
+        timeout_s: Maximum number of seconds to wait.
+        poll_interval_s: Delay between readiness checks.
+
+    Returns:
+        ``True`` when every worker becomes ready before the timeout, otherwise ``False``.
+
+    """
     deadline = time.time() + timeout_s
     api_client = get_api_client()
     cluster_config = config_store.get()
@@ -256,9 +309,20 @@ def wait_for_nodes_to_be_ready(
 
 
 def change_node_status(number_of_nodes: int, status: str):
-    """Change status of up to number_of_nodes in the cluster.
+    """Turn a requested number of workers on or off.
 
-    status: 'on' or 'off'.
+    When turning on worker nodes, the operation is performed concurrently using
+    threads because powering on a worker can take several seconds. This allows
+    multiple nodes to start simultaneously instead of sequentially. The function
+    still waits until all expected nodes are fully powered on before continuing.
+
+    Args:
+        number_of_nodes: Maximum number of workers to change.
+        status: Either ``"on"`` or ``"off"``.
+
+    Returns:
+        A small summary dict with the requested count, action, and changed nodes.
+
     """
     cluster_config = config_store.get()
     cluster_name = cluster_config.cluster_config.name
@@ -295,7 +359,16 @@ def change_node_status(number_of_nodes: int, status: str):
 
 
 def select_nodes_to_turn_on(number_of_nodes: int, worker_nodes: list[WorkerNode]) -> list[WorkerNode]:
-    """Select inactive nodes to turn on."""
+    """Pick powered off workers that should be powered on.
+
+    Args:
+        number_of_nodes: Maximum number of workers to select.
+        worker_nodes: Full worker list for the cluster.
+
+    Returns:
+        Workers selected for power-on, in the order they were found.
+
+    """
     nodes_to_turn_on = []
     for node in worker_nodes:
         if len(nodes_to_turn_on) >= number_of_nodes:
@@ -303,16 +376,21 @@ def select_nodes_to_turn_on(number_of_nodes: int, worker_nodes: list[WorkerNode]
         if node.status == WorkerStatus.OFF:
             nodes_to_turn_on.append(node)
             continue
-        # A node can remain stuck in TURNING_ON if the previous boot attempt did not
-        # produce a ready llama pod or valid slots. Select it again so it can be retried.
-        if node.status == WorkerStatus.TURNING_ON and node.max_slots == 0:
-            nodes_to_turn_on.append(node)
-            continue
+
     return nodes_to_turn_on
 
 
 def select_nodes_to_turn_off(number_of_nodes: int, worker_nodes: list[WorkerNode]) -> list[WorkerNode]:
-    """Select active nodes to turn off, this is only used for manually turn off x nodes."""
+    """Pick idle workers that should be powered off.
+
+    Args:
+        number_of_nodes: Maximum number of workers to select.
+        worker_nodes: Full worker list for the cluster.
+
+    Returns:
+        Idle workers selected for power-off, in the order they were found.
+
+    """
     nodes_to_turn_off = []
     for node in worker_nodes:
         if len(nodes_to_turn_off) >= number_of_nodes:
@@ -323,18 +401,18 @@ def select_nodes_to_turn_off(number_of_nodes: int, worker_nodes: list[WorkerNode
 
 
 def get_idle_time(node_name: str, cluster_name: str) -> float:
-    """Return the idle time in seconds for a given node in a cluster.
+    """Return how long a worker has been idle.
 
-    Checks the most recent NodeStatusLog entry for this node. If it shows status==IDLE,
-    returns the seconds since that transition. Otherwise returns 0 (node not currently idle).
+    The function reads the latest node-status log entry for the worker. If the latest
+    status is ``IDLE``, it returns the age of that state in seconds. If the node is not
+    currently idle, it returns ``0`` so the caller does not treat it as eligible.
 
     Args:
-        node_name: Name of the node to check.
+        node_name: Name of the worker node.
         cluster_name: Name of the cluster the node belongs to.
 
     Returns:
-        Time in seconds since the node transitioned to IDLE.
-        Returns 0 if the most recent status is not IDLE.
+        Number of seconds since the node last became idle, or ``0`` if it is not idle.
 
     """
     now = datetime.now(timezone.utc)
@@ -362,11 +440,14 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
 
 
 def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
-    """Turn off all nodes that have been idle for longer than `idle_time` seconds.
+    """Turn off workers that have been idle longer than the configured threshold.
 
     Args:
-        idle_time: Number of seconds a node must be idle before being turned off.
-        stay_one: If its the best cluster after running scoring algorithm then at least stay one up.
+        idle_time: Minimum idle time in seconds before a node may be powered off.
+        stay_one: Keep one worker running when the cluster would otherwise drop to zero.
+
+    Returns:
+        A summary dict when the stay-one guard short-circuits; otherwise ``None``.
 
     """
     config = config_store.get()
@@ -382,25 +463,13 @@ def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
 
     nodes = config.worker_nodes
 
-    if stay_one:
-        active_or_idle_nodes = 0
-        for node in nodes:
-            if node.status in {WorkerStatus.WORKING, WorkerStatus.IDLE}:
-                active_or_idle_nodes += 1
-        if active_or_idle_nodes <= 1:
-            log.debug(
-                "cluster_api.power.turn_off_idle_stay_one_protected",
-                cluster_name=cluster_name,
-                active_or_idle_nodes=active_or_idle_nodes,
-            )
-            return {
-                "requested": 0,
-                "status": "off",
-                "node_changed": 0,
-                "nodes": [],
-            }
+    # Ensure the same working node (sorted by name) is never turned off.
+    nodes = sorted(config.worker_nodes, key=lambda n: n.name)
+    keeper = nodes[0]
 
     for node in nodes:
+        if node is keeper:
+            continue
         # Only true idle nodes are eligible for automatic power-off.
         if node.status != WorkerStatus.IDLE:
             log.debug(
