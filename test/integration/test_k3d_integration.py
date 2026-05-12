@@ -14,6 +14,7 @@ class K3dTestRunner:
     """Start a test, wait for completion, fetch the raw summary, and run assertions."""
 
     def __init__(self, config: Config, api_url: str = "http://127.0.0.1:8071"):
+        """Init K3dTestRunner."""
         self.config = config
         self.api_url = api_url
         self.assertions: list[tuple[str, Callable[[dict], None]]] = []
@@ -47,7 +48,12 @@ class K3dTestRunner:
         self.assertions.append((f"success_rate(min={min_rate})", check))
         return self
 
-    def assert_cluster_requests(self, cluster_name: str, min_count: int | None = None, max_count: int | None = None):
+    def assert_cluster_requests(
+            self,
+            cluster_name: str,
+            min_count: int | None = None,
+            max_count: int | None = None
+        ):
         """Assert request count for one cluster."""
 
         def check(summary: dict) -> None:
@@ -146,6 +152,7 @@ class K3dTestRunner:
         print(f"{'=' * 72}\n")
 
     def run(self, wait_for_test_to_stop: int) -> dict:
+        """Run the tests and wait for x seconds to abort."""
         config_name = self._start_test()
         self._wait_for_completion(timeout_s=wait_for_test_to_stop)
         config_id = self._find_config_id_by_name(config_name)
@@ -162,11 +169,11 @@ def test_k3d_default():
 
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=8)
-        .assert_success_rate(min_rate=0.99)
-        .assert_cluster_requests("pt", min_count=3)
+        .assert_total_requests(min_count=10)
+        .assert_success_rate(min_rate=1)
+        .assert_cluster_requests("pt", min_count=9)
         .assert_global_carbon(max_gco2=100)
-        .run(config.start.duration_time_s)
+        .run(config.start.duration_time_s + 60)
     )
 
 
@@ -178,8 +185,8 @@ def test_k3d_high_load():
 
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=20)
-        .assert_success_rate(min_rate=0.98)
-        .assert_cluster_requests("dk", min_count=10)
-        .run(config.start.duration_time_s)
+        .assert_total_requests(min_count=30)
+        .assert_success_rate(min_rate=1)
+        .assert_cluster_requests("dk", min_count=29)
+        .run(config.start.duration_time_s + 120)
     )
