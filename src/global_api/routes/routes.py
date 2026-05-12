@@ -17,6 +17,7 @@ def nodes():
 
     Returns:
         List of worker-node entries from all clusters.
+
     """
     return get_all_worker_nodes()
 
@@ -34,6 +35,7 @@ def handle_llm_question(question: QuestionConfig, request: Request):
 
     Returns:
         Scheduler response containing the chosen cluster and model output.
+
     """
     trace_id = request.headers.get("X-Trace-Id")
     return handle_llm_request(question, trace_id=trace_id)
@@ -51,6 +53,7 @@ def start_test_endpoint(config: Config):
 
     Raises:
         HTTPException: If the test cannot be started.
+
     """
     try:
         return start_test(config)
@@ -64,6 +67,7 @@ def stop_test_endpoint():
 
     Returns:
         Stop-test response describing what was stopped.
+
     """
     return stop_test()
 
@@ -80,5 +84,6 @@ def validate_config_endpoint(config: Config):
 
     Returns:
         Validation result with pass/fail status and any validation messages.
+
     """
     return validate_config(config)

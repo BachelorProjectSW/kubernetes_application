@@ -22,6 +22,7 @@ def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
         cluster: Cluster configuration object with name, host, port, and k3d flag.
         timeout_s: Maximum number of seconds to wait for each readiness phase.
         poll_interval_s: Seconds between status checks.
+
     """
     if cluster.k3d:
         return

@@ -22,6 +22,7 @@ def _ms_to_iso(ms: int) -> str:
 
     Returns:
         UTC datetime string in `YYYY-MM-DD HH:MM:SS` format.
+
     """
     return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 

@@ -29,6 +29,7 @@ def _database_url() -> str:
 
     Returns:
         Full SQLAlchemy/PostgreSQL connection URL.
+
     """
     url = os.getenv("DATABASE_URL")
     if url:
@@ -50,6 +51,7 @@ def _admin_url(url: URL) -> URL:
 
     Returns:
         URL pointing to the admin database (usually `postgres`).
+
     """
     admin_db = os.getenv("POSTGRES_ADMIN_DB", "postgres")
     return url.set(database=admin_db)
@@ -66,6 +68,7 @@ def _db_name(url: URL) -> str:
 
     Raises:
         ValueError: If the URL has no database component.
+
     """
     if not url.database:
         raise ValueError("DATABASE_URL must include a database name")
@@ -116,6 +119,7 @@ def _engine():
 
     Returns:
         The shared SQLAlchemy engine used for all database access.
+
     """
     global _ENGINE
     if _ENGINE is None:
@@ -162,6 +166,7 @@ def save_config(config: Config) -> None:
 
     Args:
         config: In-memory configuration object to persist.
+
     """
     payload = config.model_dump(mode="python")
     row = ConfigRecord(
@@ -181,6 +186,7 @@ def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
     Args:
         config_id: Optional configuration ID used to group logs by test run.
         log_model: Pydantic model instance representing one log entry.
+
     """
     row = AppLogRecord(
         config_id=config_id,
@@ -202,6 +208,7 @@ def save_terminal_debug(config_id: str | None, message: str, level: str, payload
         message: Human-readable log message.
         level: Log level (for example `info`, `warning`, `error`).
         payload: Structured context data to store with the message.
+
     """
     safe_payload = jsonable_encoder(payload)
     row = AppLogRecord(
@@ -229,6 +236,7 @@ def read_model_logs(
 
     Returns:
         Parsed log entries ordered by creation time.
+
     """
     query = select(AppLogRecord).where(AppLogRecord.log_type == log_model_class.__name__)
     if config_id is not None:
@@ -268,6 +276,7 @@ def read_latest_node_status_log(
 
     Returns:
         Latest matching `NodeStatusLog`, or `None` if not found.
+
     """
     query = select(AppLogRecord).where(AppLogRecord.log_type == NodeStatusLog.__name__)
     query = query.where(AppLogRecord.config_id == config_id)
@@ -310,6 +319,7 @@ def read_config_by_id(config_id: str) -> Config | None:
 
     Returns:
         Parsed `Config` object, or `None` when no matching row exists.
+
     """
     query = select(ConfigRecord).where(ConfigRecord.config_id == config_id)
 
@@ -330,6 +340,7 @@ def read_config_by_name(config_name: str) -> Config | None:
 
     Returns:
         Parsed `Config` object, or `None` when no matching row exists.
+
     """
     query = select(ConfigRecord).where(ConfigRecord.config_name == config_name)
 
@@ -347,6 +358,7 @@ def read_all_configs() -> list[Config]:
 
     Returns:
         List of persisted configuration rows ordered by `created_at`.
+
     """
     query = select(ConfigRecord).order_by(ConfigRecord.created_at)
 

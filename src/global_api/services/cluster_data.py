@@ -69,6 +69,7 @@ def _get_microgrid_base_load_w(
 
     Returns:
         Extra base load in watts to add to computed cluster load.
+
     """
     country_code = cluster.simulated_country_code.upper()
 
