@@ -1,3 +1,4 @@
+const CONFIG_API_URL = import.meta.env.VITE_CONFIG_API_URL;
 export const handleSubmit = async (e, inputs) => {
   e.preventDefault();
 
@@ -78,7 +79,7 @@ export const handleSubmit = async (e, inputs) => {
 
   try {
     console.log(exportData);
-    const response = await fetch("http://100.109.95.2:8099/start_test", {
+    const response = await fetch(`${CONFIG_API_URL}/start_test`, {
       // Ensure port matches your FastAPI server
       method: "POST",
       headers: {

@@ -13,6 +13,7 @@ import {
   Legend,
 } from "recharts";
 import "./App.css";
+const CONFIG_API_URL = import.meta.env.VITE_CONFIG_API_URL;
 
 const COLORS = ["#3b82f6", "#22c55e", "#f59e0b"];
 
@@ -36,7 +37,7 @@ function DashboardPage() {
       setLoadingConfigs(true);
 
       try {
-        const res = await fetch("http://100.109.95.2:8099/get_configs");
+        const res =  await fetch(`${CONFIG_API_URL}/get_configs`);
 
         if (!res.ok) {
           throw new Error("Failed to fetch configs");

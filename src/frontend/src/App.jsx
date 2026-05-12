@@ -11,6 +11,8 @@ import { handleSubmit } from "./components/submitData";
 import DashboardPage from "./pages/DashboardPage";
 import "./index.css";
 
+const CONFIG_API_URL = import.meta.env.VITE_CONFIG_API_URL;
+
 function ConfigPage() {
   const navigate = useNavigate();
 
@@ -20,10 +22,11 @@ function ConfigPage() {
   const [statusError, setStatusError] = useState("");
 
   const isLocked = testStatus === "running" || testStatus === "stopping";
+  
 
   const fetchTestStatus = async () => {
     try {
-      const res = await fetch("http://100.109.95.2:8099/test_status");
+      const res = await fetch(`${CONFIG_API_URL}/test_status`);
 
       if (!res.ok) {
         throw new Error("Failed to fetch test status");

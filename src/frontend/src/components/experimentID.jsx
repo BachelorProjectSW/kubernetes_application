@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+const CONFIG_API_URL = import.meta.env.VITE_CONFIG_API_URL;
 
 function Ids({ inputs, setInputs, handleChange }) {
   const [earlierConfigs, setEarlierConfigs] = useState([]);
@@ -10,7 +11,7 @@ function Ids({ inputs, setInputs, handleChange }) {
       setLoading(true);
 
       try {
-        const response = await fetch("http://100.109.95.2:8099/get_configs");
+        const response = await fetch(`${CONFIG_API_URL}/get_configs`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch configs");
