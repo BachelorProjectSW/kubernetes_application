@@ -368,7 +368,8 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--surface-3);
+  background: #e2e8f0; /* no status data */
+  cursor: help;
 }
 
 .relativeTimelineBlock {

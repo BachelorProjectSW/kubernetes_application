@@ -760,7 +760,10 @@ const NodeTimelineRows = ({ label, nodes, rangeMs }) => {
                 <span className="nodeLabel">{node}</span>
               </div>
 
-              <div className="relativeTimeline">
+              <div
+                className="relativeTimeline"
+                title={`${node} — no status data before first event`}
+              >
                 {mergedStates.map((state, index) => {
                   const currentMs = state.timestamp;
                   const nextMs =
