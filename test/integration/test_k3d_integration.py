@@ -187,6 +187,22 @@ def test_k3d_high_load():
         K3dTestRunner(config)
         .assert_total_requests(min_count=30)
         .assert_success_rate(min_rate=1)
-        .assert_cluster_requests("dk", min_count=29)
+        .assert_cluster_requests("pt", min_count=29)
+        .run(config.start.duration_time_s + 120)
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.xfail(reason="Github runner have not access to CROM DB.", strict=False)
+def test_k3d_dk_cluster():
+    """Higher request-rate scenario."""
+    config = get_test_config()
+    config.workload.request_per_minute = 30
+    config.clusters[0].simulated_country_code = "DK-DK1"
+    (
+        K3dTestRunner(config)
+        .assert_total_requests(min_count=30)
+        .assert_success_rate(min_rate=1)
+        .assert_cluster_requests("pt", min_count=29)
         .run(config.start.duration_time_s + 120)
     )
