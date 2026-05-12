@@ -61,7 +61,7 @@ def get_test_config():
                 ip="127.0.0.1",
                 port="8073",
                 gpio_list=[1, 2],
-                simulated_country_code="DK",
+                simulated_country_code="DK-DK1",
                 llama_service_port="8075",
                 k3d=True
             ),
