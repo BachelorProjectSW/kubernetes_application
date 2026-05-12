@@ -7,7 +7,14 @@ from ..services.price_and_carbon_intensity import fetch_carbon_intensity, fetch_
 
 
 def _hour_floor(dt: datetime) -> datetime:
-    """Strip minutes and seconds so that e.g. 14:23 and 14:59 map to the same key (14:00)."""
+    """Normalize a timestamp to the beginning of its hour.
+
+    Args:
+        dt: Timestamp to normalize.
+
+    Returns:
+        datetime: Timestamp with minute, second, and microsecond set to zero.
+    """
     return dt.replace(minute=0, second=0, microsecond=0)
 
 
@@ -30,13 +37,25 @@ class MarketDataStore:
     """In-memory store for hourly market data, keyed on simulated time."""
 
     def __init__(self):
-        """Init."""
+        """Initialize empty in-memory caches for market data.
+
+        Returns:
+            None: Sets up cache dictionaries for carbon, price, and power
+            time-series values.
+        """
         self._carbon: dict[tuple[str, datetime], _CarbonCacheEntry] = {}
         self._price: dict[tuple[str, datetime], _PriceCacheEntry] = {}
         self._power: dict[tuple[str, float, datetime], _PowerCacheEntry] = {}
 
     def reset(self):
-        """Clear all cached market data (call when starting a new test)."""
+        """Clear all cached market data.
+
+        This should be called when a new test starts to avoid reusing cached
+        values from a previous run.
+
+        Returns:
+            None: Empties all internal cache dictionaries.
+        """
         self._carbon.clear()
         self._price.clear()
         self._power.clear()
@@ -47,10 +66,22 @@ class MarketDataStore:
         end: datetime,
         zone: str,
     ) -> list[tuple[datetime, int]]:
-        """Return grid carbon intensity for the simulated hour.
+        """Get grid carbon intensity for the simulated time window.
 
         Fetches from the Electricity Maps API only when the simulated hour
         changes; subsequent calls within the same hour return cached data.
+
+        Args:
+            start: Start timestamp of the simulated interval.
+            end: End timestamp of the simulated interval.
+            zone: Electricity Maps zone code.
+
+        Returns:
+            list[tuple[datetime, int]]: Carbon intensity series in gCO2eq/kWh.
+
+        Raises:
+            Exception: Propagates provider errors from
+                ``fetch_carbon_intensity``.
         """
         key = (zone.upper(), _hour_floor(start))
 
@@ -68,10 +99,21 @@ class MarketDataStore:
         end: datetime,
         zone: str,
     ) -> list[tuple[datetime, float]]:
-        """Return day-ahead electricity price for the simulated hour.
+        """Get day-ahead electricity price for the simulated time window.
 
         Fetches from the Electricity Maps API only when the simulated hour
         changes; subsequent calls within the same hour return cached data.
+
+        Args:
+            start: Start timestamp of the simulated interval.
+            end: End timestamp of the simulated interval.
+            zone: Electricity Maps zone code.
+
+        Returns:
+            list[tuple[datetime, float]]: Price series for the given zone.
+
+        Raises:
+            Exception: Propagates provider errors from ``fetch_price_data``.
         """
         key = (zone.upper(), _hour_floor(start))
 
@@ -90,7 +132,7 @@ class MarketDataStore:
         zone: str,
         pv_capacity_w: float,
     ) -> list[tuple[datetime, float]]:
-        """Return solar generation in watts for the simulated hour.
+        """Get PV generation in watts for the simulated time window.
 
         For DK zones, real measured generation is fetched from the AAU Orin
         proxy (CrateDB) instead of the static CSV capacity-factor table.
@@ -100,6 +142,19 @@ class MarketDataStore:
 
         Fetches only when the simulated hour changes; subsequent calls within
         the same hour return cached data.
+
+        Args:
+            start: Start timestamp of the simulated interval.
+            end: End timestamp of the simulated interval.
+            zone: Country or zone code used for data lookup.
+            pv_capacity_w: Installed PV capacity in watts.
+
+        Returns:
+            list[tuple[datetime, float]]: PV generation time series in watts.
+
+        Raises:
+            Exception: Propagates errors from DK proxy fetches or CSV-based
+                power lookup.
         """
         zone_key = zone.upper()
         key = (zone_key, float(pv_capacity_w), _hour_floor(start))
