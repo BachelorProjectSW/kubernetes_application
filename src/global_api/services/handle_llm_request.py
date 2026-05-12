@@ -19,18 +19,25 @@ log = structlog.get_logger()
 
 
 def handle_llm_request(question: QuestionConfig, trace_id: str):
-    """Send the question to the local cluster request scheduler llama-service."""
+    """Send one LLM question to the best cluster and return the answer.
+
+    The function first reads the current test configuration, estimates the
+    current simulation time, and collects recent request latencies. It then
+    checks each cluster, picks the best one with the scoring rules, forwards
+    the question to that cluster, and stores a detailed request log.
+    """
     try:
         total_start = time.monotonic()
         config = config_store.get()
 
+        # Convert the real clock into the simulated time used by the test run.
         simulated_time = compute_simulated_now(
             config.start.start_time_simulated,
             config.start.start_time_real,
         )
 
-        # Prefetch recent RequestLog entries once and compute per-cluster
-        # average latencies to avoid one DB query per cluster.
+        # Load recent request logs once so we can reuse them for every cluster.
+        # This avoids one database query per cluster and keeps selection fast.
         now = datetime.now(timezone.utc)
         start = now - timedelta(seconds=config.latency.latency_window_s)
         try:
@@ -38,6 +45,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         except Exception:
             recent_requests = []
 
+        # Build one average latency value per cluster from the recent window.
         avg_latency_by_cluster: dict[str, float] = {}
         for cluster in config.clusters:
             latencies = [r.latency_ms for r in recent_requests if r.cluster == cluster.name]
@@ -48,6 +56,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
 
             avg_latency_by_cluster[cluster.name] = avg
 
+        # Gather the current runtime state for every cluster before scoring.
         all_cluster_energy_data = [
             get_cluster_runtime_data(
                 cluster,
@@ -58,6 +67,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             for cluster in config.clusters
         ]
 
+        # Pick the best cluster using energy, cost, and latency scoring.
         cluster, cluster_energy_data = choose_cluster(
             config.clusters,
             all_cluster_energy_data,
@@ -67,6 +77,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         )
         choose_cluster_end = int((time.monotonic() - total_start) * 1000)
 
+        # Compute the blended energy numbers used in the request log.
         grid_fraction = compute_grid_fraction(
             cluster_energy_data.renewable_output_w,
             cluster_energy_data.cluster_load_w,
@@ -83,6 +94,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             cluster_energy_data.grid_electricity_price,
         )
 
+        # Forward the original question to the chosen cluster.
         url = f"http://{cluster.ip}:{cluster.port}/handle_llm_request"
 
         headers = {"X-Trace-Id": trace_id}
@@ -98,6 +110,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             response.raise_for_status()
             data = response.json()
         except Exception as e:
+            # If the cluster call fails, store the attempt so the failure is visible.
             global_total_time_ms = int((time.monotonic() - total_start) * 1000)
             log_request(
                 cluster_name=cluster.name,
@@ -118,6 +131,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             )
             raise Exception(e)
 
+        # Convert the cluster payload into the response model used by callers.
         result = LLMResponse(
             llm_content=data["llm_content"],
             worker_node=data["worker_node"],
@@ -134,11 +148,13 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         log.debug("global_api.llm_content", llm_content=llm_content, worker_node=worker_node)
         answer = None
 
+        # The answer is stored separately when the cluster returns plain content.
         if isinstance(llm_content, dict):
             answer = llm_content.get("content") or None
 
         global_total_time_ms = int((time.monotonic() - total_start) * 1000)
 
+        # Save the successful request with timing and energy details.
         log_request(
             cluster_name=cluster.name,
             worker_node_name=worker_node.name,
@@ -161,6 +177,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
 
         return result
     except Exception as e:
+        # Any unexpected failure is logged once more with the best data we have.
         log.error("global.api.request.failed", error=e)
         log_request(
             cluster_name=cluster.name if "cluster" in locals() else "unknown",
