@@ -77,6 +77,7 @@ class WorkerNode(BaseModel):
 
         Returns:
             int: Number of actively running requests for this worker.
+
         """
         return min(self.inflight_requests, self.max_slots)
 
@@ -92,6 +93,7 @@ class WorkerNode(BaseModel):
 
         Returns:
             int: Number of queued (not yet actively running) requests.
+
         """
         return max(0, self.inflight_requests - self.max_slots)
 
@@ -107,6 +109,7 @@ class WorkerNode(BaseModel):
 
         Returns:
             int: Number of slots available for immediate assignment.
+
         """
         return max(0, self.max_slots - self.active_requests)
 

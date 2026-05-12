@@ -15,6 +15,7 @@ class ConfigStore:
 
         Returns:
             None: Creates internal state used by service threads.
+
         """
         self._config: Config | None = None
         self._lock = threading.Lock()
@@ -28,6 +29,7 @@ class ConfigStore:
 
         Returns:
             None: Updates internal shared state under lock.
+
         """
         with self._lock:
             self._config = config
@@ -38,6 +40,7 @@ class ConfigStore:
         Returns:
             Config | None: The current configuration if one has been set,
             otherwise ``None``.
+
         """
         with self._lock:
             return self._config
@@ -48,6 +51,7 @@ class ConfigStore:
         Returns:
             list: Configured clusters, or an empty list if no configuration is
             active.
+
         """
         with self._lock:
             if self._config is None:
@@ -68,6 +72,7 @@ class ConfigStore:
             requests.RequestException: If a cluster API request fails.
             ValueError: If the response payload cannot be parsed into
                 ``ClusterInformation``.
+
         """
         all_clusters = []
 
@@ -95,6 +100,7 @@ class ConfigStore:
 
         Returns:
             None: Mutates the scheduler start flag when a config is present.
+
         """
         with self._lock:
             if self._config is None:

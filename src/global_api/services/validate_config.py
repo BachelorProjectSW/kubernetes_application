@@ -25,6 +25,7 @@ def validate_config_values(config: Config) -> list[str]:
     Returns:
         list[str]: Validation errors. An empty list means the configuration
         values are internally consistent.
+
     """
     errors = []
 
@@ -92,6 +93,7 @@ def validate_cluster_reachability(config: Config) -> list[str]:
     Returns:
         list[str]: Reachability-related validation errors. Empty means all
         clusters responded successfully.
+
     """
     errors = []
 
@@ -124,6 +126,7 @@ def validate_electricity_maps(config: Config) -> list[str]:
     Returns:
         list[str]: API and data-availability validation errors. Empty means all
         required non-DK zones returned data.
+
     """
     errors = []
 
@@ -171,6 +174,7 @@ def validate_dk_energy(config: Config) -> list[str]:
     Returns:
         list[str]: DK energy validation errors. Empty means all DK clusters had
         accessible data for the requested interval.
+
     """
     errors = []
 
@@ -208,6 +212,7 @@ def validate_pv_data(config: Config) -> list[str]:
     Returns:
         list[str]: PV data validation errors. Empty means PV data was available
         for all relevant clusters.
+
     """
     errors = []
 
@@ -246,6 +251,7 @@ def validate_config(config: Config) -> dict:
         dict: Validation result payload with two keys:
             - ``valid`` (bool): ``True`` when no validation errors were found.
             - ``errors`` (list[str]): Collected validation error messages.
+
     """
     errors = []
     errors.extend(validate_config_values(config))

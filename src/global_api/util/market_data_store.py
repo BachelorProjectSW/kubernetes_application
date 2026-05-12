@@ -14,6 +14,7 @@ def _hour_floor(dt: datetime) -> datetime:
 
     Returns:
         datetime: Timestamp with minute, second, and microsecond set to zero.
+
     """
     return dt.replace(minute=0, second=0, microsecond=0)
 
@@ -42,6 +43,7 @@ class MarketDataStore:
         Returns:
             None: Sets up cache dictionaries for carbon, price, and power
             time-series values.
+
         """
         self._carbon: dict[tuple[str, datetime], _CarbonCacheEntry] = {}
         self._price: dict[tuple[str, datetime], _PriceCacheEntry] = {}
@@ -55,6 +57,7 @@ class MarketDataStore:
 
         Returns:
             None: Empties all internal cache dictionaries.
+
         """
         self._carbon.clear()
         self._price.clear()
@@ -82,6 +85,7 @@ class MarketDataStore:
         Raises:
             Exception: Propagates provider errors from
                 ``fetch_carbon_intensity``.
+
         """
         key = (zone.upper(), _hour_floor(start))
 
@@ -114,6 +118,7 @@ class MarketDataStore:
 
         Raises:
             Exception: Propagates provider errors from ``fetch_price_data``.
+
         """
         key = (zone.upper(), _hour_floor(start))
 
@@ -155,6 +160,7 @@ class MarketDataStore:
         Raises:
             Exception: Propagates errors from DK proxy fetches or CSV-based
                 power lookup.
+
         """
         zone_key = zone.upper()
         key = (zone_key, float(pv_capacity_w), _hour_floor(start))

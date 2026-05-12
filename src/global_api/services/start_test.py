@@ -24,6 +24,7 @@ def _run_power_scheduler_loop():
 
     Returns:
         None: This function runs until the async scheduler loop exits.
+
     """
     asyncio.run(power_scheduler_loop())
 
@@ -47,6 +48,7 @@ def start_test(config: Config):
         Exception: Wrapped exception if any initialization step fails, such as
             configuration push errors, node readiness timeout, or scheduler
             startup issues.
+
     """
     try:
         global _power_scheduler_thread
@@ -110,6 +112,7 @@ def stop_test():
 
     Returns:
         dict[str, str]: Confirmation payload describing the stop action.
+
     """
     config_store.stop_power_scheduler()
     return {"message": "Test stopped"}

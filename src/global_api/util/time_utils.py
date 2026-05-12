@@ -22,6 +22,7 @@ def compute_simulated_now(start_time_simulated: str, start_time_real: str) -> da
 
     Raises:
         ValueError: If either timestamp cannot be parsed.
+
     """
     now_utc = datetime.now(timezone.utc)
 
