@@ -94,14 +94,16 @@ class ValidationScenario:
     run after test execution completes. Not a pytest test class.
     """
 
-    def __init__(self, test_name: str):
+    def __init__(self, test_name: str, use_pattern: bool = False):
         """Initialize a scenario for a named test config.
 
         Args:
-            test_name: Name of the test config to match in the database.
+            test_name: Name or pattern of the test config to match in the database.
+            use_pattern: If True, treat test_name as SQL LIKE pattern (e.g., 'k3d_test_%').
 
         """
         self.test_name = test_name
+        self.use_pattern = use_pattern
         self.assertions = AssertionRegistry()
 
     def assert_total_requests(self, min_count: Optional[int] = None, max_count: Optional[int] = None) -> "ValidationScenario":
@@ -278,6 +280,43 @@ class ResultsValidator:
         )
         return config
 
+    def find_latest_config_by_pattern(self, pattern: str) -> Config | None:
+        """Find the most recently created config matching a name pattern (LIKE).
+
+        Useful for finding configs with dynamic names like 'k3d_test_%'.
+
+        Args:
+            pattern: SQL LIKE pattern to match config names.
+
+        Returns:
+            Config object or None if not found.
+
+        """
+        from sqlalchemy import func
+
+        query = (
+            select(ConfigRecord)
+            .where(ConfigRecord.config_name.like(pattern))
+            .order_by(ConfigRecord.created_at.desc())
+        )
+
+        with Session(_engine()) as session:
+            row = session.exec(query).first()
+
+        if row is None:
+            log.warning("test.config_not_found", pattern=pattern)
+            return None
+
+        config = Config.model_validate(row.config_json)
+        log.info(
+            "test.config_found_by_pattern",
+            pattern=pattern,
+            config_name=config.name,
+            config_id=config.id,
+            created_at=row.created_at.isoformat()
+        )
+        return config
+
     def get_test_results(self, config_id: str) -> dict:
         """Fetch test results from Strato API.
 
@@ -388,8 +427,12 @@ class ResultsValidator:
             Exception: If config not found or API call fails.
 
         """
-        # Find latest config
-        config = self.find_latest_config_by_name(scenario.test_name)
+        # Find latest config (by pattern or exact name)
+        if scenario.use_pattern:
+            config = self.find_latest_config_by_pattern(scenario.test_name)
+        else:
+            config = self.find_latest_config_by_name(scenario.test_name)
+        
         if config is None:
             raise Exception(f"Config '{scenario.test_name}' not found in database")
 
@@ -426,7 +469,7 @@ def validate_k3d_default_scenario():
         python -c "from test.integration.test_k3d_integration import validate_k3d_default_scenario; validate_k3d_default_scenario()"
     """
     scenario = (
-        ValidationScenario("k3d_test")
+        ValidationScenario("k3d_test_%", use_pattern=True)
         .assert_total_requests(min_count=8)  # At least 8 requests sent
         .assert_success_rate(min_rate=0.99)  # 99% success rate
         .assert_cluster_requests("pt", min_count=3)  # PT should get some requests

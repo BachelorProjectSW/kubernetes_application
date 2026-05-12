@@ -1,3 +1,5 @@
+import uuid
+
 from src.models.basemodels import (
     Config,
     StartConfig,
@@ -13,10 +15,17 @@ from src.models.basemodels import (
 
 
 def get_test_config():
-    """Start test test."""
+    """Start test test with unique config name.
+    
+    Generates a unique config name each time to avoid database conflicts
+    from previous test runs. Name format: k3d_test_{short_uuid}
+    """
+    unique_id = str(uuid.uuid4())[:8]
+    config_name = f"k3d_test_{unique_id}"
+    
     test_config = Config(
         id=None,
-        name="k3d_test!",
+        name=config_name,
         start=StartConfig(
             duration_time_s=60,
             start_time_simulated="25/03/2026 15:00:00",  # PT 0.645 (CROM LOW)
