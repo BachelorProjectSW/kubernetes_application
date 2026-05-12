@@ -7,8 +7,8 @@ import requests
 import structlog
 from sqlmodel import Session, select
 
-from ...src.db.postgres import ConfigRecord, _engine
-from ...src.models.basemodels import Config
+from src.db.postgres import ConfigRecord, _engine
+from src.models.basemodels import Config
 
 log = structlog.get_logger()
 
