@@ -31,7 +31,7 @@ spec:
 
       containers:
         - name: cluster-api
-          image: ghcr.io/bachelorprojectsw/cluster-api:37c2a999c69b21d649b4dc78cef0274336fc456a
+          image: ghcr.io/bachelorprojectsw/cluster-api:c2748bb04a2fdda389899ae8d4ba00b56a6a234d
 
           imagePullPolicy: IfNotPresent
           ports:
