@@ -22,7 +22,7 @@ def get_test_config():
     """
     unique_id = str(uuid.uuid4())[:8]
     config_name = f"k3d_test_{unique_id}"
-    
+
     test_config = Config(
         id=None,
         name=config_name,
