@@ -15,12 +15,28 @@ from ...custom_logging.util.log_reader import (
 
 
 def _request_energy_kwh(request: RequestLog) -> float:
-    """Estimate the energy used by a single request in kWh."""
+    """Estimate energy used by one request in kWh.
+
+    The estimate is based on power (W) multiplied by duration (hours).
+
+    Args:
+        request: Request log entry containing cluster load and latency.
+
+    Returns:
+        float: Estimated energy use in kWh.
+    """
     return (request.cluster_load_w / 1000.0) * (request.latency_ms / 3_600_000.0)
 
 
 def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> list[dict]:
-    """Build raw node status events and aggregate active-node snapshots."""
+    """Convert node status logs into a timestamp-ordered event list.
+
+    Args:
+        node_logs: Node-level status logs for one test run.
+
+    Returns:
+        list[dict]: Timeline events with timestamp, cluster, node, and status.
+    """
     sorted_logs = sorted(node_logs, key=lambda entry: (entry.timestamp, entry.cluster, entry.node))
     latest_status_by_cluster: dict[str, dict[str, str]] = defaultdict(dict)
     raw_events: list[dict] = []
@@ -40,7 +56,15 @@ def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> list[dict]:
 
 
 def _power_for_status(status: str, energy: EnergyConfig) -> float:
-    """Return instantaneous power draw in watts for a node in the given status."""
+    """Map a worker status to instantaneous power draw in watts.
+
+    Args:
+        status: Worker lifecycle state.
+        energy: Energy constants and scaling factors.
+
+    Returns:
+        float: Estimated power draw in watts for the given status.
+    """
     if status == WorkerStatus.WORKING:
         return energy.node_power_active_w * energy.power_scale_factor
     if status in (WorkerStatus.IDLE, WorkerStatus.TURNING_ON, WorkerStatus.TURNING_OFF):
@@ -55,14 +79,21 @@ def compute_cluster_energy_wh(
     energy: EnergyConfig,
     logs: list[NodeStatusLog],
 ) -> float:
-    """Return total energy consumed (Wh) by a cluster between start and end.
+    """Estimate total cluster energy consumption (Wh) for a time window.
 
     Reconstructs power draw from NodeStatusLog entries so that state changes
     between requests are accounted for, not just snapshots at request time.
     Nodes with no history before the window are assumed to have been OFF.
 
-    logs: if provided, use this list instead of fetching from the in-memory
-    store. Pass pre-fetched database logs here when reviewing past test results.
+    Args:
+        cluster_name: Cluster to compute energy for.
+        start: Window start timestamp.
+        end: Window end timestamp.
+        energy: Energy constants and scaling factors.
+        logs: Pre-fetched node status logs from the same config/test.
+
+    Returns:
+        float: Total estimated energy in watt-hours for the interval.
     """
     cluster_logs = sorted(
         (e for e in logs if e.cluster == cluster_name),
@@ -85,9 +116,11 @@ def compute_cluster_energy_wh(
         if before:
             initial_status = before[-1].status
         else:
+            # If we have no status before the interval, assume node was off.
             initial_status = WorkerStatus.OFF
 
         timeline: list[tuple[datetime, str | None]] = []
+        # Build a piecewise timeline: start marker, status changes, end marker.
         timeline.append((start, initial_status))
         for e in within:
             timeline.append((e.timestamp, e.status))
@@ -97,6 +130,7 @@ def compute_cluster_energy_wh(
             interval_start, status = timeline[i]
             interval_end, _ = timeline[i + 1]
 
+            # Energy for each segment is constant power * segment duration.
             duration_hours = (interval_end - interval_start).total_seconds() / 3600
             power_watts = _power_for_status(status, energy)
             total_wh += power_watts * duration_hours
@@ -105,7 +139,20 @@ def compute_cluster_energy_wh(
 
 
 def get_test_results(config_id: str) -> dict:
-    """Return summarized test data for one config id."""
+    """Build API-ready metrics and timelines for one test configuration.
+
+    The response combines request logs, node status logs, sent-event logs, and
+    market snapshots into one summary payload used by the frontend.
+
+    Args:
+        config_id: Config identifier for the test run.
+
+    Returns:
+        dict: Summary payload with counters, totals, timelines, and metadata.
+
+    Raises:
+        HTTPException: ``404`` when the config id does not exist.
+    """
     config = get_config_by_id(config_id)
     if config is None:
         raise HTTPException(status_code=404, detail=f"No config found for config_id={config_id}")
@@ -157,6 +204,7 @@ def get_test_results(config_id: str) -> dict:
     cumulative_cost_eur = 0.0
 
     for entry in sorted_requests:
+        # Convert per-request load + time into request-level carbon and cost.
         energy_kwh = _request_energy_kwh(entry)
         request_gco2_g = energy_kwh * entry.blended_carbon_gco2_per_kwh
         request_cost_eur = energy_kwh * entry.blended_cost_eur_per_kwh
@@ -230,6 +278,7 @@ def get_test_results(config_id: str) -> dict:
 
     cluster_energy_wh: dict[str, float] = {}
     if started_at and ended_at:
+        # Energy by cluster over full test interval from node status transitions.
         cluster_names = {log.cluster for log in node_logs}
         for cluster_name in cluster_names:
             cluster_energy_wh[cluster_name] = compute_cluster_energy_wh(
@@ -255,6 +304,7 @@ def get_test_results(config_id: str) -> dict:
         for i, snapshot in enumerate(snapshots):
             interval_start = snapshot.timestamp
             is_last_snapshot = i + 1 == len(snapshots)
+            # Use next snapshot as interval end. Last snapshot closes at test end.
             interval_end = snapshots[i + 1].timestamp if not is_last_snapshot else ended_at
 
             if interval_end is None or interval_start >= interval_end:
@@ -265,6 +315,7 @@ def get_test_results(config_id: str) -> dict:
             )
             energy_kwh = energy_wh / 1000.0
 
+            # Apply market snapshot factors to interval energy to get totals.
             total_gco2_g += energy_kwh * snapshot.carbon_gco2_per_kwh
             total_cost_eur += energy_kwh * snapshot.cost_eur_per_kwh
 
