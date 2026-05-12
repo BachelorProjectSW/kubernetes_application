@@ -24,7 +24,27 @@ async def execute_workload(
     peakiness: float,
     stop_check,
 ):
-    """Generate and execute scheduled HTTP requests against an endpoint."""
+    """Generate and execute a timed HTTP workload against a target endpoint.
+
+    The function builds a request schedule using workload settings, sends each
+    request close to its planned timestamp, and collects per-request success or
+    failure results.
+
+    Args:
+        host: Base URL of the target API.
+        endpoint: Relative endpoint path used for each request.
+        question: Question payload sent to the endpoint.
+        duration_s: Total workload duration in seconds.
+        rpm: Target requests per minute.
+        pattern: Workload shape (steady or peaks).
+        seed: Seed used to make generated schedules reproducible.
+        peakiness: Controls burst intensity for peak-based patterns.
+        stop_check: Callable that returns ``True`` when execution should stop.
+
+    Returns:
+        list[dict]: Per-request result objects containing status or error info.
+
+    """
     request_timeout_s = 1000
     start_time = time.perf_counter()
 
@@ -48,7 +68,16 @@ async def execute_workload(
     async with aiohttp.ClientSession(base_url=host, timeout=timeout) as session:
 
         async def _send_request(ts: float):
-            """Wait until the scheduled timestamp, then send the request."""
+            """Send one request at its scheduled offset from workload start.
+
+            Args:
+                ts: Scheduled offset in seconds from ``start_time``.
+
+            Returns:
+                dict: Result payload with ``ok`` flag and response/error data.
+
+            """
+            # Translate the schedule offset into a sleep relative to "now".
             delay = ts - (time.perf_counter() - start_time)
             if delay > 0:
                 await asyncio.sleep(delay)
@@ -92,6 +121,8 @@ async def execute_workload(
             except asyncio.TimeoutError:
                 duration_ms = int((time.perf_counter() - request_start) * 1000)
                 if not request_reached_host:
+                    # If we timed out before reaching the cluster, write a fallback
+                    # failed-request log entry so observability data stays complete.
                     log_request(
                         cluster_name="unknown",
                         worker_node_name="unknown",
@@ -117,6 +148,8 @@ async def execute_workload(
             except Exception as e:
                 duration_ms = int((time.perf_counter() - request_start) * 1000)
                 if not request_reached_host:
+                    # Same fallback as timeout path: keep telemetry consistent
+                    # even when the downstream system did not process the request.
                     log_request(
                         cluster_name="unknown",
                         worker_node_name="unknown",
@@ -140,17 +173,19 @@ async def execute_workload(
                 )
                 return {"ok": False, "error": str(e)}
 
-        # Schedule all requests
+        # Create one async task per planned request timestamp.
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
 
-        while not all(t.done() for t in tasks):  # Keep looping while tasks are being schedueled
-            if stop_check():  # If the user decided to stop (this calls the function)
-                log.info("workload.stop_requested — cancelling all tasks")
-                for t in tasks:  # Loop through every task. If it iss still running or waiting, cancel it.
+        # Poll for completion so we can react quickly to external stop requests.
+        while not all(t.done() for t in tasks):
+            if stop_check():
+                log.info("workload.stop_requested - cancelling all tasks")
+                # Cancel tasks that are still waiting or running.
+                for t in tasks:
                     if not t.done():
                         t.cancel()
                 break
-            await asyncio.sleep(0.5)  # Runs every 0.5 sec
+            await asyncio.sleep(0.5)
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -162,7 +197,15 @@ async def execute_workload(
 
 
 def _stop_global_test(host: str):
-    """Tell global API to stop the test after workload execution finishes."""
+    """Request global test shutdown after workload execution completes.
+
+    Args:
+        host: Base URL of the global API.
+
+    Returns:
+        None: Emits logs for success/failure of the stop request.
+
+    """
     try:
         response = requests.post(f"{host}/stop_test", timeout=500)
         response.raise_for_status()
@@ -182,7 +225,26 @@ def run_workload(
     peakiness: float,
     stop_check
 ):
-    """Run workload executor."""
+    """Run workload execution in a synchronous entrypoint.
+
+    This wrapper bridges sync callers to the async workload engine and ensures
+    a global stop request is sent in a ``finally`` block.
+
+    Args:
+        host: Base URL of the target/global API.
+        endpoint: Relative endpoint path used for workload requests.
+        question: Question payload sent per generated request.
+        duration_s: Total workload duration in seconds.
+        rpm: Target requests per minute.
+        pattern: Workload shape (for example, steady or peaks).
+        seed: Seed used to make generated schedules reproducible.
+        peakiness: Controls burst intensity for peak-based patterns.
+        stop_check: Callable that returns ``True`` when execution should stop.
+
+    Returns:
+        list[dict]: Per-request result objects returned by ``execute_workload``.
+
+    """
     try:
         return asyncio.run(
             execute_workload(host, endpoint, question, duration_s, rpm, pattern, seed, peakiness, stop_check)
