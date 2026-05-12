@@ -159,7 +159,7 @@ class K3dTestRunner:
 def test_k3d_default():
     """Balanced default scenario."""
     config = get_test_config()
-
+    
     (
         K3dTestRunner(config)
         .assert_total_requests(min_count=8)

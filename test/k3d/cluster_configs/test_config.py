@@ -46,7 +46,7 @@ def get_test_config():
             max_ms=20000
         ),
         workload=WorkloadConfig(
-            request_per_minute=1,
+            request_per_minute=10,
             pattern="steady",
             seed=10,
             peakiness=0
