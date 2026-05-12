@@ -17,18 +17,20 @@ rr_index = 0
 
 
 def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
-    """
-    Pick a worker using simple round-robin selection.
+    """Pick a worker using simple round-robin selection.
 
     Simple explanation:
     - Keep a global index and return the worker at `index % len(workers)`.
     - This gives a fair, predictable rotation when all other selection rules don't apply.
 
-    Parameters:
+    Parameters
+    ----------
         workers: List of available `WorkerNode` objects.
 
-    Returns:
+    Returns
+    -------
         A `WorkerNode` chosen by round-robin, or `None` if the input list is empty.
+
     """
     global rr_index
     if not workers:
@@ -41,8 +43,7 @@ def round_robin(workers: list[WorkerNode]) -> WorkerNode | None:
 
 
 def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
-    """
-    Choose the best worker node to handle a request.
+    """Choose the best worker node to handle a request.
 
     1. Ignore nodes that are powered off or otherwise unavailable.
     2. Prefer an idle node (zero inflight requests) to keep others ready for power scheduling.
@@ -50,11 +51,14 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
     4. If multiple nodes tie on free slots, pick deterministically by name.
     5. If all tied nodes have zero free slots (all busy), fall back to round-robin.
 
-    Parameters:
+    Parameters
+    ----------
         worker_node_list: Full list of `WorkerNode` objects for this cluster.
 
-    Returns:
+    Returns
+    -------
         The selected `WorkerNode`, or `None` when no eligible worker exists.
+
     """
     # Note: keeping selection deterministic (sorted by name) helps debugging and reduces
     # unnecessary churn between workers which can interfere with power/latency decisions.
@@ -100,18 +104,20 @@ def choose_worker_node(worker_node_list: list[WorkerNode]) -> WorkerNode | None:
 
 
 def sync_worker_status(worker: WorkerNode) -> None:
-    """
-    Update a worker's `status` to reflect its current inflight requests.
+    """Update a worker's `status` to reflect its current inflight requests.
 
     Simple explanation:
     - Do not override power-transition states (OFF, TURNING_ON, TURNING_OFF).
     - If the node has zero inflight requests set it to `IDLE`, otherwise `WORKING`.
 
-    Parameters:
+    Parameters
+    ----------
         worker: The `WorkerNode` to update in-place.
 
-    Returns:
+    Returns
+    -------
         None. The function mutates the `worker` object and logs the status snapshot.
+
     """
     if worker.status in {WorkerStatus.OFF, WorkerStatus.TURNING_ON, WorkerStatus.TURNING_OFF}:
         return
@@ -123,8 +129,7 @@ def sync_worker_status(worker: WorkerNode) -> None:
 
 
 def handle_llm(question: QuestionConfig, trace_id: str | None = None):
-    """
-    Send a single LLM question to a selected worker and return the response.
+    """Send a single LLM question to a selected worker and return the response.
 
     Purpose:
     - Pick a worker using the selection rules, increment its inflight counter,
@@ -139,16 +144,20 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
     - Timeouts are computed conservatively based on queued requests so long-running
       model calls don't block forever.
 
-    Parameters:
+    Parameters
+    ----------
         question: `QuestionConfig` containing the question text and max output tokens.
         trace_id: Optional trace id extracted from the HTTP request headers for logging.
 
-    Returns:
+    Returns
+    -------
         An `LLMResponse` object containing the raw LLM result plus selection/timing metadata.
 
-    Raises:
+    Raises
+    ------
         `HTTPException(503)` if no worker is available, or
         `HTTPException(502)` if the LLM request failed for other reasons.
+
     """
     # Keep local variables initialized for clear error logging below.
     try:

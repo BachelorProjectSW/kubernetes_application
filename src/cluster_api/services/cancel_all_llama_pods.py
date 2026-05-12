@@ -6,8 +6,7 @@ log = structlog.get_logger()
 
 
 def cancel_all_llama_pods():
-    """
-    Immediately remove every running Llama pod so they restart cleanly.
+    """Immediately remove every running Llama pod so they restart cleanly.
 
     Simple explanation:
     - This tells Kubernetes to delete all pods that are part of the Llama service.
@@ -15,10 +14,12 @@ def cancel_all_llama_pods():
       will automatically recreate the pods after they are deleted. Use this when
       you need a clean restart of the model processes on every node.
 
-    Parameters:
+    Parameters
+    ----------
         None
 
-    Returns:
+    Returns
+    -------
         None. The function logs success or failure and does not return a value.
 
     """

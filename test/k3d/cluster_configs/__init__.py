@@ -1,1 +1,1 @@
-from .worker_nodes import UnitTestWorkerNodes
+from .worker_nodes import UnitTestWorkerNodes as UnitTestWorkerNodes

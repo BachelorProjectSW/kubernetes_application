@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch, mock_open
 from src.global_api.services.pv_power import floor_to_hour, get_power_factor_by_time
 
-CSV_CONTENT = """time,PT
+CSV_CONTENT = """Date,PT
 2010-06-01 10:00:00,0.6989
 2010-06-01 11:00:00,0.7994
 2010-06-01 12:00:00,0.8415
