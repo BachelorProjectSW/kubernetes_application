@@ -8,22 +8,54 @@ log = structlog.get_logger()
 
 
 class ConfigStore:
-    """Store for the current cluster config."""
+    """In-memory holder and helper for the active cluster configuration.
+
+    This class stores the currently active `ClusterInformation` and provides
+    convenience methods to build `WorkerNode` objects from a live Kubernetes
+    cluster (or from test fixtures), assign GPIO pins and forwarded ports, and
+    read runtime information such as Llama hostPorts and per-worker capacities.
+
+    """
 
     def __init__(self):
         """Init config to none."""
         self.config: ClusterInformation | None = None
 
     def set(self, config: ClusterInformation):
-        """Set the current config."""
+        """Store a `ClusterInformation` object to be used by helper methods.
+
+        Args:
+            config: The `ClusterInformation` instance to store.
+
+        """
         self.config = config
 
     def get(self):
-        """Get the current config."""
+        """Return the currently stored `ClusterInformation`.
+
+        Returns:
+            The stored `ClusterInformation` instance, or ``None`` when no
+            configuration has been loaded yet.
+
+        """
         return self.config
 
     def build_worker_nodes(self):
-        """Build worker nodes using Kubernetes API or config defaults."""
+        """Discover cluster worker nodes and populate `config.worker_nodes`.
+
+        This queries the Kubernetes API for nodes, skips control-plane nodes,
+        extracts an IP address and ready state for each worker node, and
+        produces a list of `WorkerNode` objects attached to the stored
+        `ClusterInformation`.
+
+        Returns:
+            The list of created `WorkerNode` objects.
+
+        Raises:
+            Exception: If no configuration has been `set()` prior to calling
+                this method.
+
+        """
         if self.config is None:
             raise Exception("Config is not set yet")
 
@@ -77,7 +109,14 @@ class ConfigStore:
         return self.config.worker_nodes
 
     def assign_gpios(self):
-        """Assign GPIOs from config to each worker node."""
+        """Assign GPIO numbers from the cluster config to each worker node.
+
+        The cluster configuration includes a `gpio_list` which defines one GPIO
+        pin per worker. This method writes the GPIO number into each
+        `WorkerNode.gpio` field in the same order as the workers list. The
+        method raises a ``ValueError`` when the number of GPIOs does not match
+        the number of discovered worker nodes.
+        """
         if self.config.worker_nodes is None:
             self.build_worker_nodes()
 
@@ -98,13 +137,29 @@ class ConfigStore:
             )
 
     def get_worker_nodes_dict(self):
-        """Return worker nodes only, as list of dicts."""
+        """Return the list of worker nodes as plain dictionaries.
+
+        This is convenient for HTTP responses where the API should return a
+        JSON-serializable structure rather than Pydantic models.
+
+        Returns:
+            A list of dicts, one per worker node. If `worker_nodes` is not yet
+            populated the method will discover nodes by calling
+            `build_worker_nodes()`.
+
+        """
         if self.config.worker_nodes is None:
             self.build_worker_nodes()
         return [node.model_dump() for node in self.config.worker_nodes]
 
     def assign_forwarded_ports(self):
-        """Assign forwarded ports to workers in k3d mode."""
+        """Assign local forwarded ports to workers when running in `k3d` mode.
+
+        Many tests and local deployments use `kubectl port-forward` so each
+        worker pod is reachable on `localhost:<forwarded_port>`. This method
+        assigns a stable forwarded port to each worker based on the cluster's
+        configured `llama_service_port` and the worker's sorted name order.
+        """
         if self.config is None:
             raise Exception("Config is not set yet")
 
@@ -123,9 +178,14 @@ class ConfigStore:
             )
 
     def populate_host_port(self):
-        """Fetch hostPort from running llama pods and save it in cluster config.
+        """Discover the Llama service `hostPort` from running pods.
 
-        If no suitable pod is found, keep existing config value and continue.
+        This inspects running, ready pods labeled `app=llama-server` and reads
+        container `hostPort` fields. If a single consistent hostPort is found
+        it is stored in `config.cluster_config.llama_hostport`. If multiple
+        inconsistent hostPorts are discovered the method raises ``ValueError``.
+        If no ready pod exposes a hostPort the existing configuration value is
+        left untouched and a warning is logged.
         """
         if self.config is None:
             raise Exception("Config is not set yet")
@@ -181,9 +241,15 @@ class ConfigStore:
         )
 
     def populate_worker_capacities(self):
-        """Fetch max_slots from each worker's llama server."""
-        # Max slot = level of concurrency
+        """Probe each worker's Llama `/props` endpoint to determine capacity.
 
+        For each worker this method builds a request URL (localhost forwarded
+        port when `k3d` is enabled, otherwise the discovered host port), calls
+        the `/props` endpoint, and sets `worker.max_slots` from the returned
+        JSON's `total_slots` value. When running in `k3d` mode the probe will
+        fall back to a safe default capacity (1) if the HTTP request fails,
+        because pods may still be starting during test bootstrapping.
+        """
         if self.config is None:
             raise Exception("Config is not set yet")
 
