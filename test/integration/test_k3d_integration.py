@@ -1,6 +1,4 @@
-import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Callable, Optional
 
 import requests
@@ -65,6 +63,7 @@ class AssertionRegistry:
 
         Returns:
             Self for fluent chaining.
+
         """
         self.assertions.append((name, check))
         return self
@@ -77,6 +76,7 @@ class AssertionRegistry:
 
         Raises:
             AssertionError: If any assertion fails.
+
         """
         for name, check in self.assertions:
             try:
@@ -99,6 +99,7 @@ class ValidationScenario:
 
         Args:
             test_name: Name of the test config to match in the database.
+
         """
         self.test_name = test_name
         self.assertions = AssertionRegistry()
@@ -112,6 +113,7 @@ class ValidationScenario:
 
         Returns:
             Self for fluent chaining.
+
         """
         def check(result: ValidationResult) -> None:
             if min_count is not None and result.total_requests < min_count:
@@ -134,6 +136,7 @@ class ValidationScenario:
 
         Returns:
             Self for fluent chaining.
+
         """
         def check(result: ValidationResult) -> None:
             if result.total_requests == 0:
@@ -158,6 +161,7 @@ class ValidationScenario:
 
         Returns:
             Self for fluent chaining.
+
         """
         def check(result: ValidationResult) -> None:
             if cluster_name not in result.cluster_metrics:
@@ -189,6 +193,7 @@ class ValidationScenario:
 
         Returns:
             Self for fluent chaining.
+
         """
         def check(result: ValidationResult) -> None:
             if cluster_name not in result.cluster_metrics:
@@ -217,6 +222,7 @@ class ValidationScenario:
 
         Returns:
             Self for fluent chaining.
+
         """
         def check(result: ValidationResult) -> None:
             if result.global_avg_carbon > max_gco2:
@@ -236,6 +242,7 @@ class ResultsValidator:
 
         Args:
             strato_api_url: Base URL of Strato API.
+
         """
         self.strato_api_url = strato_api_url
 
@@ -247,6 +254,7 @@ class ResultsValidator:
 
         Returns:
             Config object or None if not found.
+
         """
         query = (
             select(ConfigRecord)
@@ -281,6 +289,7 @@ class ResultsValidator:
 
         Raises:
             requests.RequestException: If API call fails.
+
         """
         url = f"{self.strato_api_url}/test_results"
         response = requests.get(url, params={"config_id": config_id}, timeout=30)
@@ -302,6 +311,7 @@ class ResultsValidator:
 
         Returns:
             Parsed TestResult with aggregated metrics.
+
         """
         config_id = api_result.get("config_id", "unknown")
         cluster_metrics_dict: dict[str, ClusterMetrics] = {}
@@ -376,6 +386,7 @@ class ResultsValidator:
         Raises:
             AssertionError: If any assertion fails.
             Exception: If config not found or API call fails.
+
         """
         # Find latest config
         config = self.find_latest_config_by_name(scenario.test_name)
@@ -426,20 +437,20 @@ def validate_k3d_default_scenario():
     result = validator.run(scenario)
 
     # Print result summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Test: {result.config_name}")
     print(f"Config ID: {result.config_id}")
     print(f"Total Requests: {result.total_requests} ({result.total_success} success, {result.total_failure} failure)")
     print(f"Global Avg Carbon: {result.global_avg_carbon:.2f} gCO2/kWh")
     print(f"Global Avg Cost: {result.global_avg_cost:.4f} EUR/kWh")
-    print(f"\nPer-Cluster Metrics:")
+    print("\nPer-Cluster Metrics:")
     for cluster_name, metrics in result.cluster_metrics.items():
         print(f"\n  {cluster_name}:")
         print(f"    Requests: {metrics.request_count} ({metrics.success_count} success)")
         print(f"    Avg Latency: {metrics.avg_latency_ms:.0f}ms")
         print(f"    Avg Carbon: {metrics.avg_carbon_gco2:.2f} gCO2/kWh")
         print(f"    Avg Cost: {metrics.avg_cost_eur:.4f} EUR/kWh")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
 if __name__ == "__main__":
