@@ -34,6 +34,7 @@ def _current_config_id() -> str | None:
 
     Returns None if no configuration has been set.
     """
+    return _LOGGER_CONFIG_ID
 
 
 def _get_terminal_logs(_, __, event_dict):
