@@ -22,6 +22,14 @@ log = structlog.get_logger()
 
 
 def _database_url() -> str:
+    """Build the database connection URL from environment variables.
+
+    Uses `DATABASE_URL` directly when present. Otherwise builds a URL from
+    individual `POSTGRES_*` environment variables with project defaults.
+
+    Returns:
+        Full SQLAlchemy/PostgreSQL connection URL.
+    """
     url = os.getenv("DATABASE_URL")
     if url:
         return url
@@ -35,11 +43,30 @@ def _database_url() -> str:
 
 
 def _admin_url(url: URL) -> URL:
+    """Create an admin-database URL used for database creation checks.
+
+    Args:
+        url: Parsed application database URL.
+
+    Returns:
+        URL pointing to the admin database (usually `postgres`).
+    """
     admin_db = os.getenv("POSTGRES_ADMIN_DB", "postgres")
     return url.set(database=admin_db)
 
 
 def _db_name(url: URL) -> str:
+    """Extract the database name from a parsed URL.
+
+    Args:
+        url: Parsed database URL.
+
+    Returns:
+        Database name from the URL.
+
+    Raises:
+        ValueError: If the URL has no database component.
+    """
     if not url.database:
         raise ValueError("DATABASE_URL must include a database name")
     return url.database
@@ -75,6 +102,21 @@ _ENGINE_LOCK = threading.Lock()
 
 
 def _engine():
+    """Return the shared SQLAlchemy database engine.
+
+    The engine is the main object used to talk to the database. It manages
+    database connections for the whole application and reuses them instead
+    of creating a new connection every time.
+
+    It is created only once (the first time this function is called) and then
+    reused for all future database operations to improve performance.
+
+    A lock is used to make sure the engine is not created multiple times if
+    several parts of the program try to initialize it at the same time.
+
+    Returns:
+        The shared SQLAlchemy engine used for all database access.
+    """
     global _ENGINE
     if _ENGINE is None:
         with _ENGINE_LOCK:
@@ -84,6 +126,11 @@ def _engine():
 
 
 def _ensure_database_exists() -> None:
+    """Ensure the target PostgreSQL database exists before table creation.
+
+    Connects to the admin database, checks whether the configured application
+    database is present, and creates it when missing.
+    """
     url = make_url(_database_url())
     database_name = _db_name(url)
     admin_engine = create_engine(_admin_url(url), isolation_level="AUTOCOMMIT", pool_pre_ping=True)
@@ -99,7 +146,11 @@ def _ensure_database_exists() -> None:
 
 
 def init_database() -> None:
-    """Create postgres database and tables when missing."""
+    """Initialize database infrastructure required by the application.
+
+    Ensures the database exists and creates all SQLModel tables if they are
+    missing. Safe to call on startup.
+    """
     log.info("db.init_database.start")
     _ensure_database_exists()
     SQLModel.metadata.create_all(_engine())
@@ -107,7 +158,11 @@ def init_database() -> None:
 
 
 def save_config(config: Config) -> None:
-    """Persist full Config model content as JSON."""
+    """Save a full configuration snapshot to the database.
+
+    Args:
+        config: In-memory configuration object to persist.
+    """
     payload = config.model_dump(mode="python")
     row = ConfigRecord(
         config_id=config.id,
@@ -121,7 +176,12 @@ def save_config(config: Config) -> None:
 
 
 def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
-    """Persist a structured log model payload linked to config_id."""
+    """Save a structured log model as a JSON payload.
+
+    Args:
+        config_id: Optional configuration ID used to group logs by test run.
+        log_model: Pydantic model instance representing one log entry.
+    """
     row = AppLogRecord(
         config_id=config_id,
         log_type=type(log_model).__name__,
@@ -135,7 +195,14 @@ def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
 
 
 def save_terminal_debug(config_id: str | None, message: str, level: str, payload: dict[str, Any]) -> None:
-    """Save all logs to DB."""
+    """Save a terminal/debug log entry.
+
+    Args:
+        config_id: Optional configuration ID used to group debug logs.
+        message: Human-readable log message.
+        level: Log level (for example `info`, `warning`, `error`).
+        payload: Structured context data to store with the message.
+    """
     safe_payload = jsonable_encoder(payload)
     row = AppLogRecord(
         config_id=config_id,
@@ -153,7 +220,16 @@ def read_model_logs(
         config_id: str | None = None,
         since: datetime | None = None
     ) -> list[TModel]:
-    """Read model logs from DB and parse as Pydantic objects."""
+    """Read structured logs and parse them into a given Pydantic model.
+
+    Args:
+        log_model_class: Model class used to parse stored JSON payloads.
+        config_id: Optional configuration ID filter.
+        since: Optional lower bound for `created_at` timestamp.
+
+    Returns:
+        Parsed log entries ordered by creation time.
+    """
     query = select(AppLogRecord).where(AppLogRecord.log_type == log_model_class.__name__)
     if config_id is not None:
         query = query.where(AppLogRecord.config_id == config_id)
@@ -183,7 +259,16 @@ def read_latest_node_status_log(
     cluster_name: str,
     node_name: str,
 ) -> NodeStatusLog | None:
-    """Return the most recent NodeStatusLog for one node in one cluster."""
+    """Read the latest node-status entry for a specific node.
+
+    Args:
+        config_id: Configuration ID used to scope the query.
+        cluster_name: Cluster name that owns the node.
+        node_name: Node name to search for.
+
+    Returns:
+        Latest matching `NodeStatusLog`, or `None` if not found.
+    """
     query = select(AppLogRecord).where(AppLogRecord.log_type == NodeStatusLog.__name__)
     query = query.where(AppLogRecord.config_id == config_id)
     query = query.order_by(AppLogRecord.created_at.desc())
@@ -218,7 +303,14 @@ def read_latest_node_status_log(
 
 
 def read_config_by_id(config_id: str) -> Config | None:
-    """Read a persisted config snapshot by config id."""
+    """Load a configuration snapshot by configuration ID.
+
+    Args:
+        config_id: Configuration ID to lookup.
+
+    Returns:
+        Parsed `Config` object, or `None` when no matching row exists.
+    """
     query = select(ConfigRecord).where(ConfigRecord.config_id == config_id)
 
     with Session(_engine()) as session:
@@ -231,7 +323,14 @@ def read_config_by_id(config_id: str) -> Config | None:
 
 
 def read_config_by_name(config_name: str) -> Config | None:
-    """Read the first persisted config snapshot by config name."""
+    """Load the first configuration snapshot that matches a config name.
+
+    Args:
+        config_name: Human-readable configuration name.
+
+    Returns:
+        Parsed `Config` object, or `None` when no matching row exists.
+    """
     query = select(ConfigRecord).where(ConfigRecord.config_name == config_name)
 
     with Session(_engine()) as session:
@@ -244,7 +343,11 @@ def read_config_by_name(config_name: str) -> Config | None:
 
 
 def read_all_configs() -> list[Config]:
-    """Read all persisted config snapshots."""
+    """Read all saved configuration rows in creation order.
+
+    Returns:
+        List of persisted configuration rows ordered by `created_at`.
+    """
     query = select(ConfigRecord).order_by(ConfigRecord.created_at)
 
     with Session(_engine()) as session:
