@@ -301,6 +301,11 @@ def select_nodes_to_turn_on(number_of_nodes: int, worker_nodes: list[WorkerNode]
             break
         if node.status == WorkerStatus.OFF:
             nodes_to_turn_on.append(node)
+            continue
+        
+        if node.status == WorkerStatus.TURNING_ON and node.max_slots == 0:
+            nodes_to_turn_on.append(node)
+            continue
     return nodes_to_turn_on
 
 
