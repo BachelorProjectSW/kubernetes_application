@@ -22,7 +22,14 @@ def _log_market_snapshot_if_new(
     carbon_gco2_per_kwh: float,
     cost_eur_per_kwh: float,
 ) -> None:
-    """Write a MarketSnapshotLog entry for this cluster and hour if not already written."""
+    """Save hourly energy market values once per cluster and hour.
+
+    This stores two values for later analysis:
+    1. Carbon intensity: how much CO2 the grid emits per kWh.
+    2. Electricity price: how expensive grid energy is for that hour.
+
+    The same hour is logged only once to avoid duplicate records.
+    """
     config = config_store.get()
     if config is None or config.id is None:
         return
@@ -49,7 +56,20 @@ def _get_microgrid_base_load_w(
     simulated_time_start: datetime,
     simulated_time_end: datetime,
 ) -> float:
-    """Return extra base load for clusters backed by real microgrid data."""
+    """Return extra always-on power draw for supported clusters.
+
+    Some clusters include a fixed background energy usage (base load such as fridge), even when
+    no inference is running. This function currently adds that fixed load for
+    Denmark-backed data sources and returns 0 for other regions.
+
+    Args:
+        cluster: Cluster configuration containing country code.
+        simulated_time_start: Start of the hourly simulation window.
+        simulated_time_end: End of the hourly simulation window.
+
+    Returns:
+        Extra base load in watts to add to computed cluster load.
+    """
     country_code = cluster.simulated_country_code.upper()
 
     match country_code:
@@ -66,17 +86,22 @@ def get_cluster_runtime_data(
     energy: EnergyConfig,
     avg_latency_ms: float | None = None,
 ) -> ClusterRuntimeData:
-    """Fetch all runtime values for a cluster at the given simulated time.
+    """Build the current runtime snapshot for one cluster.
+
+    Combines energy-market data and cluster activity into one result object.
+    In simple terms, it answers: how much renewable power is available, how much
+    power the cluster is using, how dirty/expensive grid power is right now,
+    and whether any nodes are currently online.
 
     Args:
-        cluster: Static cluster configuration.
-        simulated_time_start: Start time for the simulation window.
-        energy: Energy configuration constants.
-        avg_latency_ms: Clusters avg latency.
+        cluster: Cluster connection and simulation settings.
+        simulated_time_start: Start of the one-hour simulation window.
+        energy: Constants used for load and energy calculations.
+        avg_latency_ms: Optional average request latency to carry into the result.
 
     Returns:
-        ClusterRuntimeData with renewable_output_w, cluster_load_w,
-        grid_carbon_intensity, grid_electricity_price, and avg_latency_ms.
+        `ClusterRuntimeData` containing renewable output, total cluster load,
+        grid carbon intensity, grid electricity price, and node power state.
 
     """
     try:

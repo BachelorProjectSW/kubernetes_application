@@ -33,7 +33,7 @@ def _mock_worker_nodes(*statuses: str):
 
 @pytest.mark.unit
 def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
-    """Denmark clusters include Orin base load in the total cluster load."""
+    """Denmark runtime load includes extra fixed background power usage."""
     cluster = _make_cluster("DK-DK1")
 
     with (
@@ -66,7 +66,7 @@ def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
 
 @pytest.mark.unit
 def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
-    """Non-Denmark clusters should not fetch Orin base load."""
+    """Non-Denmark clusters should not add the Denmark background load."""
     cluster = _make_cluster("PT")
 
     with (
