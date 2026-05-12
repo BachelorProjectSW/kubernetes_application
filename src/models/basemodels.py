@@ -67,17 +67,47 @@ class WorkerNode(BaseModel):
 
     @property
     def active_requests(self) -> int:
-        """Number of requests actively occupying slots."""
+        """Requests currently consuming execution slots.
+
+        This is capped by ``max_slots`` so it represents only requests that can
+        run right now, not total inflight traffic.
+
+        Formula:
+            ``min(inflight_requests, max_slots)``
+
+        Returns:
+            int: Number of actively running requests for this worker.
+        """
         return min(self.inflight_requests, self.max_slots)
 
     @property
     def queued_requests(self) -> int:
-        """Number of requests beyond slot capacity."""
+        """Requests waiting because slot capacity is already full.
+
+        When ``inflight_requests`` exceeds ``max_slots``, the overflow is
+        treated as queue depth.
+
+        Formula:
+            ``max(0, inflight_requests - max_slots)``
+
+        Returns:
+            int: Number of queued (not yet actively running) requests.
+        """
         return max(0, self.inflight_requests - self.max_slots)
 
     @property
     def free_slots(self) -> int:
-        """Number of currently free slots."""
+        """Immediately available execution slots.
+
+        This is derived from capacity minus currently active requests and is
+        clamped to zero so it never becomes negative.
+
+        Formula:
+            ``max(0, max_slots - active_requests)``
+
+        Returns:
+            int: Number of slots available for immediate assignment.
+        """
         return max(0, self.max_slots - self.active_requests)
 
 
