@@ -19,7 +19,7 @@ def get_test_config():
         name="k3d_test!",
         start=StartConfig(
             duration_time_s=60,
-            start_time_simulated="25/03/2026 15:00:00", #PT 0.645 (CROM LOW)
+            start_time_simulated="25/03/2026 15:00:00",  # PT 0.645 (CROM LOW)
             start_time_real=None
         ),
         weights=WeightsConfig(

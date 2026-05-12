@@ -24,6 +24,7 @@ def _request_energy_kwh(request: RequestLog) -> float:
 
     Returns:
         float: Estimated energy use in kWh.
+
     """
     return (request.cluster_load_w / 1000.0) * (request.latency_ms / 3_600_000.0)
 
@@ -36,6 +37,7 @@ def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> list[dict]:
 
     Returns:
         list[dict]: Timeline events with timestamp, cluster, node, and status.
+
     """
     sorted_logs = sorted(node_logs, key=lambda entry: (entry.timestamp, entry.cluster, entry.node))
     latest_status_by_cluster: dict[str, dict[str, str]] = defaultdict(dict)
@@ -64,6 +66,7 @@ def _power_for_status(status: str, energy: EnergyConfig) -> float:
 
     Returns:
         float: Estimated power draw in watts for the given status.
+
     """
     if status == WorkerStatus.WORKING:
         return energy.node_power_active_w * energy.power_scale_factor
@@ -94,6 +97,7 @@ def compute_cluster_energy_wh(
 
     Returns:
         float: Total estimated energy in watt-hours for the interval.
+
     """
     cluster_logs = sorted(
         (e for e in logs if e.cluster == cluster_name),
@@ -152,6 +156,7 @@ def get_test_results(config_id: str) -> dict:
 
     Raises:
         HTTPException: ``404`` when the config id does not exist.
+
     """
     config = get_config_by_id(config_id)
     if config is None:
