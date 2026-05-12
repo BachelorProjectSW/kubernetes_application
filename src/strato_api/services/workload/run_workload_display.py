@@ -80,11 +80,6 @@ def generate_workload_charts(duration_s, rpm, pattern="steady", seed=42, peakine
 
     timestamps.sort()
 
-
-
-
-
-
     plt.rcParams.update({
         "font.size": 16,          # Base font size
         "axes.titlesize": 20,     # Figure title

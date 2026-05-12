@@ -145,7 +145,7 @@ class EnergyConfig(BaseModel):
     # Reference maximums for scoring normalization
     carbon_ref_max: float = 670  # gCO2/kWh
     cost_ref_max: float = 0.30  # EUR/kWh
-    latency_ref_max: float = 12000 # ms
+    latency_ref_max: float = 12000  # ms
 
 
 class Config(BaseModel):

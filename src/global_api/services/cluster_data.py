@@ -97,7 +97,6 @@ def get_cluster_runtime_data(
         )
         grid_electricity_price = (price_data[0][1] / 1000) if price_data else 0.0
 
-        
         simulated_hour = simulated_time_start.replace(minute=0, second=0, microsecond=0)
         _log_market_snapshot_if_new(
             cluster.name,

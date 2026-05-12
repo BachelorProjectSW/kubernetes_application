@@ -18,7 +18,6 @@ from ...db.postgres import read_model_logs
 log = structlog.get_logger()
 
 
-
 def _get_simulated_time(config: Config) -> datetime:
     try:
         return compute_simulated_now(
@@ -108,7 +107,6 @@ def estimate_required_nodes(
     Then a worker nodes handle 1000/8000=0.125 request pr second.
     Therefore to handle 1 request pr second the required nodes is 1/0.125=8
     """
-
     if current_rps <= 0:
         log.info("global_api.power.no_current_rps", current_rps=current_rps)
         return 0
@@ -136,13 +134,13 @@ def apply_lantecy_scaling(
 
     When avg_latency > max_latency, scale current nodes proportionally.
     Scale factor = avg_latency / max_latency, then subtract current active nodes.
-    
+
     Example: If current=2, avg_latency=16000ms, max_latency=8000ms,
     scale_factor=2, scaled_needed=4, nodes_to_add=4-2=2.
     """
     if max_latency_ms <= 0 or avg_latency_ms <= 0 or current_active_nodes <= 0:
         return 0
-    
+
     if avg_latency_ms > max_latency_ms:
         scale_factor = avg_latency_ms / max_latency_ms
         scaled_nodes_needed = int(math.ceil(current_active_nodes * scale_factor))
@@ -157,7 +155,7 @@ def apply_lantecy_scaling(
             nodes_to_add=nodes_to_add,
         )
         return nodes_to_add
-    
+
     return 0
 
 
@@ -204,7 +202,7 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
     current_active_nodes = get_current_active_nodes(clusters)
     current_rps = get_current_rps(config.latency.latency_window_s, config.id)
     log.debug(
-        "global_api.power.math.variables", 
+        "global_api.power.math.variables",
         current_nodes=current_active_nodes,
         avg_llama_latency_ms=avg_llama_latency_ms,
         current_rps=current_rps,
@@ -228,19 +226,18 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         current_rps,
         current_active_nodes,
     )
-    
+
     # Also calculate nodes needed from latency scaling, use the max of both approaches
     latency_scaling_nodes = apply_lantecy_scaling(
         current_active_nodes,
         avg_llama_latency_ms,
         config.latency.max_ms,
     )
-    
+
     nodes_to_add = max(nodes_to_add, latency_scaling_nodes)
 
-    best_cluster_flag = True
     for cluster in sorted_clusters:
-        if nodes_to_add <= 0 and not best_cluster_flag:
+        if nodes_to_add <= 0:
             break
         powered_off_nodes = 0
         for worker_node in cluster.worker_nodes:
@@ -248,11 +245,7 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
                 powered_off_nodes += 1
 
         amount = min(nodes_to_add, powered_off_nodes)
-        if best_cluster_flag and powered_off_nodes == len(cluster.worker_nodes) and amount <= 0:
-            # Always have at least one node on on the best cluster.
-            amount = 1
 
-        best_cluster_flag = False
         if amount <= 0:
             continue
 
@@ -290,34 +283,25 @@ def turn_off_idle_nodes(config: Config):
         )
         return
 
-    simulated_time = _get_simulated_time(config)
-    scored_clusters = _get_scored_clusters(config, config_store.get_cluster_information(), simulated_time)
-    sorted_clusters = [
-        cluster
-        for _, cluster, _ in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
-    ]
-
-    top_cluster_name = sorted_clusters[0].cluster_config.name if sorted_clusters else None
-
-    for cluster in sorted_clusters:
+    for cluster in config.clusters:
         try:
-            url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_off_idle_nodes/"
+            url = f"http://{cluster.ip}:{cluster.port}/turn_off_idle_nodes/"
             idle_time = config.power_scheduler.idle_time_for_turn_off_s
             log.debug(
                 "global_api.power.turn_off_idle_requested",
-                cluster_name=cluster.cluster_config.name,
+                cluster_name=cluster.name,
                 idle_time_s=idle_time,
             )
             response = requests.post(
                 url,
-                params={"idle_time": idle_time, "stay_one": cluster.cluster_config.name == top_cluster_name},
+                params={"idle_time": idle_time},
                 timeout=500,
             )
             response.raise_for_status()
         except Exception as e:
             log.error(
                 "global_api.power.turn_off_idle_request_failed",
-                cluster_name=cluster.cluster_config.name,
+                cluster_name=cluster.name,
                 target_url=url,
                 error=str(e),
             )
