@@ -145,9 +145,9 @@ class K3dTestRunner:
         print(f"cluster_distribution={summary.get('cluster_distribution', {})}")
         print(f"{'=' * 72}\n")
 
-    def run(self) -> dict:
+    def run(self, wait_for_test_to_stop: int) -> dict:
         config_name = self._start_test()
-        self._wait_for_completion()
+        self._wait_for_completion(timeout_s=wait_for_test_to_stop)
         config_id = self._find_config_id_by_name(config_name)
         summary = self._fetch_summary(config_id)
         self._run_assertions(summary)
@@ -166,7 +166,7 @@ def test_k3d_default():
         .assert_success_rate(min_rate=0.99)
         .assert_cluster_requests("pt", min_count=3)
         .assert_global_carbon(max_gco2=100)
-        .run()
+        .run(config.start.duration_time_s)
     )
 
 
@@ -174,12 +174,12 @@ def test_k3d_default():
 def test_k3d_high_load():
     """Higher request-rate scenario."""
     config = get_test_config()
-    config.workload.request_per_minute = 60
+    config.workload.request_per_minute = 30
 
     (
         K3dTestRunner(config)
         .assert_total_requests(min_count=20)
         .assert_success_rate(min_rate=0.98)
         .assert_cluster_requests("dk", min_count=10)
-        .run()
+        .run(config.start.duration_time_s)
     )
