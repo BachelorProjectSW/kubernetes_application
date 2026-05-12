@@ -19,13 +19,13 @@ def get_test_config():
         name="k3d_test!",
         start=StartConfig(
             duration_time_s=60,
-            start_time_simulated="01/01/2026 10:21:00",
+            start_time_simulated="25/03/2026 15:00:00", #PT 0.645 (CROM LOW)
             start_time_real=None
         ),
         weights=WeightsConfig(
-            gco2=0.3,
-            cost=0.1,
-            latency=0.6
+            gco2=0.9,
+            cost=0.05,
+            latency=0.05
         ),
         power_scheduler=PowerSchedulerConfig(
             start=False,
@@ -34,10 +34,10 @@ def get_test_config():
         ),
         latency=LatencyConfig(
             latency_window_s=60,
-            max_ms=12000
+            max_ms=20000
         ),
         workload=WorkloadConfig(
-            request_per_minute=10,
+            request_per_minute=20,
             pattern="steady",
             seed=10,
             peakiness=0
@@ -52,7 +52,7 @@ def get_test_config():
                 ip="127.0.0.1",
                 port="8073",
                 gpio_list=[1, 2],
-                simulated_country_code="ES",
+                simulated_country_code="DK",
                 llama_service_port="8075",
                 k3d=True
             ),
