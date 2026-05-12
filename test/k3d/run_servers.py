@@ -116,9 +116,20 @@ def wait_for_local_port(port: int, timeout_s: float = 30.0, poll_interval_s: flo
     return False
 
 
+def _set_db_env():
+    os.environ["POSTGRES_HOST"] = "127.0.0.1"
+    os.environ["POSTGRES_PORT"] = "5433"
+    os.environ["POSTGRES_USER"] = "strato"
+    os.environ["POSTGRES_PASSWORD"] = "strato"
+    os.environ["POSTGRES_DB"] = "strato"
+
+
 def start_all_servers():
     """Start strato, global scheduler, all cluster control planes, and port-forward the llama-services."""
+    _set_db_env()
+
     configs = get_test_config()
+
     cluster_config = get_cluster_config()
     server_processes = []
 
