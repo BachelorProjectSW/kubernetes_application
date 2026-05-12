@@ -1,107 +1,105 @@
 export const handleSubmit = async (e, inputs) => {
-    e.preventDefault();
+  e.preventDefault();
 
+  const days = parseInt(inputs.dur_days) || 0;
+  const hours = parseInt(inputs.dur_hours) || 0;
+  const minutes = parseInt(inputs.dur_minutes) || 0;
 
-    const days = parseInt(inputs.dur_days) || 0;
-    const hours = parseInt(inputs.dur_hours) || 0;
-    const minutes = parseInt(inputs.dur_minutes) || 0;
+  const totalSeconds = days * 86400 + hours * 3600 + minutes * 60;
 
-    const totalSeconds = (days * 86400) + (hours * 3600) + (minutes * 60);
-    
-    let formattedDate = "";
-    if (inputs.startdate) {
-        const dateObj = new Date(inputs.startdate);
-        
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const year = dateObj.getFullYear();
-        const hoursDate = String(dateObj.getHours()).padStart(2, '0');
-        const minsDate = String(dateObj.getMinutes()).padStart(2, '0');
-        const secsDate = "00"; // datetime-local usually doesn't capture seconds
+  let formattedDate = "";
+  if (inputs.startdate) {
+    const dateObj = new Date(inputs.startdate);
 
-        formattedDate = `${day}/${month}/${year} ${hoursDate}:${minsDate}:${secsDate}`;
+    const day = String(dateObj.getDate()).padStart(2, "0");
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const year = dateObj.getFullYear();
+    const hoursDate = String(dateObj.getHours()).padStart(2, "0");
+    const minsDate = String(dateObj.getMinutes()).padStart(2, "0");
+    const secsDate = "00"; // datetime-local usually doesn't capture seconds
+
+    formattedDate = `${day}/${month}/${year} ${hoursDate}:${minsDate}:${secsDate}`;
+  }
+
+  const exportData = {
+    id: inputs.expID,
+    name: inputs.name || "",
+    start:
+      {
+        duration_time_s: totalSeconds,
+        start_time_simulated: formattedDate || "",
+        start_time_real: null,
+      } || "",
+    weights:
+      {
+        gco2: inputs.gco2,
+        cost: inputs.cost,
+        latency: inputs.latency,
+      } || "",
+    power_scheduler:
+      {
+        start: true,
+        timeout_s: inputs.timeout_s,
+        idle_time_for_turn_off_s: inputs.turn_off_s,
+      } || "",
+    latency: {
+      latency_window_s: inputs.latency_window || 0,
+      max_ms: inputs.max_latency || 0,
+    },
+    workload:
+      {
+        request_per_minute: inputs.request_per_min,
+        pattern: inputs.pattern,
+        seed: inputs.seed,
+        peakiness: inputs.peakiness,
+      } || "",
+    question: {
+      question: inputs.question,
+      max_output_tokens: inputs.max_output_tokens,
+    },
+    clusters: (inputs.clusters || []).map((cluster) => ({
+      name: cluster.name || "",
+      ip: cluster.ip || "",
+      port: cluster.port || "",
+      gpio_list: cluster.gpio_list || "",
+      simulated_country_code: cluster.simulated_country_code || "",
+      k3d: cluster.k3d,
+    })),
+
+    global_scheduler: {
+      ip: inputs.ip_global,
+      port: inputs.port_global,
+    },
+    strato: {
+      ip: inputs.ip_strato,
+      port: inputs.port_global,
+    },
+  };
+
+  try {
+    console.log(exportData);
+    const response = await fetch("http://100.109.95.2:8099/start_test", {
+      // Ensure port matches your FastAPI server
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(exportData),
+    });
+
+    if (!response.ok) {
+      const errorDetail = await response.json();
+      console.error("Validation Error:", errorDetail);
+      alert("Failed to start test. Check console for details.");
+      return;
     }
 
-
-    const exportData = {
-       
-        "id": inputs.expID,
-        "name": inputs.name || "",
-        "start": {
-            "duration_time_s": totalSeconds,
-            "start_time_simulated": formattedDate || "",
-            "start_time_real": null
-        } || "",
-        "weights": {
-            "gco2": inputs.gco2,
-            "cost": inputs.cost,
-            "latency": inputs.latency
-        } || "",
-        "power_scheduler": {
-            "start": true,
-            "timeout_s": inputs.timeout_s,
-            "idle_time_for_turn_off_s": inputs.turn_off_s
-        } || "",
-        "latency": {
-            "latency_window_s": inputs.latency_window || 0, 
-            "max_ms": inputs.max_latency || 0
-        },
-        "workload": {
-            "request_per_minute": inputs.request_per_min,
-            "pattern": inputs.pattern,
-            "seed": inputs.seed,
-            "peakiness": inputs.peakiness
-        } || "",
-        "question": {
-            "question": inputs.question,
-            "max_output_tokens": inputs.max_output_tokens,
-        },
-        "clusters": (inputs.clusters || []).map((cluster) => ({
-            "name": cluster.name || "", 
-            "ip": cluster.ip || "",
-            "port": cluster.port || "", 
-            "gpio_list": cluster.gpio_list || "", 
-            "simulated_country_code": cluster.simulated_country_code || "",  
-            "k3d": cluster.k3d
-        })),
-
-        "global_scheduler": {
-            "ip": inputs.ip_global,
-            "port": inputs.port_global
-        },
-        "strato": {
-            "ip": inputs.ip_strato,
-            "port": inputs.port_global
-        }
-
-    };
-
-    try {
-        console.log(exportData);
-        const response = await fetch('http://100.109.95.2:8015/start_test', { // Ensure port matches your FastAPI server
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(exportData),
-        });
-
-
-        if (!response.ok) {
-            const errorDetail = await response.json();
-            console.error("Validation Error:", errorDetail);
-            alert("Failed to start test. Check console for details.");
-            return;
-        }
-
-        const data = await response.json();
-        console.log("Success:", data);
-        alert("Test started successfully!");
-    } catch (error) {
-        console.error("Network Error:", error);
-        alert("Could not connect to the backend.");
-    }
-    console.log(JSON.stringify(exportData, null, 2));
+    const data = await response.json();
+    console.log("Success:", data);
+    alert("Test started successfully!");
+  } catch (error) {
+    console.error("Network Error:", error);
+    alert("Could not connect to the backend.");
+  }
+  console.log(JSON.stringify(exportData, null, 2));
 };
-
-

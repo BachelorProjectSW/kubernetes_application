@@ -3,13 +3,13 @@ import {
   Routes,
   Route,
   NavLink,
-  useNavigate
+  useNavigate,
 } from "react-router-dom";
 import { useEffect, useState } from "react";
 import AllConfigs from "./components/play_around";
 import { handleSubmit } from "./components/submitData";
 import DashboardPage from "./pages/DashboardPage";
-import "./index.css"
+import "./index.css";
 
 function ConfigPage() {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ function ConfigPage() {
 
   const fetchTestStatus = async () => {
     try {
-      const res = await fetch("http://100.109.95.2:8015/test_status");
+      const res = await fetch("http://100.109.95.2:8099/test_status");
 
       if (!res.ok) {
         throw new Error("Failed to fetch test status");
@@ -132,28 +132,24 @@ function ConfigPage() {
 function App() {
   return (
     <BrowserRouter>
-          <nav className="top-nav">
-      <NavLink
-        to="/"
-        end
-        className={({ isActive }) =>
-          `nav-link ${isActive ? "active" : ""}`
-        }
-      >
-        <span className="nav-icon">📝</span>
-        <span>Config</span>
-      </NavLink>
+      <nav className="top-nav">
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+        >
+          <span className="nav-icon">📝</span>
+          <span>Config</span>
+        </NavLink>
 
-      <NavLink
-        to="/dashboard"
-        className={({ isActive }) =>
-          `nav-link ${isActive ? "active" : ""}`
-        }
-      >
-        <span className="nav-icon">📊</span>
-        <span>Dashboard</span>
-      </NavLink>
-    </nav>
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+        >
+          <span className="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </NavLink>
+      </nav>
 
       <Routes>
         <Route path="/" element={<ConfigPage />} />

@@ -10,9 +10,9 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
+  Legend,
 } from "recharts";
-import "./App.css"
+import "./App.css";
 
 const COLORS = ["#3b82f6", "#22c55e", "#f59e0b"];
 
@@ -25,32 +25,38 @@ function DashboardPage() {
   const [compareConfigId, setCompareConfigId] = useState("");
   const [compareData, setCompareData] = useState(null);
 
+  const getExperimentName = (config) =>
+    config.config_name ||
+    config.config_json?.name ||
+    config.test_name ||
+    "Unnamed experiment";
+
   useEffect(() => {
-  const fetchConfigs = async () => {
-    setLoadingConfigs(true);
+    const fetchConfigs = async () => {
+      setLoadingConfigs(true);
 
-    try {
-      const res = await fetch("http://100.109.95.2:8099/get_configs");
+      try {
+        const res = await fetch("http://100.109.95.2:8099/get_configs");
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch configs");
+        if (!res.ok) {
+          throw new Error("Failed to fetch configs");
+        }
+
+        const json = await res.json();
+        setConfigs(json);
+      } catch (err) {
+        console.error("Error fetching configs:", err);
+      } finally {
+        setLoadingConfigs(false);
       }
+    };
 
-      const json = await res.json();
-      setConfigs(json);
-    } catch (err) {
-      console.error("Error fetching configs:", err);
-    } finally {
-      setLoadingConfigs(false);
-    }
-  };
-
-  fetchConfigs();
-}, []);
+    fetchConfigs();
+  }, []);
 
   const fetchOneConfig = async (id) => {
     const res = await fetch(
-      `http://100.109.95.2:8015/test_results?config_id=${encodeURIComponent(id)}`
+      `http://100.109.95.2:8015/test_results?config_id=${encodeURIComponent(id)}`,
     );
 
     if (!res.ok) {
@@ -61,7 +67,7 @@ function DashboardPage() {
     return res.json();
   };
 
-    useEffect(() => {
+  useEffect(() => {
     const configIdFromUrl = searchParams.get("config_id");
 
     if (!configIdFromUrl) return;
@@ -116,148 +122,162 @@ function DashboardPage() {
     new Date(ts).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit"
+      second: "2-digit",
     });
 
   const requestData = data
-  ? data.request_over_time.map((r) => ({
-      timestamp: r.timestamp,
-      latency: r.latency_ms,
-      answer: r.answer,
-      cluster: r.cluster,
-      node: r.node,
-      status: r.response_status_code,
-      success: r.ok
-    }))
-  : [];
-
-  const mergeByIndex = (primaryArray = [], compareArray = [], primaryKey, compareKey, valueSelector) => {
-  const maxLength = Math.max(primaryArray.length, compareArray.length);
-
-  return Array.from({ length: maxLength }, (_, index) => ({
-    index: index + 1,
-    [primaryKey]: primaryArray[index] ? valueSelector(primaryArray[index]) : null,
-    [compareKey]: compareArray[index] ? valueSelector(compareArray[index]) : null,
-    primaryTimestamp: primaryArray[index]?.timestamp,
-    compareTimestamp: compareArray[index]?.timestamp
-  }));
-};
-
-const latencyComparisonData =
-  data && compareData
-    ? mergeByIndex(
-        data.request_over_time,
-        compareData.request_over_time,
-        "primaryLatency",
-        "compareLatency",
-        (r) => r.latency_ms
-      ).map((point, index) => {
-        const primary = data.request_over_time[index];
-        const comparison = compareData.request_over_time[index];
-
-        return {
-          ...point,
-
-          primaryCluster: primary?.cluster,
-          primaryAnswer: primary?.answer,
-
-          compareCluster: comparison?.cluster,
-          compareAnswer: comparison?.answer
-        };
-      })
+    ? data.request_over_time.map((r) => ({
+        timestamp: r.timestamp,
+        latency: r.latency_ms,
+        answer: r.answer,
+        cluster: r.cluster,
+        node: r.node,
+        status: r.response_status_code,
+        success: r.ok,
+      }))
     : [];
 
-const gco2ComparisonData =
-  data && compareData
-    ? mergeByIndex(
-        data.gco2_over_time,
-        compareData.gco2_over_time,
-        "primaryGco2",
-        "compareGco2",
-        (r) => r.cumulative_gco2_g
-      )
-    : [];
+  const mergeByIndex = (
+    primaryArray = [],
+    compareArray = [],
+    primaryKey,
+    compareKey,
+    valueSelector,
+  ) => {
+    const maxLength = Math.max(primaryArray.length, compareArray.length);
 
-const costComparisonData =
-  data && compareData
-    ? mergeByIndex(
-        data.cost_over_time,
-        compareData.cost_over_time,
-        "primaryCost",
-        "compareCost",
-        (r) => r.cumulative_cost_eur
-      )
-    : [];
-  
-  const getRunTimeRange = (run) => {
-  if (!run) return { startMs: Date.now(), endMs: Date.now() };
-
-  const timestamps = [
-    ...(run.request_over_time || []).map((r) => new Date(r.timestamp).getTime()),
-    ...(run.node_status_over_time || []).map((r) => new Date(r.timestamp).getTime())
-  ].filter(Boolean);
-
-  if (timestamps.length === 0) {
-    return { startMs: Date.now(), endMs: Date.now() };
-  }
-
-  return {
-    startMs: Math.min(...timestamps),
-    endMs: Math.max(...timestamps)
+    return Array.from({ length: maxLength }, (_, index) => ({
+      index: index + 1,
+      [primaryKey]: primaryArray[index]
+        ? valueSelector(primaryArray[index])
+        : null,
+      [compareKey]: compareArray[index]
+        ? valueSelector(compareArray[index])
+        : null,
+      primaryTimestamp: primaryArray[index]?.timestamp,
+      compareTimestamp: compareArray[index]?.timestamp,
+    }));
   };
-};
 
-const primaryRange = getRunTimeRange(data);
-const compareRange = getRunTimeRange(compareData);
+  const latencyComparisonData =
+    data && compareData
+      ? mergeByIndex(
+          data.request_over_time,
+          compareData.request_over_time,
+          "primaryLatency",
+          "compareLatency",
+          (r) => r.latency_ms,
+        ).map((point, index) => {
+          const primary = data.request_over_time[index];
+          const comparison = compareData.request_over_time[index];
+
+          return {
+            ...point,
+
+            primaryCluster: primary?.cluster,
+            primaryAnswer: primary?.answer,
+
+            compareCluster: comparison?.cluster,
+            compareAnswer: comparison?.answer,
+          };
+        })
+      : [];
+
+  const gco2ComparisonData =
+    data && compareData
+      ? mergeByIndex(
+          data.gco2_over_time,
+          compareData.gco2_over_time,
+          "primaryGco2",
+          "compareGco2",
+          (r) => r.cumulative_gco2_g,
+        )
+      : [];
+
+  const costComparisonData =
+    data && compareData
+      ? mergeByIndex(
+          data.cost_over_time,
+          compareData.cost_over_time,
+          "primaryCost",
+          "compareCost",
+          (r) => r.cumulative_cost_eur,
+        )
+      : [];
+
+  const getRunTimeRange = (run) => {
+    if (!run) return { startMs: Date.now(), endMs: Date.now() };
+
+    const timestamps = [
+      ...(run.request_over_time || []).map((r) =>
+        new Date(r.timestamp).getTime(),
+      ),
+      ...(run.node_status_over_time || []).map((r) =>
+        new Date(r.timestamp).getTime(),
+      ),
+    ].filter(Boolean);
+
+    if (timestamps.length === 0) {
+      return { startMs: Date.now(), endMs: Date.now() };
+    }
+
+    return {
+      startMs: Math.min(...timestamps),
+      endMs: Math.max(...timestamps),
+    };
+  };
+
+  const primaryRange = getRunTimeRange(data);
+  const compareRange = getRunTimeRange(compareData);
   // Worker node timeline data
-const buildGroupedNodes = (run) => {
-  const grouped = {};
-  const timestamps = [];
+  const buildGroupedNodes = (run) => {
+    const grouped = {};
+    const timestamps = [];
 
-  if (!run) {
+    if (!run) {
+      return { grouped, timestamps };
+    }
+
+    (run.node_status_over_time || []).forEach((entry) => {
+      const { cluster, node, status, timestamp } = entry;
+
+      const ts = new Date(timestamp).getTime();
+      timestamps.push(ts);
+
+      if (!grouped[cluster]) grouped[cluster] = {};
+      if (!grouped[cluster][node]) grouped[cluster][node] = [];
+
+      grouped[cluster][node].push({
+        status,
+        timestamp: ts,
+        timeStr: formatTime(timestamp),
+      });
+    });
+
+    Object.values(grouped).forEach((cluster) => {
+      Object.values(cluster).forEach((nodeEvents) => {
+        nodeEvents.sort((a, b) => a.timestamp - b.timestamp);
+      });
+    });
+
     return { grouped, timestamps };
-  }
+  };
 
-  (run.node_status_over_time || []).forEach((entry) => {
-    const { cluster, node, status, timestamp } = entry;
+  const primaryNodes = buildGroupedNodes(data);
+  const compareNodes = buildGroupedNodes(compareData);
 
-    const ts = new Date(timestamp).getTime();
-    timestamps.push(ts);
+  const allNodeTimestamps = [
+    ...primaryNodes.timestamps,
+    ...compareNodes.timestamps,
+  ];
 
-    if (!grouped[cluster]) grouped[cluster] = {};
-    if (!grouped[cluster][node]) grouped[cluster][node] = [];
+  const minTime = allNodeTimestamps.length
+    ? Math.min(...allNodeTimestamps)
+    : Date.now();
 
-    grouped[cluster][node].push({
-      status,
-      timestamp: ts,
-      timeStr: formatTime(timestamp)
-    });
-  });
-
-  Object.values(grouped).forEach((cluster) => {
-    Object.values(cluster).forEach((nodeEvents) => {
-      nodeEvents.sort((a, b) => a.timestamp - b.timestamp);
-    });
-  });
-
-  return { grouped, timestamps };
-};
-
-const primaryNodes = buildGroupedNodes(data);
-const compareNodes = buildGroupedNodes(compareData);
-
-const allNodeTimestamps = [
-  ...primaryNodes.timestamps,
-  ...compareNodes.timestamps
-];
-
-const minTime = allNodeTimestamps.length
-  ? Math.min(...allNodeTimestamps)
-  : Date.now();
-
-const maxTime = allNodeTimestamps.length
-  ? Math.max(...allNodeTimestamps)
-  : Date.now();
+  const maxTime = allNodeTimestamps.length
+    ? Math.max(...allNodeTimestamps)
+    : Date.now();
 
   return (
     <div className="container">
@@ -271,320 +291,346 @@ const maxTime = allNodeTimestamps.length
           disabled={loadingConfigs}
         >
           <option value="">
-            {loadingConfigs ? "Loading configs..." : "Select config_id"}
+            {loadingConfigs ? "Loading experiments..." : "Select experiment"}
           </option>
 
           {configs.map((config) => (
             <option key={config.config_id} value={config.config_id}>
-              {config.config_id}
-              {config.config_name ? ` — ${config.config_name}` : ""}
+              {getExperimentName(config)}
             </option>
           ))}
         </select>
 
         <button type="submit" onClick={fetchData} disabled={!configId}>
-            Load
+          Load
         </button>
-    </div>
+      </div>
 
       {/* NO DATA */}
       {!data ? (
-      <div className="emptyState">
-        <p>Select a config_id and press Load.</p>
-      </div>
-    ) : (
+        <div className="emptyState">
+          <p>Select an Experiment and press Load.</p>
+        </div>
+      ) : (
         <>
           {/* OPTIONAL COMPARISON INPUT */}
-        <div className="inputBox compareBox">
-          <div>
-            <h3>Compare with another test run</h3>
-          </div>
-
-          <select
-            value={compareConfigId}
-            onChange={(e) => setCompareConfigId(e.target.value)}
-            disabled={loadingConfigs}
-          >
-            <option value="">
-              Select optional second config_id
-            </option>
-
-            {configs
-              .filter((config) => config.config_id !== configId)
-              .map((config) => (
-                <option key={config.config_id} value={config.config_id}>
-                  {config.config_id}
-                  {config.config_name ? ` — ${config.config_name}` : ""}
-                </option>
-              ))}
-          </select>
-
-         <button type="submit" onClick={fetchCompareData} disabled={!compareConfigId}>
-            Compare
-        </button>
-        </div>
-              <MetricsGrid
-        title={`Primary Run: ${data.test_name}`}
-        run={data}
-      />
-
-      {compareData && (
-        <MetricsGrid
-          title={`Compared Run: ${compareData.test_name}`}
-          run={compareData}
-        />
-      )}
-
-          {/* REQUEST OVER TIME */}
-        <ChartCard title={compareData ? "Latency Comparison" : "Requests Over Time (Latency)"}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={compareData ? latencyComparisonData : requestData}>
-              <XAxis
-                dataKey={compareData ? "index" : "timestamp"}
-                tickFormatter={compareData ? undefined : formatTime}
-                label={compareData ? { value: "Request #", position: "insideBottom", offset: -5 } : undefined}
-              />
-
-              <YAxis />
-
-         <Tooltip
-  content={(props) =>
-    compareData ? (
-      <div className="customTooltip">
-        <p><strong>Request #{props.label}</strong></p>
-
-        {props.payload?.map((entry) => {
-          const point = entry.payload;
-          const isPrimary = entry.dataKey === "primaryLatency";
-
-          return (
-            <div key={entry.dataKey}>
-              <p>
-                <strong>
-                  {isPrimary
-                    ? `Primary: ${data.test_name}`
-                    : `Comparison: ${compareData.test_name}`}
-                </strong>
-              </p>
-
-              <p>
-                <strong>Cluster:</strong>{" "}
-                {isPrimary
-                  ? point.primaryCluster ?? "N/A"
-                  : point.compareCluster ?? "N/A"}
-              </p>
-
-              <p>
-                <strong>Answer:</strong>{" "}
-                {isPrimary
-                  ? point.primaryAnswer ?? "N/A"
-                  : point.compareAnswer ?? "N/A"}
-              </p>
-
-              <p>
-                <strong>Latency:</strong> {entry.value ?? "N/A"} ms
-              </p>
+          <div className="inputBox compareBox">
+            <div>
+              <h3>Compare with another test run</h3>
             </div>
-          );
-        })}
-      </div>
-    ) : (
-      <LatencyTooltip {...props} formatTime={formatTime} />
-    )
-  }
-/>
-              {compareData ? (
-                <>
-                  <Line
-                    type="monotone"
-                    dataKey="primaryLatency"
-                    name="Primary"
-                    stroke="#a855f7"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    strokeWidth={2}
-                    connectNulls
-                  />
 
-                  <Line
-                    type="monotone"
-                    dataKey="compareLatency"
-                    name="Comparison"
-                    stroke="#22c55e"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    strokeWidth={2}
-                    connectNulls
-                  />
-                </>
-              ) : (
-                <Line
-                  type="monotone"
-                  dataKey="latency"
-                  stroke="#a855f7"
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
+            <select
+              value={compareConfigId}
+              onChange={(e) => setCompareConfigId(e.target.value)}
+              disabled={loadingConfigs}
+            >
+              <option value="">Select optional comparison experiment</option>
 
-          {/* GCO2 */}
-          <ChartCard title={compareData ? "gCO2 Comparison" : "gCO2 Over Time"}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={compareData ? gco2ComparisonData : data.gco2_over_time}>
-              <XAxis
-                dataKey={compareData ? "index" : "timestamp"}
-                tickFormatter={compareData ? undefined : formatTime}
-                label={compareData ? { value: "Point #", position: "insideBottom", offset: -5 } : undefined}
-              />
+              {configs
+                .filter((config) => config.config_id !== configId)
+                .map((config) => (
+                  <option key={config.config_id} value={config.config_id}>
+                    {getExperimentName(config)}
+                  </option>
+                ))}
+            </select>
 
-              <YAxis />
-
-              <Tooltip
-                formatter={(value, name) => {
-                  if (compareData) {
-                    return [
-                      `${value} g`,
-                      name === "primaryGco2"
-                        ? `Primary: ${data.test_name}`
-                        : `Comparison: ${compareData.test_name}`
-                    ];
-                  }
-
-                  return [`${value} g`, "Cumulative gCO2"];
-                }}
-                labelFormatter={(label) =>
-                  compareData ? `Point #${label}` : formatTime(label)
-                }
-              />
-
-              {compareData ? (
-                <>
-                  <Line
-                    type="monotone"
-                    dataKey="primaryGco2"
-                    name="Primary"
-                    stroke="#3b82f6"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    strokeWidth={2}
-                    connectNulls
-                  />
-
-                  <Line
-                    type="monotone"
-                    dataKey="compareGco2"
-                    name="Comparison"
-                    stroke="#f59e0b"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    strokeWidth={2}
-                    connectNulls
-                  />
-                </>
-              ) : (
-                <Line
-                  dataKey="cumulative_gco2_g"
-                  stroke="#22c55e"
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-          {/* COST OVER TIME */}
-          <ChartCard title={compareData ? "Cost Comparison" : "Cost Over Time"}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={compareData ? costComparisonData : data.cost_over_time}>
-              <XAxis
-                dataKey={compareData ? "index" : "timestamp"}
-                tickFormatter={compareData ? undefined : formatTime}
-                label={compareData ? { value: "Point #", position: "insideBottom", offset: -5 } : undefined}
-              />
-
-              <YAxis />
-
-              <Tooltip
-                formatter={(value, name) => {
-                  if (compareData) {
-                    return [
-                      `€${value}`,
-                      name === "primaryCost"
-                        ? `Primary: ${data.test_name}`
-                        : `Comparison: ${compareData.test_name}`
-                    ];
-                  }
-
-                  return [`€${value}`, "Cumulative Cost"];
-                }}
-                labelFormatter={(label) =>
-                  compareData ? `Point #${label}` : formatTime(label)
-                }
-              />
-
-              {compareData ? (
-                <>
-                  <Line
-                    type="monotone"
-                    dataKey="primaryCost"
-                    name="Primary"
-                    stroke="#3b82f6"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    strokeWidth={2}
-                    connectNulls
-                  />
-
-                  <Line
-                    type="monotone"
-                    dataKey="compareCost"
-                    name="Comparison"
-                    stroke="#f59e0b"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    strokeWidth={2}
-                    connectNulls
-                  />
-                </>
-              ) : (
-                <Line
-                  dataKey="cumulative_cost_eur"
-                  stroke="#f59e0b"
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-          {/* CLUSTER PIE */}
-          <div className={compareData ? "pairedCharts" : ""}>
-          <ClusterDistributionChart
-            title={`Primary Run — Cluster Distribution`}
-            run={data}
-          />
+            <button
+              type="submit"
+              onClick={fetchCompareData}
+              disabled={!compareConfigId}
+            >
+              Compare
+            </button>
+          </div>
+          <MetricsGrid title={`Primary Run: ${data.test_name}`} run={data} />
 
           {compareData && (
-            <ClusterDistributionChart
-              title={`Compared Run — Cluster Distribution`}
+            <MetricsGrid
+              title={`Compared Run: ${compareData.test_name}`}
               run={compareData}
             />
           )}
-        </div>
 
-          {/* SERVICE TIME */}
-          <ServiceTimeoutChart
-              title="Primary Run — Service Timeout Breakdown"
+          {/* REQUEST OVER TIME */}
+          <ChartCard
+            title={
+              compareData
+                ? "Latency Comparison"
+                : "Requests Over Time (Latency)"
+            }
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={compareData ? latencyComparisonData : requestData}
+              >
+                <XAxis
+                  dataKey={compareData ? "index" : "timestamp"}
+                  tickFormatter={compareData ? undefined : formatTime}
+                  label={
+                    compareData
+                      ? {
+                          value: "Request #",
+                          position: "insideBottom",
+                          offset: -5,
+                        }
+                      : undefined
+                  }
+                />
+
+                <YAxis />
+
+                <Tooltip
+                  content={(props) =>
+                    compareData ? (
+                      <div className="customTooltip">
+                        <p>
+                          <strong>Request #{props.label}</strong>
+                        </p>
+
+                        {props.payload?.map((entry) => {
+                          const point = entry.payload;
+                          const isPrimary = entry.dataKey === "primaryLatency";
+
+                          return (
+                            <div key={entry.dataKey}>
+                              <p>
+                                <strong>
+                                  {isPrimary
+                                    ? `Primary: ${data.test_name}`
+                                    : `Comparison: ${compareData.test_name}`}
+                                </strong>
+                              </p>
+
+                              <p>
+                                <strong>Cluster:</strong>{" "}
+                                {isPrimary
+                                  ? (point.primaryCluster ?? "N/A")
+                                  : (point.compareCluster ?? "N/A")}
+                              </p>
+
+                              <p>
+                                <strong>Answer:</strong>{" "}
+                                {isPrimary
+                                  ? (point.primaryAnswer ?? "N/A")
+                                  : (point.compareAnswer ?? "N/A")}
+                              </p>
+
+                              <p>
+                                <strong>Latency:</strong> {entry.value ?? "N/A"}{" "}
+                                ms
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <LatencyTooltip {...props} formatTime={formatTime} />
+                    )
+                  }
+                />
+                {compareData ? (
+                  <>
+                    <Line
+                      type="monotone"
+                      dataKey="primaryLatency"
+                      name="Primary"
+                      stroke="#a855f7"
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      strokeWidth={2}
+                      connectNulls
+                    />
+
+                    <Line
+                      type="monotone"
+                      dataKey="compareLatency"
+                      name="Comparison"
+                      stroke="#22c55e"
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      strokeWidth={2}
+                      connectNulls
+                    />
+                  </>
+                ) : (
+                  <Line type="monotone" dataKey="latency" stroke="#a855f7" />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* GCO2 */}
+          <ChartCard title={compareData ? "gCO2 Comparison" : "gCO2 Over Time"}>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={compareData ? gco2ComparisonData : data.gco2_over_time}
+              >
+                <XAxis
+                  dataKey={compareData ? "index" : "timestamp"}
+                  tickFormatter={compareData ? undefined : formatTime}
+                  label={
+                    compareData
+                      ? {
+                          value: "Point #",
+                          position: "insideBottom",
+                          offset: -5,
+                        }
+                      : undefined
+                  }
+                />
+
+                <YAxis />
+
+                <Tooltip
+                  formatter={(value, name) => {
+                    if (compareData) {
+                      return [
+                        `${value} g`,
+                        name === "primaryGco2"
+                          ? `Primary: ${data.test_name}`
+                          : `Comparison: ${compareData.test_name}`,
+                      ];
+                    }
+
+                    return [`${value} g`, "Cumulative gCO2"];
+                  }}
+                  labelFormatter={(label) =>
+                    compareData ? `Point #${label}` : formatTime(label)
+                  }
+                />
+
+                {compareData ? (
+                  <>
+                    <Line
+                      type="monotone"
+                      dataKey="primaryGco2"
+                      name="Primary"
+                      stroke="#3b82f6"
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      strokeWidth={2}
+                      connectNulls
+                    />
+
+                    <Line
+                      type="monotone"
+                      dataKey="compareGco2"
+                      name="Comparison"
+                      stroke="#f59e0b"
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      strokeWidth={2}
+                      connectNulls
+                    />
+                  </>
+                ) : (
+                  <Line dataKey="cumulative_gco2_g" stroke="#22c55e" />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* COST OVER TIME */}
+          <ChartCard title={compareData ? "Cost Comparison" : "Cost Over Time"}>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={compareData ? costComparisonData : data.cost_over_time}
+              >
+                <XAxis
+                  dataKey={compareData ? "index" : "timestamp"}
+                  tickFormatter={compareData ? undefined : formatTime}
+                  label={
+                    compareData
+                      ? {
+                          value: "Point #",
+                          position: "insideBottom",
+                          offset: -5,
+                        }
+                      : undefined
+                  }
+                />
+
+                <YAxis />
+
+                <Tooltip
+                  formatter={(value, name) => {
+                    if (compareData) {
+                      return [
+                        `€${value}`,
+                        name === "primaryCost"
+                          ? `Primary: ${data.test_name}`
+                          : `Comparison: ${compareData.test_name}`,
+                      ];
+                    }
+
+                    return [`€${value}`, "Cumulative Cost"];
+                  }}
+                  labelFormatter={(label) =>
+                    compareData ? `Point #${label}` : formatTime(label)
+                  }
+                />
+
+                {compareData ? (
+                  <>
+                    <Line
+                      type="monotone"
+                      dataKey="primaryCost"
+                      name="Primary"
+                      stroke="#3b82f6"
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      strokeWidth={2}
+                      connectNulls
+                    />
+
+                    <Line
+                      type="monotone"
+                      dataKey="compareCost"
+                      name="Comparison"
+                      stroke="#f59e0b"
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                      strokeWidth={2}
+                      connectNulls
+                    />
+                  </>
+                ) : (
+                  <Line dataKey="cumulative_cost_eur" stroke="#f59e0b" />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* CLUSTER PIE */}
+          <div className={compareData ? "pairedCharts" : ""}>
+            <ClusterDistributionChart
+              title={`Primary Run — Cluster Distribution`}
               run={data}
-              formatTime={formatTime}
             />
 
             {compareData && (
-              <ServiceTimeoutChart
-                title="Compared Run — Service Timeout Breakdown"
+              <ClusterDistributionChart
+                title={`Compared Run — Cluster Distribution`}
                 run={compareData}
-                formatTime={formatTime}
               />
             )}
+          </div>
+
+          {/* SERVICE TIME */}
+          <ServiceTimeoutChart
+            title="Primary Run — Service Timeout Breakdown"
+            run={data}
+            formatTime={formatTime}
+          />
+
+          {compareData && (
+            <ServiceTimeoutChart
+              title="Compared Run — Service Timeout Breakdown"
+              run={compareData}
+              formatTime={formatTime}
+            />
+          )}
 
           {/* WORKER NODE STATUS */}
           <WorkerNodeStatusComparison
@@ -619,8 +665,8 @@ const ClusterDistributionChart = ({ title, run }) => {
   const clusterPie = Object.entries(run.cluster_distribution || {}).map(
     ([key, value]) => ({
       name: key,
-      value
-    })
+      value,
+    }),
   );
 
   return (
@@ -692,18 +738,20 @@ const NodeTimelineRows = ({ label, nodes, rangeMs }) => {
       </h5>
 
       {Object.entries(nodes).map(([node, states]) => {
-        const sortedStates = [...states].sort((a, b) => a.timestamp - b.timestamp);
+        const sortedStates = [...states].sort(
+          (a, b) => a.timestamp - b.timestamp,
+        );
 
-      const mergedStates = sortedStates.reduce((acc, state) => {
-        const last = acc[acc.length - 1];
+        const mergedStates = sortedStates.reduce((acc, state) => {
+          const last = acc[acc.length - 1];
 
-        if (last && last.status === state.status) {
+          if (last && last.status === state.status) {
+            return acc;
+          }
+
+          acc.push(state);
           return acc;
-        }
-
-        acc.push(state);
-        return acc;
-      }, []);
+        }, []);
 
         return (
           <div key={node} className="nodeRowContainer">
@@ -714,15 +762,14 @@ const NodeTimelineRows = ({ label, nodes, rangeMs }) => {
 
               <div className="relativeTimeline">
                 {mergedStates.map((state, index) => {
-                const currentMs = state.timestamp;
-                const nextMs =
-                  mergedStates[index + 1]?.timestamp ?? rangeMs.endMs;
+                  const currentMs = state.timestamp;
+                  const nextMs =
+                    mergedStates[index + 1]?.timestamp ?? rangeMs.endMs;
 
                   const leftPct =
                     ((currentMs - rangeMs.startMs) / durationMs) * 100;
 
-                  const widthPct =
-                    ((nextMs - currentMs) / durationMs) * 100;
+                  const widthPct = ((nextMs - currentMs) / durationMs) * 100;
 
                   return (
                     <div
@@ -730,13 +777,11 @@ const NodeTimelineRows = ({ label, nodes, rangeMs }) => {
                       className={`relativeTimelineBlock ${state.status}`}
                       style={{
                         left: `${Math.max(0, leftPct)}%`,
-                        width: `${Math.max(0.5, widthPct)}%`
+                        width: `${Math.max(0.5, widthPct)}%`,
                       }}
                       title={`${node} — ${state.status} — ${Math.round(
-                        (currentMs - rangeMs.startMs) / 1000
-                      )}s to ${Math.round(
-                        (nextMs - rangeMs.startMs) / 1000
-                      )}s`}
+                        (currentMs - rangeMs.startMs) / 1000,
+                      )}s to ${Math.round((nextMs - rangeMs.startMs) / 1000)}s`}
                     />
                   );
                 })}
@@ -760,22 +805,22 @@ const WorkerNodeStatusComparison = ({
   compareNodes,
   compareData,
   primaryRange,
-  compareRange
+  compareRange,
 }) => {
   const clusters = Array.from(
     new Set([
       ...Object.keys(primaryNodes.grouped),
-      ...Object.keys(compareNodes.grouped)
-    ])
+      ...Object.keys(compareNodes.grouped),
+    ]),
   );
 
   if (clusters.length === 0) {
-  return (
-    <ChartCard title="Worker Node Status Timeline">
-      <p>No node status logs found for this run.</p>
-    </ChartCard>
-  );
-}
+    return (
+      <ChartCard title="Worker Node Status Timeline">
+        <p>No node status logs found for this run.</p>
+      </ChartCard>
+    );
+  }
 
   return (
     <ChartCard title="Worker Node Status Timeline">
@@ -783,7 +828,7 @@ const WorkerNodeStatusComparison = ({
         <div key={cluster} className="clusterCompareBlock">
           <h4 className="clusterTitle">{cluster.toUpperCase()}</h4>
 
-         <NodeTimelineRows
+          <NodeTimelineRows
             label="Primary"
             nodes={primaryNodes.grouped[cluster] || {}}
             rangeMs={primaryRange}
@@ -791,10 +836,10 @@ const WorkerNodeStatusComparison = ({
 
           {compareData && (
             <NodeTimelineRows
-            label="Comparison"
-            nodes={compareNodes.grouped[cluster] || {}}
-            rangeMs={compareRange}
-          />
+              label="Comparison"
+              nodes={compareNodes.grouped[cluster] || {}}
+              rangeMs={compareRange}
+            />
           )}
         </div>
       ))}
@@ -809,10 +854,18 @@ const LatencyTooltip = ({ active, payload, label, formatTime }) => {
 
   return (
     <div className="customTooltip">
-      <p><strong>{formatTime(label)}</strong></p>
-      <p><strong>Cluster:</strong> {point.cluster ?? "N/A"}</p>
-      <p><strong>Answer:</strong> {point.answer ?? "N/A"}</p>
-      <p><strong>Latency:</strong> {point.latency ?? "N/A"} ms</p>
+      <p>
+        <strong>{formatTime(label)}</strong>
+      </p>
+      <p>
+        <strong>Cluster:</strong> {point.cluster ?? "N/A"}
+      </p>
+      <p>
+        <strong>Answer:</strong> {point.answer ?? "N/A"}
+      </p>
+      <p>
+        <strong>Latency:</strong> {point.latency ?? "N/A"} ms
+      </p>
     </div>
   );
 };
