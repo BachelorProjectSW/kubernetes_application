@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import subprocess
 import time
 from ...custom_logging.logger import log_node_status_snapshot
+import requests
 
 log = structlog.get_logger()
 
