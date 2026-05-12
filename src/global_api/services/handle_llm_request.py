@@ -25,6 +25,14 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
     current simulation time, and collects recent request latencies. It then
     checks each cluster, picks the best one with the scoring rules, forwards
     the question to that cluster, and stores a detailed request log.
+
+    Args:
+        question: The question payload to send to a cluster.
+        trace_id: Optional trace id used to connect logs across services.
+
+    Returns:
+        The response model returned by the selected cluster.
+
     """
     try:
         total_start = time.monotonic()
