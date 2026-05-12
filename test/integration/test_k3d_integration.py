@@ -1,23 +1,3 @@
-"""Simple K3d integration tests driven directly from the raw /test_results payload.
-
-How to add a new scenario:
-    1. Copy one of the tests below
-    2. Start with get_test_config()
-    3. Modify the config you care about
-    4. Chain assertions on K3dTestRunner
-    5. Call .run()
-
-Example:
-    # @pytest.mark.integration
-    # def test_k3d_my_scenario():
-    #     config = get_test_config()
-    #     config.workload.request_per_minute = 30
-    #     K3dTestRunner(config) \
-    #         .assert_total_requests(min_count=10) \
-    #         .assert_success_rate(min_rate=0.98) \
-    #         .run()
-"""
-
 from __future__ import annotations
 
 import time
@@ -104,12 +84,23 @@ class K3dTestRunner:
             timeout=30,
         )
         response.raise_for_status()
-        payload = response.json()
-        config_id = payload.get("config_id") or self.config.id
-        if config_id is None:
-            raise RuntimeError("start_test did not return a config_id")
-        print(f"[START] config_id={config_id}")
-        return config_id
+        print(f"[START] config_name={self.config.name}")
+        return self.config.name
+
+    def _find_config_id_by_name(self, config_name: str, timeout_s: int = 60) -> str:
+        print(f"[LOOKUP] waiting for config_name={config_name}")
+        started_at = time.time()
+        while time.time() - started_at < timeout_s:
+            response = requests.get(f"{self.api_url}/get_configs", timeout=30)
+            response.raise_for_status()
+            for entry in response.json():
+                if entry.get("config_name") == config_name:
+                    config_id = entry.get("config_id") or entry.get("config_json", {}).get("id")
+                    if config_id:
+                        print(f"[LOOKUP] config_id={config_id}")
+                        return config_id
+            time.sleep(2)
+        raise TimeoutError(f"Could not find config_id for '{config_name}' within {timeout_s} seconds")
 
     def _wait_for_completion(self, timeout_s: int = 120, poll_interval_s: int = 2) -> None:
         print(f"[WAIT] waiting up to {timeout_s}s")
@@ -155,8 +146,9 @@ class K3dTestRunner:
         print(f"{'=' * 72}\n")
 
     def run(self) -> dict:
-        config_id = self._start_test()
+        config_name = self._start_test()
         self._wait_for_completion()
+        config_id = self._find_config_id_by_name(config_name)
         summary = self._fetch_summary(config_id)
         self._run_assertions(summary)
         self._print_summary(summary)
@@ -191,8 +183,3 @@ def test_k3d_high_load():
         .assert_cluster_requests("dk", min_count=10)
         .run()
     )
-
-
-# To add test_k3d_my_scenario, copy one of the tests above,
-# import get_test_config(), change the fields you need, and chain
-# the assertions that matter for that scenario.
