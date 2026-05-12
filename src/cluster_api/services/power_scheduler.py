@@ -148,12 +148,10 @@ def check_if_llama_pod_is_ready(
                 continue
 
             conditions = getattr(pod.status, "conditions", None) or []
+            #Is the pod ready, this uses readiness probe (so the container is also ready)
             pod_ready = any(c.type == "Ready" and c.status == "True" for c in conditions)
 
-            container_statuses = getattr(pod.status, "container_statuses", None) or []
-            containers_ready = bool(container_statuses) and all(cs.ready for cs in container_statuses)
-
-            if pod_ready and containers_ready:
+            if pod_ready:
                 return True
 
         return False
@@ -182,10 +180,11 @@ def refresh_worker_capacity(worker_node: WorkerNode, cluster_config) -> bool:
             url=url,
         )
 
-        response = requests.get(url, timeout=120)
+        response = requests.get(url, timeout=30)
         response.raise_for_status()
         props = response.json()
 
+        #Sets the max_slot, by getting it from the max_slots dict, if no "total_slots" exists, set it to 0
         worker_node.max_slots = props.get("total_slots", 0)
 
         if worker_node.max_slots > 0:
@@ -231,12 +230,12 @@ def wait_for_nodes_to_be_ready(
             if not pod_ready:
                 continue
 
-            capacity_ready = refresh_worker_capacity(node, cluster_config)
+            capacity_ready = refresh_worker_capacity(node, cluster_config) #Valid capacity >0
 
             if capacity_ready:
                 ready_nodes.append(node)
-            else:
-                # Keep it as turning_on while /props is not ready yet
+            else:   
+                #The pod is ready, but the capacity is still 0
                 node.status = WorkerStatus.TURNING_ON
                 log_node_status_snapshot(cluster_name, node)
 
@@ -302,7 +301,8 @@ def select_nodes_to_turn_on(number_of_nodes: int, worker_nodes: list[WorkerNode]
         if node.status == WorkerStatus.OFF:
             nodes_to_turn_on.append(node)
             continue
-        
+        #A node can remain stuck in TURNING_ON if the previous boot attempt did not
+        #produce a ready llama pod or valid slots. Select it again so it can be retried.
         if node.status == WorkerStatus.TURNING_ON and node.max_slots == 0:
             nodes_to_turn_on.append(node)
             continue
