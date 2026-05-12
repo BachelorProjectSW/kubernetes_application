@@ -27,7 +27,7 @@ class ClusterMetrics:
 
 
 @dataclass
-class TestResult:
+class ValidationResult:
     """Aggregated test execution result across all clusters."""
 
     config_id: str
@@ -69,7 +69,7 @@ class AssertionRegistry:
         self.assertions.append((name, check))
         return self
 
-    def execute_all(self, result: TestResult) -> None:
+    def execute_all(self, result: ValidationResult) -> None:
         """Run all registered assertions against a test result.
 
         Args:
@@ -87,11 +87,11 @@ class AssertionRegistry:
                 raise
 
 
-class TestScenario:
+class ValidationScenario:
     """Encapsulates a test scenario name with configurable assertions.
 
     This class provides a fluent API for registering assertions that will be
-    run after test execution completes.
+    run after test execution completes. Not a pytest test class.
     """
 
     def __init__(self, test_name: str):
@@ -103,7 +103,7 @@ class TestScenario:
         self.test_name = test_name
         self.assertions = AssertionRegistry()
 
-    def assert_total_requests(self, min_count: Optional[int] = None, max_count: Optional[int] = None) -> "TestScenario":
+    def assert_total_requests(self, min_count: Optional[int] = None, max_count: Optional[int] = None) -> "ValidationScenario":
         """Assert on total request count across all clusters.
 
         Args:
@@ -113,7 +113,7 @@ class TestScenario:
         Returns:
             Self for fluent chaining.
         """
-        def check(result: TestResult) -> None:
+        def check(result: ValidationResult) -> None:
             if min_count is not None and result.total_requests < min_count:
                 raise AssertionError(
                     f"Expected at least {min_count} requests, got {result.total_requests}"
@@ -126,7 +126,7 @@ class TestScenario:
         self.assertions.add(f"total_requests({min_count}, {max_count})", check)
         return self
 
-    def assert_success_rate(self, min_rate: float = 0.95) -> "TestScenario":
+    def assert_success_rate(self, min_rate: float = 0.95) -> "ValidationScenario":
         """Assert on global success rate.
 
         Args:
@@ -135,7 +135,7 @@ class TestScenario:
         Returns:
             Self for fluent chaining.
         """
-        def check(result: TestResult) -> None:
+        def check(result: ValidationResult) -> None:
             if result.total_requests == 0:
                 raise AssertionError("No requests executed")
             rate = result.total_success / result.total_requests
@@ -148,7 +148,7 @@ class TestScenario:
         return self
 
     def assert_cluster_requests(self, cluster_name: str, min_count: Optional[int] = None,
-                               max_count: Optional[int] = None) -> "TestScenario":
+                               max_count: Optional[int] = None) -> "ValidationScenario":
         """Assert on request count for a specific cluster.
 
         Args:
@@ -159,7 +159,7 @@ class TestScenario:
         Returns:
             Self for fluent chaining.
         """
-        def check(result: TestResult) -> None:
+        def check(result: ValidationResult) -> None:
             if cluster_name not in result.cluster_metrics:
                 raise AssertionError(f"Cluster '{cluster_name}' not found in results")
             count = result.cluster_metrics[cluster_name].request_count
@@ -179,7 +179,7 @@ class TestScenario:
         return self
 
     def assert_cluster_carbon(self, cluster_name: str, max_gco2: Optional[float] = None,
-                             min_gco2: Optional[float] = None) -> "TestScenario":
+                             min_gco2: Optional[float] = None) -> "ValidationScenario":
         """Assert on carbon intensity for a specific cluster.
 
         Args:
@@ -190,7 +190,7 @@ class TestScenario:
         Returns:
             Self for fluent chaining.
         """
-        def check(result: TestResult) -> None:
+        def check(result: ValidationResult) -> None:
             if cluster_name not in result.cluster_metrics:
                 raise AssertionError(f"Cluster '{cluster_name}' not found in results")
             carbon = result.cluster_metrics[cluster_name].avg_carbon_gco2
@@ -209,7 +209,7 @@ class TestScenario:
         )
         return self
 
-    def assert_global_carbon(self, max_gco2: float) -> "TestScenario":
+    def assert_global_carbon(self, max_gco2: float) -> "ValidationScenario":
         """Assert on global average carbon intensity.
 
         Args:
@@ -218,7 +218,7 @@ class TestScenario:
         Returns:
             Self for fluent chaining.
         """
-        def check(result: TestResult) -> None:
+        def check(result: ValidationResult) -> None:
             if result.global_avg_carbon > max_gco2:
                 raise AssertionError(
                     f"Global carbon {result.global_avg_carbon:.2f} exceeds max {max_gco2}"
@@ -228,7 +228,7 @@ class TestScenario:
         return self
 
 
-class TestRunner:
+class ResultsValidator:
     """Execute test scenario: load config, fetch results, run assertions."""
 
     def __init__(self, strato_api_url: str = "http://127.0.0.1:8071"):
@@ -288,8 +288,8 @@ class TestRunner:
         log.info("test.results_fetched", config_id=config_id)
         return response.json()
 
-    def parse_results(self, config_name: str, api_result: dict) -> TestResult:
-        """Parse raw API results into structured TestResult.
+    def parse_results(self, config_name: str, api_result: dict) -> ValidationResult:
+        """Parse raw API results into structured ValidationResult.
 
         Makes assumptions about result structure:
         - Results are organized by cluster
@@ -353,7 +353,7 @@ class TestRunner:
         global_costs = [m.avg_cost_eur for m in cluster_metrics_dict.values()]
         global_avg_cost = sum(global_costs) / len(global_costs) if global_costs else 0.0
 
-        return TestResult(
+        return ValidationResult(
             config_id=config_id,
             config_name=config_name,
             total_requests=total_requests,
@@ -364,14 +364,14 @@ class TestRunner:
             global_avg_cost=global_avg_cost,
         )
 
-    def run(self, scenario: TestScenario) -> TestResult:
+    def run(self, scenario: ValidationScenario) -> ValidationResult:
         """Execute a test scenario: load config, fetch results, validate assertions.
 
         Args:
-            scenario: TestScenario with test name and assertions.
+            scenario: ValidationScenario with test name and assertions.
 
         Returns:
-            Parsed TestResult.
+            Parsed ValidationResult.
 
         Raises:
             AssertionError: If any assertion fails.
@@ -400,24 +400,30 @@ class TestRunner:
         return result
 
 
-def test_k3d_default_scenario():
-    """Test the default k3d scenario with typical assumptions.
+def validate_k3d_default_scenario():
+    """Validate the default k3d scenario with typical assumptions.
 
     Assumptions:
-    - PT cluster receives majority of requests (ideally high carbon avoidance)
+    - PT cluster receives requests (carbon avoidance strategy)
     - Global carbon intensity is low (PT has good renewable output)
     - Success rate is very high (>99%)
+    
+    This is a manual validation function - NOT a pytest test. It should be called
+    AFTER running the k3d servers and workload. Usage:
+    
+        python -m test.k3d.run_servers  # Start clusters and run test
+        python -c "from test.integration.test_k3d_integration import validate_k3d_default_scenario; validate_k3d_default_scenario()"
     """
     scenario = (
-        TestScenario("k3d_test!")
+        ValidationScenario("k3d_test")
         .assert_total_requests(min_count=8)  # At least 8 requests sent
         .assert_success_rate(min_rate=0.99)  # 99% success rate
         .assert_cluster_requests("pt", min_count=3)  # PT should get some requests
         .assert_global_carbon(max_gco2=100)  # Low global carbon
     )
 
-    runner = TestRunner()
-    result = runner.run(scenario)
+    validator = ResultsValidator()
+    result = validator.run(scenario)
 
     # Print result summary
     print(f"\n{'='*60}")
@@ -437,4 +443,4 @@ def test_k3d_default_scenario():
 
 
 if __name__ == "__main__":
-    test_k3d_default_scenario()
+    validate_k3d_default_scenario()
