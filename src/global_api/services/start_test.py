@@ -16,12 +16,38 @@ log = structlog.get_logger()
 
 
 def _run_power_scheduler_loop():
-    """Run the async power scheduler in a dedicated thread."""
+    """Run the global power scheduler event loop in a background thread.
+
+    This helper is used as the thread target when the scheduler is enabled.
+    It creates and runs a dedicated asyncio event loop for
+    ``power_scheduler_loop``.
+
+    Returns:
+        None: This function runs until the async scheduler loop exits.
+    """
     asyncio.run(power_scheduler_loop())
 
 
 def start_test(config: Config):
-    """Start the test and send configs."""
+    """Start a distributed test run and initialize scheduler state.
+
+    This function prepares shared runtime state for a new test, pushes the
+    cluster-specific configuration to each cluster API, waits for worker nodes
+    to be ready, and optionally starts the global power scheduler in a daemon
+    thread.
+
+    Args:
+        config: Full test configuration containing cluster, question, and
+            scheduler settings.
+
+    Returns:
+        str: Success message indicating the test has started.
+
+    Raises:
+        Exception: Wrapped exception if any initialization step fails, such as
+            configuration push errors, node readiness timeout, or scheduler
+            startup issues.
+    """
     try:
         global _power_scheduler_thread
         config.start.start_time_real = datetime.now(timezone.utc).isoformat()
@@ -77,6 +103,13 @@ def start_test(config: Config):
 
 
 def stop_test():
-    """Stop the test."""
+    """Request shutdown of the running power scheduler for the active test.
+
+    This function signals the shared configuration store to stop the global
+    power-scheduler loop.
+
+    Returns:
+        dict[str, str]: Confirmation payload describing the stop action.
+    """
     config_store.stop_power_scheduler()
     return {"message": "Test stopped"}
