@@ -50,7 +50,7 @@ function DashboardPage() {
 
   const fetchOneConfig = async (id) => {
     const res = await fetch(
-      `http://100.109.95.2:8099/test_results?config_id=${encodeURIComponent(id)}`
+      `http://100.109.95.2:8015/test_results?config_id=${encodeURIComponent(id)}`
     );
 
     if (!res.ok) {

@@ -23,7 +23,7 @@ function ConfigPage() {
 
   const fetchTestStatus = async () => {
     try {
-      const res = await fetch("http://100.109.95.2:8099/test_status");
+      const res = await fetch("http://100.109.95.2:8015/test_status");
 
       if (!res.ok) {
         throw new Error("Failed to fetch test status");
