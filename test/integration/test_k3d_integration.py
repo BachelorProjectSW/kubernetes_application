@@ -1,12 +1,15 @@
+import time
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+import pytest
 import requests
 import structlog
 from sqlmodel import Session, select
 
 from src.db.postgres import ConfigRecord, _engine
 from src.models.basemodels import Config
+from test.k3d.cluster_configs.test_config import get_test_config
 
 log = structlog.get_logger()
 
@@ -336,6 +339,65 @@ class ResultsValidator:
         log.info("test.results_fetched", config_id=config_id)
         return response.json()
 
+    def start_test(self, config: Config) -> str:
+        """Start a test by posting config to Strato API.
+
+        Args:
+            config: Test configuration to start.
+
+        Returns:
+            Config ID from the response.
+
+        Raises:
+            requests.RequestException: If API call fails.
+        """
+        url = f"{self.strato_api_url}/start_test"
+        payload = config.model_dump()
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        result = response.json()
+        config_id = result.get("config_id", config.id)
+        log.info("test.started", config_id=config_id, config_name=config.name)
+        return config_id
+
+    def get_test_status(self) -> str:
+        """Get current test status from Strato API.
+
+        Returns:
+            Status string: 'idle', 'running', or 'stopping'.
+
+        Raises:
+            requests.RequestException: If API call fails.
+        """
+        url = f"{self.strato_api_url}/test_status"
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        result = response.json()
+        status = result.get("status", "unknown")
+        log.info("test.status_checked", status=status)
+        return status
+
+    def wait_for_test_completion(self, timeout_s: int = 120, poll_interval_s: int = 2) -> bool:
+        """Wait for test to complete (status becomes 'idle').
+
+        Args:
+            timeout_s: Maximum seconds to wait before timeout.
+            poll_interval_s: Seconds between status checks.
+
+        Returns:
+            True if test completed, False if timeout.
+        """
+        start_time = time.time()
+        while time.time() - start_time < timeout_s:
+            status = self.get_test_status()
+            if status == "idle":
+                log.info("test.completed")
+                return True
+            log.info("test.waiting", status=status, elapsed_s=time.time() - start_time)
+            time.sleep(poll_interval_s)
+        log.warning("test.timeout", timeout_s=timeout_s)
+        return False
+
     def parse_results(self, config_name: str, api_result: dict) -> ValidationResult:
         """Parse raw API results into structured ValidationResult.
 
@@ -454,47 +516,209 @@ class ResultsValidator:
         return result
 
 
-def validate_k3d_default_scenario():
-    """Validate the default k3d scenario with typical assumptions.
+@dataclass
+class TestScenarioDef:
+    """Definition of a test scenario with config builder and assertion builder."""
 
-    Assumptions:
-    - PT cluster receives requests (carbon avoidance strategy)
-    - Global carbon intensity is low (PT has good renewable output)
-    - Success rate is very high (>99%)
+    name: str
+    config_builder: Callable[[], Config]
+    assertion_builder: Callable[[ValidationScenario], ValidationScenario]
+    description: str = ""
+
+
+class TestScenarioRegistry:
+    """Registry of test scenarios with builders for config and assertions.
     
-    This is a manual validation function - NOT a pytest test. It should be called
-    AFTER running the k3d servers and workload. Usage:
-    
-        python -m test.k3d.run_servers  # Start clusters and run test
-        python -c "from test.integration.test_k3d_integration import validate_k3d_default_scenario; validate_k3d_default_scenario()"
+    Makes it easy to add new end-to-end test scenarios that run via pytest.
+    Each scenario has:
+    - A config builder function (generates fresh config with unique name)
+    - An assertion builder function (adds test-specific assertions)
     """
-    scenario = (
-        ValidationScenario("k3d_test_%", use_pattern=True)
-        .assert_total_requests(min_count=8)  # At least 8 requests sent
-        .assert_success_rate(min_rate=0.99)  # 99% success rate
-        .assert_cluster_requests("pt", min_count=3)  # PT should get some requests
-        .assert_global_carbon(max_gco2=100)  # Low global carbon
+
+    def __init__(self):
+        """Initialize empty registry."""
+        self._scenarios: dict[str, TestScenarioDef] = {}
+
+    def register(
+        self,
+        name: str,
+        config_builder: Callable[[], Config],
+        assertion_builder: Callable[[ValidationScenario], ValidationScenario],
+        description: str = "",
+    ) -> None:
+        """Register a new test scenario.
+
+        Args:
+            name: Unique scenario name (used in test IDs).
+            config_builder: Callable that returns a Config object.
+            assertion_builder: Callable that takes ValidationScenario and returns it with assertions added.
+            description: Human-readable scenario description.
+
+        Example:
+            def build_config():
+                config = get_test_config()
+                config.workload.request_per_minute = 50  # High load
+                return config
+
+            def build_assertions(scenario):
+                return (
+                    scenario
+                    .assert_total_requests(min_count=20)
+                    .assert_success_rate(min_rate=0.98)
+                )
+
+            registry.register("high_load", build_config, build_assertions, "High request load test")
+        """
+        self._scenarios[name] = TestScenarioDef(
+            name=name,
+            config_builder=config_builder,
+            assertion_builder=assertion_builder,
+            description=description,
+        )
+
+    def get_all(self) -> dict[str, TestScenarioDef]:
+        """Get all registered scenarios."""
+        return self._scenarios.copy()
+
+    def get_names(self) -> list[str]:
+        """Get all scenario names for pytest parametrization."""
+        return list(self._scenarios.keys())
+
+
+# Global scenario registry
+TEST_SCENARIOS = TestScenarioRegistry()
+
+
+# ============================================================================
+# SCENARIO DEFINITIONS: Easy to add new scenarios here
+# ============================================================================
+
+
+def _build_default_config() -> Config:
+    """Build default k3d test config with unique name."""
+    return get_test_config()
+
+
+def _build_default_assertions(scenario: ValidationScenario) -> ValidationScenario:
+    """Add assertions for default scenario."""
+    return (
+        scenario
+        .assert_total_requests(min_count=8)
+        .assert_success_rate(min_rate=0.99)
+        .assert_cluster_requests("pt", min_count=3)
+        .assert_global_carbon(max_gco2=100)
     )
 
+
+def _build_high_load_config() -> Config:
+    """Build high-load test config."""
+    config = get_test_config()
+    config.workload.request_per_minute = 60  # Higher request rate
+    return config
+
+
+def _build_high_load_assertions(scenario: ValidationScenario) -> ValidationScenario:
+    """Add assertions for high-load scenario."""
+    return (
+        scenario
+        .assert_total_requests(min_count=20)  # More requests expected
+        .assert_success_rate(min_rate=0.98)  # Slightly lower tolerance under load
+        .assert_cluster_requests("dk", min_count=10)  # DK should handle more
+    )
+
+
+# Register scenarios (easy to add more)
+TEST_SCENARIOS.register(
+    "default",
+    _build_default_config,
+    _build_default_assertions,
+    "Default k3d test: balanced load, carbon optimization"
+)
+
+TEST_SCENARIOS.register(
+    "high_load",
+    _build_high_load_config,
+    _build_high_load_assertions,
+    "High load test: 60 req/min to stress clusters"
+)
+
+
+# ============================================================================
+# PYTEST INTEGRATION: Auto-discovered and parametrized
+# ============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("scenario_name", TEST_SCENARIOS.get_names())
+def test_k3d_scenario(scenario_name: str) -> None:
+    """Parametrized pytest test for all registered k3d scenarios.
+    
+    Each scenario:
+    1. Generates fresh config with unique name
+    2. POSTs to Strato API /start_test
+    3. Polls for completion
+    4. Validates scenario-specific assertions
+    
+    Run all scenarios:
+        pytest test/integration/test_k3d_integration.py -m integration -v
+    
+    Run specific scenario:
+        pytest test/integration/test_k3d_integration.py::test_k3d_scenario[default] -v
+    """
+    scenario_def = TEST_SCENARIOS.get_all()[scenario_name]
+    
+    # Generate fresh config
+    config = scenario_def.config_builder()
+    log.info("test.scenario_started", scenario=scenario_name, config_name=config.name)
+    
+    # Start test
     validator = ResultsValidator()
-    result = validator.run(scenario)
+    config_id = validator.start_test(config)
+    
+    # Wait for completion
+    completed = validator.wait_for_test_completion(timeout_s=120)
+    assert completed, f"Test '{scenario_name}' did not complete within 120 seconds"
+    
+    # Build scenario with assertions
+    validation_scenario = ValidationScenario(config.name)
+    validation_scenario = scenario_def.assertion_builder(validation_scenario)
+    
+    # Run validation
+    try:
+        result = validator.run(validation_scenario)
+        
+        # Log results
+        log.info(
+            "test.scenario_passed",
+            scenario=scenario_name,
+            config_name=result.config_name,
+            config_id=result.config_id,
+            total_requests=result.total_requests,
+        )
+        
+        # Print summary for user visibility
+        print(f"\n{'='*70}")
+        print(f"✓ SCENARIO PASSED: {scenario_name}")
+        print(f"  Description: {scenario_def.description}")
+        print(f"  Config: {result.config_name} (ID: {result.config_id})")
+        print(f"  Requests: {result.total_requests} ({result.total_success} success, {result.total_failure} failure)")
+        print(f"  Global Avg Carbon: {result.global_avg_carbon:.2f} gCO2/kWh")
+        print(f"  Global Avg Cost: {result.global_avg_cost:.4f} EUR/kWh")
+        print(f"\n  Per-Cluster Metrics:")
+        for cluster_name, metrics in result.cluster_metrics.items():
+            print(f"    {cluster_name}:")
+            print(f"      Requests: {metrics.request_count} ({metrics.success_count} success)")
+            print(f"      Avg Latency: {metrics.avg_latency_ms:.0f}ms")
+            print(f"      Avg Carbon: {metrics.avg_carbon_gco2:.2f} gCO2/kWh")
+            print(f"      Avg Cost: {metrics.avg_cost_eur:.4f} EUR/kWh")
+        print(f"{'='*70}\n")
+        
+    except AssertionError as e:
+        log.error("test.scenario_failed", scenario=scenario_name, error=str(e))
+        print(f"\n{'='*70}")
+        print(f"✗ SCENARIO FAILED: {scenario_name}")
+        print(f"  Error: {e}")
+        print(f"{'='*70}\n")
+        raise
 
-    # Print result summary
-    print(f"\n{'=' * 60}")
-    print(f"Test: {result.config_name}")
-    print(f"Config ID: {result.config_id}")
-    print(f"Total Requests: {result.total_requests} ({result.total_success} success, {result.total_failure} failure)")
-    print(f"Global Avg Carbon: {result.global_avg_carbon:.2f} gCO2/kWh")
-    print(f"Global Avg Cost: {result.global_avg_cost:.4f} EUR/kWh")
-    print("\nPer-Cluster Metrics:")
-    for cluster_name, metrics in result.cluster_metrics.items():
-        print(f"\n  {cluster_name}:")
-        print(f"    Requests: {metrics.request_count} ({metrics.success_count} success)")
-        print(f"    Avg Latency: {metrics.avg_latency_ms:.0f}ms")
-        print(f"    Avg Carbon: {metrics.avg_carbon_gco2:.2f} gCO2/kWh")
-        print(f"    Avg Cost: {metrics.avg_cost_eur:.4f} EUR/kWh")
-    print(f"{'=' * 60}\n")
 
-
-if __name__ == "__main__":
-    validate_k3d_default_scenario()
