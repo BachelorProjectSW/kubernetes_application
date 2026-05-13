@@ -1,6 +1,11 @@
 import csv
 from datetime import datetime, timezone
 from pathlib import Path
+import structlog
+
+
+log = structlog.get_logger()
+
 
 DATA_PATH = Path(__file__).parent.parent / "data" / "pv_all_countries_2025_2026Q1.csv"
 
@@ -62,5 +67,6 @@ def get_power(
     for timestamp, factor in factors:
         available_power = pv_capacity_w * factor
         results.append((timestamp, available_power))
+    log.info("global_api.get_pv_power", start=start, end=end, pv_capacity_w=pv_capacity_w, results=results)
 
     return results

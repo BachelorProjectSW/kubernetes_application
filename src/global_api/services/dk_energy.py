@@ -47,7 +47,7 @@ def get_dk_hourly(start: datetime, end: datetime) -> list[dict]:
     """
     start_ms = int(start.timestamp() * 1000)
     end_ms = int(end.timestamp() * 1000)
-    log.info("global_api.dk_energy.hourly_fetch_started", start=str(start), end=str(end))
+    log.debug("global_api.dk_energy.hourly_fetch_started", start=str(start), end=str(end))
 
     try:
         response = requests.get(
@@ -67,5 +67,5 @@ def get_dk_hourly(start: datetime, end: datetime) -> list[dict]:
     for reading in data:
         reading["timestamp"] = _ms_to_iso(reading["timestamp_ms"])
         del reading["timestamp_ms"]
-    log.info("global_api.dk_energy.hourly_fetch_succeeded", reading_count=len(data))
+    log.info("global_api.dk_energy.hourly_fetch_succeeded", start=str(start), end=str(end), data=data)
     return data
