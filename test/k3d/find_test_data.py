@@ -13,7 +13,7 @@ CONSTRAINTS = {
     0: {
         "DK": {
             "generation": {"min": 500},
-            "consumption": {"max": 300}
+            "consumption": {"max": 330}
         },
         "NL": {
             "pv": {"max": 200},
@@ -199,10 +199,10 @@ class TestDataFinder:
                     ):
                         return False
 
-            print("\nHOUR PASS")
+            print("\nHOUR PASS✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅")
 
         print("\n==============================")
-        print("ALL HOURS PASSED")
+        print("ALL HOURS PASSED✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅")
         print("==============================")
 
         return True
@@ -225,7 +225,7 @@ class TestDataFinder:
 
                 if self._check_timeline(base_time):
 
-                    print("\nMATCH FOUND")
+                    print("\nMATCH FOUND✅")
 
                     return {
                         "base_time": base_time.isoformat(),
