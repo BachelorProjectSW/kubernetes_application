@@ -176,7 +176,7 @@ def test_k3d_default():
 
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=5)
+        .assert_total_requests(min_count=5, max_count=5)
         .assert_success_rate(min_rate=1)
         .assert_cluster_requests("pt", min_count=4)
         .assert_global_carbon(max_gco2=100)
@@ -192,7 +192,7 @@ def test_k3d_high_load():
 
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=10)
+        .assert_total_requests(min_count=10, max_count=10)
         .assert_success_rate(min_rate=1)
         .assert_cluster_requests("pt", min_count=8)
         .run(config.start.duration_time_s)
@@ -214,7 +214,7 @@ def test_k3d_dk_cluster():
     config.clusters[0].simulated_country_code = "DK-DK1"
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=5)
+        .assert_total_requests(min_count=5, max_count=5)
         .assert_success_rate(min_rate=1)
         .assert_cluster_requests("pt", min_count=4)
         .run(config.start.duration_time_s)
