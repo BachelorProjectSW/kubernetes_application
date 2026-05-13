@@ -106,8 +106,8 @@ class TestDataFinder:
                     if dk_hourly:
                         entry = dk_hourly[0]
 
-                        cluster_data["generation"] = entry.get("generation_w")
-                        cluster_data["consumption"] = entry.get("consumption_w")
+                        cluster_data["generation"] = entry.get("avg_generation_w")
+                        cluster_data["consumption"] = entry.get("avg_consumption_w")
 
                 else:
 
@@ -117,7 +117,7 @@ class TestDataFinder:
                         if prices:
                             cluster_data["cost_eur_mwh"] = prices[0][1]
                     except Exception as e:
-                        print(f"Warning price {cluster}: {e}")
+                        print(f"    [price] {cluster}: {e}")
 
                     # Carbon
                     try:
@@ -125,7 +125,7 @@ class TestDataFinder:
                         if carbons:
                             cluster_data["gco2_per_kwh"] = carbons[0][1]
                     except Exception as e:
-                        print(f"Warning carbon {cluster}: {e}")
+                        print(f"    [carbon] {cluster}: {e}")
 
                     # PV
                     try:
@@ -138,12 +138,12 @@ class TestDataFinder:
                         if pv_data:
                             cluster_data["pv_watts"] = pv_data[0][1]
                     except Exception as e:
-                        print(f"Warning PV {cluster}: {e}")
+                        print(f"    [pv] {cluster}: {e}")
 
                 data["clusters"][cluster] = cluster_data
 
             except Exception as e:
-                print(f"Error cluster {cluster}: {e}")
+                print(f"    [ERROR] cluster {cluster}: {e}")
 
         return data
 
