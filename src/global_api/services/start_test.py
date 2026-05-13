@@ -56,7 +56,7 @@ def start_test(config: Config):
         market_data_store.reset()
         set_current_config_id(config.id)
         config_store.set(config)
-        log.info("global_api.test.start_requested", config_id=config.id, test_name=config.name)
+        log.debug("global_api.test.start_requested", config_id=config.id, test_name=config.name)
 
         for cluster in config.clusters:
             cluster_information = ClusterInformation(
@@ -69,7 +69,7 @@ def start_test(config: Config):
             port = cluster.port
             url = f"http://{ip}:{port}/set_config"
 
-            log.info(
+            log.debug(
                 "global_api.test.cluster_config_push_started",
                 cluster_name=cluster.name,
                 target_url=url,

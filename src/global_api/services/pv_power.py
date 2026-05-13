@@ -67,6 +67,6 @@ def get_power(
     for timestamp, factor in factors:
         available_power = pv_capacity_w * factor
         results.append((timestamp, available_power))
-    log.info("global_api.get_pv_power", start=start, end=end, pv_capacity_w=pv_capacity_w, results=results)
+    log.debug("global_api.get_pv_power", start=start, end=end, pv_capacity_w=pv_capacity_w, results=results)
 
     return results
