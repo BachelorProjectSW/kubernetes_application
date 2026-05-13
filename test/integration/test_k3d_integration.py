@@ -26,9 +26,9 @@ class K3dTestRunner:
 
         def check(summary: dict) -> None:
             count = summary.get("request_count", 0)
-            if min_count is not None and count < min_count:
+            if min_count is not None and count <= min_count:
                 raise AssertionError(f"Expected at least {min_count} requests, got {count}")
-            if max_count is not None and count > max_count:
+            if max_count is not None and count >= max_count:
                 raise AssertionError(f"Expected at most {max_count} requests, got {count}")
 
         self.assertions.append((f"total_requests({min_count}, {max_count})", check))
@@ -43,7 +43,7 @@ class K3dTestRunner:
             if total_requests == 0:
                 raise AssertionError("No requests executed")
             success_rate = successful_requests / total_requests
-            if success_rate < min_rate:
+            if success_rate <= min_rate:
                 raise AssertionError(f"Success rate {success_rate:.2%} below minimum {min_rate:.2%}")
 
         self.assertions.append((f"success_rate(min={min_rate})", check))
@@ -60,11 +60,11 @@ class K3dTestRunner:
         def check(summary: dict) -> None:
             cluster_distribution = summary.get("cluster_distribution", {})
             count = cluster_distribution.get(cluster_name, 0)
-            if min_count is not None and count < min_count:
+            if min_count is not None and count <= min_count:
                 raise AssertionError(
                     f"Cluster {cluster_name}: expected at least {min_count} requests, got {count}"
                 )
-            if max_count is not None and count > max_count:
+            if max_count is not None and count >= max_count:
                 raise AssertionError(
                     f"Cluster {cluster_name}: expected at most {max_count} requests, got {count}"
                 )
@@ -77,8 +77,8 @@ class K3dTestRunner:
 
         def check(summary: dict) -> None:
             value = float(summary.get("total_gco2_g", 0.0))
-            if value > max_gco2:
-                raise AssertionError(f"Global carbon {value:.2f} > {max_gco2}")
+            if value >= max_gco2:
+                raise AssertionError(f"Global carbon {value:.2f} >= {max_gco2}")
 
         self.assertions.append((f"global_carbon(max={max_gco2})", check))
         return self
@@ -161,7 +161,7 @@ class K3dTestRunner:
         """Run the tests and wait for x seconds to abort."""
         config_name = self._start_test()
         self._wait_for_completion(test_duration=test_duration)
-        time.sleep(60) #ensure tests results is in db.
+        time.sleep(10) #ensure tests results is in db.
         config_id = self._find_config_id_by_name(config_name)
         summary = self._fetch_summary(config_id)
         self._run_assertions(summary)
