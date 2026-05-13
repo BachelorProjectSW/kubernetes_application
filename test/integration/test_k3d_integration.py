@@ -113,7 +113,7 @@ class K3dTestRunner:
             self,
             test_duration: int,
             time_buffer: int = 200,
-            poll_interval_s: int = 2
+            poll_interval_s: int = 10
         ) -> None:
         total_wait_time = test_duration + time_buffer
         print(f"[WAIT] waiting up to {total_wait_time}s")
