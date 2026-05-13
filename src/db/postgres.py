@@ -253,7 +253,7 @@ def read_model_logs(
         if row.payload_json is None:
             continue
         logs.append(log_model_class(**row.payload_json))
-    log.info(
+    log.debug(
         "db.read_model_logs",
         config_id=config_id,
         log_type=log_model_class.__name__,
