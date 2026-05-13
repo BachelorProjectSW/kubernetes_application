@@ -161,7 +161,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         config = config_store.get()
         cluster_name = config.cluster_config.name
 
-        logger.info(
+        logger.debug(
             "cluster_api.llm.request_started",
             service="cluster_api",
             cluster_name=cluster_name,
@@ -244,7 +244,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
         cluster_llama_inference_ms = int((time.monotonic() - llama_call_start) * 1000)
 
         duration_ms = int((time.monotonic() - start_time) * 1000)
-        logger.info(
+        logger.debug(
             "cluster_api.llm.request_succeeded",
             service="cluster_api",
             cluster_name=cluster_name,
