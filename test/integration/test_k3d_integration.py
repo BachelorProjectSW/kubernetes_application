@@ -119,7 +119,6 @@ class K3dTestRunner:
             if status == "idle":
                 print(f"[DONE] completed in {time.time() - started_at:.1f}s")
                 return
-            print(f"[WAIT] status={status}")
             time.sleep(poll_interval_s)
         raise TimeoutError(f"Test did not complete within {timeout_s} seconds")
 
