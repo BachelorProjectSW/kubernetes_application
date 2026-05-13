@@ -1,11 +1,16 @@
+import json
 import os
 import sys
-import json
-
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Optional
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from src.custom_logging import logger as _logger_bootstrap  # noqa: F401
+import structlog
 
 from src.global_api.services.price_and_carbon_intensity import (
     fetch_price_data,
@@ -13,6 +18,9 @@ from src.global_api.services.price_and_carbon_intensity import (
 )
 from src.global_api.services.pv_power import get_power
 from src.global_api.services.dk_energy import get_dk_hourly
+
+
+log = structlog.get_logger()
 
 
 CONSTRAINTS = {
