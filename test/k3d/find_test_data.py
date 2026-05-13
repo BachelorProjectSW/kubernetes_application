@@ -19,16 +19,16 @@ from src.global_api.services.dk_energy import get_dk_hourly
 CONSTRAINTS = {
     0: {
         "DK": {
-            "generation": {"min": 500, "max": 700},
+            "generation": {"min": 500},
             "consumption": {"max": 300},
         },
         "PT": {
-            "pv": {"min": 100},
+            "pv": {"max": 100},
         },
     },
     1: {
         "DK": {
-            "generation": {"max": 100},
+            "generation": {"max": 200},
         },
         "PT": {
             "pv": {"min": 500},
