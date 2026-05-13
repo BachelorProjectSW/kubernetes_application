@@ -62,6 +62,8 @@ class TestDataFinder:
             return cluster_data.get("generation")
         if metric == "consumption":
             return cluster_data.get("consumption")
+        if metric == "surplus":
+            return cluster_data.get("surplus")
         return cluster_data.get(metric)
 
     # ------------------------------------------------------------
@@ -106,8 +108,13 @@ class TestDataFinder:
 
                 if dk_hourly:
                     entry = dk_hourly[0]
-                    cluster_data["generation"] = entry.get("avg_generation_w")
-                    cluster_data["consumption"] = entry.get("avg_consumption_w")
+                    gen = entry.get("avg_generation_w")
+                    cons = entry.get("avg_consumption_w")
+                    cluster_data["generation"] = gen
+                    cluster_data["consumption"] = cons
+                    # surplus = generation - consumption (can be negative)
+                    if gen is not None and cons is not None:
+                        cluster_data["surplus"] = gen - cons
 
             else:
 
