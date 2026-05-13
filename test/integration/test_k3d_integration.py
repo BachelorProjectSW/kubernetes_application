@@ -193,7 +193,7 @@ def test_k3d_high_load():
 
 
 @pytest.mark.integration
-@pytest.mark.xfail(reason="Github runner have not access to CROM DB.", strict=False)
+@pytest.mark.local(reason="Github runner have not access to CROM DB.", strict=False)
 def test_k3d_dk_cluster():
     """Higher request-rate scenario."""
     config = get_test_config()
