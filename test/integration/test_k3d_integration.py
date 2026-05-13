@@ -212,14 +212,14 @@ def test_k3d_switch_clusters():
     Therefore expected to swith cluster after one minute.
     """
     config = get_test_config()
-
+    config.name = config.name + "NL_AND_PT"
     config.start.start_time_simulated = "01/03/2026 09:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
-
+    config.clusters[0].simulated_country_code = "NL"  # DK control is simulated in Netherlands.
     (
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
@@ -252,12 +252,14 @@ def test_k3d_switch_clusters_with_dk():
     """
     config = get_test_config()
 
+    config.name = config.name + "DK_AND_TR"
     config.start.start_time_simulated = "25/03/2026 06:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
+    config.clusters[1].simulated_country_code = "TR"
 
     (
         K3dTestRunner(config)
