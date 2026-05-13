@@ -9,30 +9,29 @@ from src.global_api.services.price_and_carbon_intensity import (
 from src.global_api.services.pv_power import get_power
 from src.global_api.services.dk_energy import get_dk_hourly
 
-
 CONSTRAINTS = {
     0: {
         "DK": {
             "generation": {"min": 500},
-            "consumption": {"max": 300},
+            "consumption": {"max": 300}
         },
-        "PT": {
-            "pv": {"max": 100},
+        "NL": {
+            "pv": {"max": 200},
         },
     },
     1: {
         "DK": {
-            "generation": {"max": 200},
+            "generation": {"max": 50},
         },
-        "PT": {
-            "pv": {"min": 500},
+        "NL": {
+            "pv": {"min": 200},
         },
     },
 }
 
 PV_CAPACITY_W = 1500
 
-START_DATE = datetime(2026, 2, 25, tzinfo=timezone.utc)
+START_DATE = datetime(2026, 3, 1, tzinfo=timezone.utc)
 
 NUM_DAYS = 30
 
@@ -52,7 +51,7 @@ class TestDataFinder:
         self.clusters = list(self.clusters)
         self.pv_capacity_w = pv_capacity_w
 
-    def _metric_value(self, cluster: str, metric: str, cluster_data: dict):
+    def _metric_value(self, metric: str, cluster_data: dict):
         if metric == "pv":
             return cluster_data.get("pv_watts")
         if metric == "cost":
