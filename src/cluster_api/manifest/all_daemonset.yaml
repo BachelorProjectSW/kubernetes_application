@@ -49,10 +49,6 @@ spec:
               value: "8080" #only on port 8080
             - name: LLAMA_ARG_THINK_BUDGET
               value: "0"
-          ports:
-            - containerPort: 8080
-              hostPort: 8080
-              protocol: TCP
           readinessProbe:
             httpGet:
               path: /health

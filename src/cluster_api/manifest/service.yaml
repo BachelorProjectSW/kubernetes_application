@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-server
+  labels:
+    app: llama-server
+spec:
+  type: NodePort
+  externalTrafficPolicy: Local
+  selector:
+    app: llama-server
+    arch: arm64
+  ports:
+    - name: http
+      port: 8080         # ClusterIP port (in-cluster access: llama-server:8080)
+      targetPort: 8080   # the containerPort on the pod
+      nodePort: 30080    # external port on each node; pick anything in 30000–32767
+      protocol: TCP
