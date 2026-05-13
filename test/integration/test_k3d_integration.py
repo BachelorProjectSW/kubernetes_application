@@ -5,6 +5,7 @@ from typing import Callable
 
 import pytest
 import requests
+import os
 
 from src.models.basemodels import Config
 from test.k3d.cluster_configs.test_config import get_test_config
@@ -192,8 +193,14 @@ def test_k3d_high_load():
     )
 
 
+skip_on_ci = pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="GitHub runner has no access to CROM DB"
+)
+
+
 @pytest.mark.integration
-@pytest.mark.local(reason="Github runner have not access to CROM DB.", strict=False)
+@skip_on_ci()
 def test_k3d_dk_cluster():
     """Higher request-rate scenario."""
     config = get_test_config()
