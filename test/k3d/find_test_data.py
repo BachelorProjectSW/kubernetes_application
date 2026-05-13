@@ -22,7 +22,7 @@ CONSTRAINTS = {
             "gco2": {"max": 10000},
         }
     },
-    0: {
+    1: {
         "DK": {
             "surplus": {"min": 50},
         },
