@@ -72,13 +72,15 @@ class K3dTestRunner:
         self.assertions.append((f"cluster_requests({cluster_name}, {min_count}, {max_count})", check))
         return self
 
-    def assert_global_carbon(self, max_gco2: float):
+    def assert_global_carbon(self, min_gco2: float | None = None, max_gco2: float | None = None):
         """Assert the global carbon total from the raw summary."""
 
         def check(summary: dict) -> None:
             value = float(summary.get("total_gco2_g", 0.0))
-            if value > max_gco2:
-                raise AssertionError(f"Global carbon {value:.2f} >= {max_gco2}")
+            if max_gco2 is not None and value > max_gco2:
+                raise AssertionError(f"Global carbon {value:.2f} > {max_gco2}")
+            if min_gco2 is not None and value < min_gco2:
+                raise AssertionError(f"Global carbon {value:.2f} < {min_gco2}")
 
         self.assertions.append((f"global_carbon(max={max_gco2})", check))
         return self
@@ -161,7 +163,7 @@ class K3dTestRunner:
         """Run the tests and wait for x seconds to abort."""
         config_name = self._start_test()
         self._wait_for_completion(test_duration=test_duration)
-        time.sleep(10) #ensure tests results is in db.
+        time.sleep(10)  # ensure tests results is in db.
         config_id = self._find_config_id_by_name(config_name)
         summary = self._fetch_summary(config_id)
         self._run_assertions(summary)
@@ -179,7 +181,7 @@ def test_k3d_default():
         .assert_total_requests(min_count=5, max_count=5)
         .assert_success_rate(min_rate=1)
         .assert_cluster_requests("pt", min_count=4)
-        .assert_global_carbon(max_gco2=100)
+        .assert_global_carbon(max_gco2=1, min_gco2=0.6)
         .run(config.start.duration_time_s)
     )
 
