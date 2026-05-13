@@ -227,10 +227,10 @@ class K3dTestRunner:
 #     )
 
 
-# skip_on_ci = pytest.mark.skipif(
-#     os.getenv("GITHUB_ACTIONS") == "true",
-#     reason="GitHub runner has no access to CROM DB"
-# )
+skip_on_ci = pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="GitHub runner has no access to CROM DB"
+)
 
 
 @pytest.mark.integration
