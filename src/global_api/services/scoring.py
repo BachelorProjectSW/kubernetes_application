@@ -200,6 +200,7 @@ def choose_cluster(
             cluster_load_w=cluster_energy_data.cluster_load_w,
             cluster_carbon_intensity=cluster_energy_data.grid_carbon_intensity,
             grid_electricity_price=cluster_energy_data.grid_electricity_price,
+            cluster_avg_latency=cluster_energy_data.avg_latency_ms
         )
 
         if cluster_score > best_score:
