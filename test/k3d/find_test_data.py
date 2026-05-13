@@ -25,14 +25,11 @@ CONSTRAINTS = {
         "generation_min": 500,
     },
     "ES": {
-        "pv_watts_max": 500,
-    },
-    "PT": {
-        "pv_watts_max": 1000,
-    },
+        "pv_watts_min": 100,
+    }
 }
 
-PV_CAPACITY_W = 10000
+PV_CAPACITY_W = 1500
 
 START_DATE = datetime(2026, 3, 25, tzinfo=timezone.utc)
 
