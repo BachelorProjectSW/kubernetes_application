@@ -15,17 +15,23 @@ CONSTRAINTS = {
             "generation": {"min": 500},
             "consumption": {"max": 330}
         },
+        "TR": {
+            "pv": {"max": 200}
+        }
     },
     1: {
         "DK": {
             "generation": {"max": 50},
         },
+        "TR": {
+            "pv": {"min": 200}
+        }
     },
 }
 
 PV_CAPACITY_W = 1500
 
-START_DATE = datetime(2026, 3, 1, tzinfo=timezone.utc)
+START_DATE = datetime(2026, 3, 25, tzinfo=timezone.utc)
 
 NUM_DAYS = 30
 
