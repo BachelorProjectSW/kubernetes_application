@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -50,6 +49,7 @@ class TestDataFinder:
         constraints: dict,
         pv_capacity_w: float = 10000,
     ):
+        """Init."""
         self.constraints = constraints
         self.max_offset = max(constraints.keys())
 
@@ -171,33 +171,36 @@ class TestDataFinder:
 
     def _check_timeline(self, base_time: datetime) -> bool:
 
-        print("\n--- Checking timeline ---")
+        print("\n" + "#" * 70)
+        print(f"BASE TIME: {base_time}")
+        print("#" * 70)
 
         for offset, constraints in self.constraints.items():
 
             current_time = base_time + timedelta(hours=offset)
 
-            print(f"\nOffset +{offset}h → {current_time}")
+            print("\n" + "-" * 70)
+            print(f"HOUR OFFSET {offset} → {current_time}")
+            print("-" * 70)
 
             data = self._fetch_hour_data(current_time)
             clusters_data = data.get("clusters", {})
 
-            # 🔥 NEW: clean per-hour snapshot
             self._print_hour_summary(current_time, clusters_data)
+
+            hour_ok = True
 
             for cluster, rules in constraints.items():
 
+                print(f"\n  Checking cluster: {cluster}")
+
                 if cluster not in clusters_data:
+                    print("  ❌ Missing cluster data")
                     return False
 
                 cluster_data = clusters_data[cluster]
 
-                print(f"\n  Cluster {cluster}:")
-
                 for key, constraint_value in rules.items():
-
-                    if constraint_value is None:
-                        continue
 
                     if key.endswith("_min"):
                         value_key = key[:-4]
@@ -206,24 +209,34 @@ class TestDataFinder:
 
                     elif key.endswith("_max"):
                         continue
-
                     else:
                         continue
 
                     value = cluster_data.get(value_key)
 
                     if value is None:
-                        print(f"    ⚠ Missing {cluster}.{value_key}")
+                        print(f"  ❌ Missing {value_key}")
                         return False
 
-                    if not self._check_constraint(
+                    ok = self._check_constraint(
                         cluster,
                         value_key,
                         value,
                         min_val,
                         max_val,
-                    ):
-                        return False
+                    )
+
+                    if not ok:
+                        hour_ok = False
+
+            print("\n" + ("✅ HOUR PASS" if hour_ok else "❌ HOUR FAIL"))
+
+            if not hour_ok:
+                return False
+
+        print("\n==============================")
+        print("ALL HOURS PASSED")
+        print("==============================")
 
         return True
 
@@ -232,7 +245,7 @@ class TestDataFinder:
         start_date: datetime,
         num_days: int = 30,
     ) -> Optional[dict]:
-
+        """Find data."""
         print("\nSearching relative timeline pattern...")
         print(f"Max offset: {self.max_offset} hours")
 
@@ -271,7 +284,7 @@ class TestDataFinder:
 
 
 def main():
-
+    """Start test."""
     finder = TestDataFinder(
         constraints=CONSTRAINTS,
         pv_capacity_w=PV_CAPACITY_W,
