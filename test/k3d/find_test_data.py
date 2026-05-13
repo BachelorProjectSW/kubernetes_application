@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -42,14 +43,8 @@ NUM_DAYS = 30
 
 
 class TestDataFinder:
-    """Relative timeline constraint matcher."""
 
-    def __init__(
-        self,
-        constraints: dict,
-        pv_capacity_w: float = 10000,
-    ):
-        """Init."""
+    def __init__(self, constraints: dict, pv_capacity_w: float = 10000):
         self.constraints = constraints
         self.max_offset = max(constraints.keys())
 
@@ -60,9 +55,9 @@ class TestDataFinder:
         self.clusters = list(self.clusters)
         self.pv_capacity_w = pv_capacity_w
 
-    # ============================================================
-    # 🔥 NEW: CLEAN HOURLY DEBUG OUTPUT
-    # ============================================================
+    # ------------------------------------------------------------
+    # SIMPLE HOURLY PRINT
+    # ------------------------------------------------------------
     def _print_hour_summary(self, timestamp: datetime, clusters_data: dict):
         print("\n" + "=" * 70)
         print(f"🕒 {timestamp.isoformat()}")
@@ -79,36 +74,9 @@ class TestDataFinder:
                 print(f"    carbon       : {data.get('gco2_per_kwh')}")
                 print(f"    pv           : {data.get('pv_watts')}")
 
-    # ============================================================
-
-    def _check_constraint(
-        self,
-        cluster: str,
-        key: str,
-        value: float,
-        min_val: Optional[float],
-        max_val: Optional[float],
-    ) -> bool:
-
-        print(f"      → Checking {cluster}.{key}")
-        print(f"        value = {value}")
-
-        if min_val is not None:
-            print(f"        min   = {min_val}")
-        if max_val is not None:
-            print(f"        max   = {max_val}")
-
-        if min_val is not None and value < min_val:
-            print("        ❌ FAIL (below min)")
-            return False
-
-        if max_val is not None and value > max_val:
-            print("        ❌ FAIL (above max)")
-            return False
-
-        print("        ✅ PASS")
-        return True
-
+    # ------------------------------------------------------------
+    # FETCH DATA
+    # ------------------------------------------------------------
     def _fetch_hour_data(self, hour_time: datetime) -> dict:
 
         start = hour_time
@@ -123,52 +91,59 @@ class TestDataFinder:
 
             cluster_data = {}
 
-            try:
+            if cluster.upper().startswith("DK"):
 
-                if cluster.upper().startswith("DK"):
+                dk_hourly = get_dk_hourly(start, end)
 
-                    dk_hourly = get_dk_hourly(start, end)
+                if dk_hourly:
+                    entry = dk_hourly[0]
+                    cluster_data["generation"] = entry.get("avg_generation_w")
+                    cluster_data["consumption"] = entry.get("avg_consumption_w")
 
-                    if dk_hourly:
-                        entry = dk_hourly[0]
-                        cluster_data["generation"] = entry.get("avg_generation_w")
-                        cluster_data["consumption"] = entry.get("avg_consumption_w")
+            else:
 
-                else:
+                prices = fetch_price_data(start, end, cluster)
+                if prices:
+                    cluster_data["cost_eur_mwh"] = prices[0][1]
 
-                    try:
-                        prices = fetch_price_data(start, end, cluster)
-                        if prices:
-                            cluster_data["cost_eur_mwh"] = prices[0][1]
-                    except Exception as e:
-                        print(f"price {cluster}: {e}")
+                carbons = fetch_carbon_intensity(start, end, cluster)
+                if carbons:
+                    cluster_data["gco2_per_kwh"] = carbons[0][1]
 
-                    try:
-                        carbons = fetch_carbon_intensity(start, end, cluster)
-                        if carbons:
-                            cluster_data["gco2_per_kwh"] = carbons[0][1]
-                    except Exception as e:
-                        print(f"carbon {cluster}: {e}")
+                pv_data = get_power(start, end, cluster, self.pv_capacity_w)
+                if pv_data:
+                    cluster_data["pv_watts"] = pv_data[0][1]
 
-                    try:
-                        pv_data = get_power(
-                            start,
-                            end,
-                            cluster,
-                            self.pv_capacity_w,
-                        )
-                        if pv_data:
-                            cluster_data["pv_watts"] = pv_data[0][1]
-                    except Exception as e:
-                        print(f"pv {cluster}: {e}")
-
-                data["clusters"][cluster] = cluster_data
-
-            except Exception as e:
-                print(f"ERROR cluster {cluster}: {e}")
+            data["clusters"][cluster] = cluster_data
 
         return data
 
+    # ------------------------------------------------------------
+    # SIMPLE AND CORRECT CONSTRAINT CHECKER
+    # ------------------------------------------------------------
+    def _check_value(self, name, value, min_val, max_val):
+
+        print(f"      → Checking {name}")
+        print(f"        value = {value}")
+
+        if min_val is not None:
+            print(f"        min   = {min_val}")
+            if value < min_val:
+                print("        ❌ FAIL (below min)")
+                return False
+
+        if max_val is not None:
+            print(f"        max   = {max_val}")
+            if value > max_val:
+                print("        ❌ FAIL (above max)")
+                return False
+
+        print("        ✅ PASS")
+        return True
+
+    # ------------------------------------------------------------
+    # TIMELINE CHECK
+    # ------------------------------------------------------------
     def _check_timeline(self, base_time: datetime) -> bool:
 
         print("\n" + "#" * 70)
@@ -188,8 +163,6 @@ class TestDataFinder:
 
             self._print_hour_summary(current_time, clusters_data)
 
-            hour_ok = True
-
             for cluster, rules in constraints.items():
 
                 print(f"\n  Checking cluster: {cluster}")
@@ -200,11 +173,14 @@ class TestDataFinder:
 
                 cluster_data = clusters_data[cluster]
 
-                for key, constraint_value in rules.items():
+                # ----------------------------------------------------
+                # SIMPLE LOOP: CHECK EACH RULE DIRECTLY
+                # ----------------------------------------------------
+                for key, rule_value in rules.items():
 
                     if key.endswith("_min"):
                         value_key = key[:-4]
-                        min_val = constraint_value
+                        min_val = rule_value
                         max_val = rules.get(f"{value_key}_max")
 
                     elif key.endswith("_max"):
@@ -218,21 +194,15 @@ class TestDataFinder:
                         print(f"  ❌ Missing {value_key}")
                         return False
 
-                    ok = self._check_constraint(
-                        cluster,
-                        value_key,
+                    if not self._check_value(
+                        f"{cluster}.{value_key}",
                         value,
                         min_val,
                         max_val,
-                    )
+                    ):
+                        return False
 
-                    if not ok:
-                        hour_ok = False
-
-            print("\n" + ("✅ HOUR PASS" if hour_ok else "❌ HOUR FAIL"))
-
-            if not hour_ok:
-                return False
+            print("\n✅ HOUR PASS")
 
         print("\n==============================")
         print("ALL HOURS PASSED")
@@ -240,31 +210,24 @@ class TestDataFinder:
 
         return True
 
-    def find(
-        self,
-        start_date: datetime,
-        num_days: int = 30,
-    ) -> Optional[dict]:
-        """Find data."""
-        print("\nSearching relative timeline pattern...")
-        print(f"Max offset: {self.max_offset} hours")
+    # ------------------------------------------------------------
+    # FIND LOOP
+    # ------------------------------------------------------------
+    def find(self, start_date: datetime, num_days: int = 30):
+
+        print("\nSearching timeline...")
 
         current_date = start_date.replace(
-            hour=0,
-            minute=0,
-            second=0,
-            microsecond=0,
+            hour=0, minute=0, second=0, microsecond=0
         )
 
-        for day_idx in range(num_days):
+        for day in range(num_days):
 
-            print(f"\nDAY {day_idx + 1}: {current_date.date()}")
+            print(f"\nDAY {day + 1}: {current_date.date()}")
 
             for hour in range(24):
 
                 base_time = current_date + timedelta(hours=hour)
-
-                print(f"\nBase time: {base_time}")
 
                 if self._check_timeline(base_time):
 
@@ -272,28 +235,20 @@ class TestDataFinder:
 
                     return {
                         "base_time": base_time.isoformat(),
-                        "simulated_start_time": base_time.strftime(
-                            "%d/%m/%Y %H:%M:%S"
-                        ),
+                        "simulated_start_time": base_time.strftime("%d/%m/%Y %H:%M:%S")
                     }
 
             current_date += timedelta(days=1)
 
-        print("\n❌ No match found")
+        print("\n❌ NO MATCH FOUND")
         return None
 
 
 def main():
-    """Start test."""
-    finder = TestDataFinder(
-        constraints=CONSTRAINTS,
-        pv_capacity_w=PV_CAPACITY_W,
-    )
 
-    result = finder.find(
-        start_date=START_DATE,
-        num_days=NUM_DAYS,
-    )
+    finder = TestDataFinder(CONSTRAINTS, PV_CAPACITY_W)
+
+    result = finder.find(START_DATE, NUM_DAYS)
 
     if result:
         print("\n====================")
