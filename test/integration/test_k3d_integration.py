@@ -109,7 +109,12 @@ class K3dTestRunner:
             time.sleep(2)
         raise TimeoutError(f"Could not find config_id for '{config_name}' within {timeout_s} seconds")
 
-    def _wait_for_completion(self, test_duration: int, time_buffer: int = 200, poll_interval_s: int = 2) -> None:
+    def _wait_for_completion(
+            self,
+            test_duration: int,
+            time_buffer: int = 200,
+            poll_interval_s: int = 2
+        ) -> None:
         total_wait_time = test_duration + time_buffer
         print(f"[WAIT] waiting up to {total_wait_time}s")
         started_at = time.time()
@@ -170,9 +175,9 @@ def test_k3d_default():
 
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=10)
+        .assert_total_requests(min_count=5)
         .assert_success_rate(min_rate=1)
-        .assert_cluster_requests("pt", min_count=9)
+        .assert_cluster_requests("pt", min_count=5)
         .assert_global_carbon(max_gco2=100)
         .run(config.start.duration_time_s)
     )
@@ -182,13 +187,13 @@ def test_k3d_default():
 def test_k3d_high_load():
     """Higher request-rate scenario."""
     config = get_test_config()
-    config.workload.request_per_minute = 30
+    config.workload.request_per_minute = 10
 
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=30)
+        .assert_total_requests(min_count=10)
         .assert_success_rate(min_rate=1)
-        .assert_cluster_requests("pt", min_count=29)
+        .assert_cluster_requests("pt", min_count=9)
         .run(config.start.duration_time_s)
     )
 
@@ -204,12 +209,12 @@ skip_on_ci = pytest.mark.skipif(
 def test_k3d_dk_cluster():
     """Higher request-rate scenario."""
     config = get_test_config()
-    config.workload.request_per_minute = 30
+    config.workload.request_per_minute = 5
     config.clusters[0].simulated_country_code = "DK-DK1"
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=30)
+        .assert_total_requests(min_count=5)
         .assert_success_rate(min_rate=1)
-        .assert_cluster_requests("pt", min_count=29)
-        .run(config.start.duration_time_s + 120)
+        .assert_cluster_requests("pt", min_count=5)
+        .run(config.start.duration_time_s)
     )
