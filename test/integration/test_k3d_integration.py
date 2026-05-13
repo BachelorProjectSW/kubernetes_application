@@ -159,6 +159,7 @@ class K3dTestRunner:
 
     def run(self, test_duration: int) -> dict:
         """Run the tests and wait for x seconds to abort."""
+        time.sleep(10) #ensure the other tests is done.
         config_name = self._start_test()
         self._wait_for_completion(test_duration=test_duration)
         config_id = self._find_config_id_by_name(config_name)
