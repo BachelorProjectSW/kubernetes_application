@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 
 # ============================================================
-# CONSTRAINTS (YOUR NEW FORMAT)
+# CONSTRAINTS (YOUR FORMAT)
 # ============================================================
 CONSTRAINTS = {
     0: {
@@ -26,18 +26,19 @@ CONSTRAINTS = {
 
 
 # ============================================================
-# MAIN CLASS
+# MAIN ENGINE
 # ============================================================
 class TestDataFinder:
 
     def __init__(self, constraints):
         self.constraints = constraints
+        self.max_offset = max(constraints.keys())
 
     # ------------------------------------------------------------
-    # MOCK DATA (replace with real API calls)
+    # MOCK DATA (replace with real APIs)
     # ------------------------------------------------------------
-    def _fetch_hour_data(self, t):
-        # deterministic fake data so logic is testable
+    def _fetch_hour_data(self, t: datetime):
+
         hour = t.hour
 
         return {
@@ -51,27 +52,22 @@ class TestDataFinder:
         }
 
     # ------------------------------------------------------------
-    # PRETTY PRINT DATA
+    # PRINT DATA
     # ------------------------------------------------------------
-    def _print_data(self, data):
-        print("\n📊 DATA")
+    def _print_data(self, t, data):
+
+        print("\n📊 DATA SNAPSHOT")
+        print(f"TIME: {t}")
+
         for c, vals in data.items():
             print(f"\n{c}:")
             for k, v in vals.items():
                 print(f"  {k}: {v}")
 
     # ------------------------------------------------------------
-    # PRETTY PRINT CONSTRAINTS
+    # CHECK SINGLE VALUE
     # ------------------------------------------------------------
-    def _print_constraints(self, constraints):
-        print("\n📌 CONSTRAINTS")
-        for field, rule in constraints.items():
-            print(f"  {field}: {rule}")
-
-    # ------------------------------------------------------------
-    # CORE CHECK
-    # ------------------------------------------------------------
-    def _check_field(self, cluster, field, value, rule):
+    def _check_value(self, cluster, field, value, rule):
 
         print(f"\n🧪 {cluster}.{field}")
         print(f"   value = {value}")
@@ -95,52 +91,15 @@ class TestDataFinder:
         return True
 
     # ------------------------------------------------------------
-    # CHECK ONE HOUR
+    # CHECK ONE TIMELINE START
     # ------------------------------------------------------------
-    def _check_hour(self, t):
-
-        print("\n" + "=" * 80)
-        print(f"⏰ TIME: {t}")
-        print("=" * 80)
-
-        data = self._fetch_hour_data(t)
-
-        self._print_data(data)
-
-        # evaluate each cluster
-        for cluster, rules in self.constraints.get(0, {}).items():
-
-            print(f"\n📍 Cluster: {cluster}")
-
-            cluster_data = data.get(cluster)
-            if not cluster_data:
-                print("❌ missing cluster data")
-                return False
-
-            self._print_constraints(rules)
-
-            for field, rule in rules.items():
-
-                value = cluster_data.get(field)
-
-                if value is None:
-                    print(f"❌ missing {cluster}.{field}")
-                    return False
-
-                if not self._check_field(cluster, field, value, rule):
-                    return False
-
-        return True
-
-    # ------------------------------------------------------------
-    # CHECK TIMELINE (ALL OFFSETS MUST PASS)
-    # ------------------------------------------------------------
-    def check(self, base_time):
+    def _check_timeline(self, base_time: datetime):
 
         print("\n" + "#" * 80)
-        print(f"BASE: {base_time}")
+        print(f"BASE TIME: {base_time}")
         print("#" * 80)
 
+        # check ALL offsets
         for offset, constraints in self.constraints.items():
 
             t = base_time + timedelta(hours=offset)
@@ -151,8 +110,9 @@ class TestDataFinder:
 
             data = self._fetch_hour_data(t)
 
-            self._print_data(data)
+            self._print_data(t, data)
 
+            # check each cluster
             for cluster, rules in constraints.items():
 
                 print(f"\n📍 Cluster: {cluster}")
@@ -163,8 +123,6 @@ class TestDataFinder:
                     print("❌ missing cluster data")
                     return False
 
-                self._print_constraints(rules)
-
                 for field, rule in rules.items():
 
                     value = cluster_data.get(field)
@@ -173,7 +131,7 @@ class TestDataFinder:
                         print(f"❌ missing {cluster}.{field}")
                         return False
 
-                    if not self._check_field(cluster, field, value, rule):
+                    if not self._check_value(cluster, field, value, rule):
                         return False
 
             print("\n✅ HOUR PASSED")
@@ -184,14 +142,56 @@ class TestDataFinder:
 
         return True
 
+    # ------------------------------------------------------------
+    # FULL SEARCH OVER DAYS + HOURS
+    # ------------------------------------------------------------
+    def find(self, start_date: datetime, num_days: int):
+
+        print("\n🔍 STARTING SEARCH")
+        print(f"Start date: {start_date}")
+        print(f"Max offset: {self.max_offset} hours")
+
+        base_day = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        for day in range(num_days):
+
+            current_day = base_day + timedelta(days=day)
+
+            print("\n" + "=" * 80)
+            print(f"📅 DAY {day + 1}: {current_day.date()}")
+            print("=" * 80)
+
+            for hour in range(24):
+
+                base_time = current_day + timedelta(hours=hour)
+
+                print("\n" + "●" * 80)
+                print(f"🧭 TESTING BASE TIME: {base_time}")
+                print("●" * 80)
+
+                if self._check_timeline(base_time):
+
+                    print("\n🎯 MATCH FOUND")
+
+                    return {
+                        "base_time": base_time.isoformat(),
+                        "simulated_start_time": base_time.strftime("%d/%m/%Y %H:%M:%S")
+                    }
+
+        print("\n❌ NO MATCH FOUND")
+        return None
+
 
 # ============================================================
-# RUN EXAMPLE
+# RUN
 # ============================================================
 if __name__ == "__main__":
 
     finder = TestDataFinder(CONSTRAINTS)
 
-    result = finder.check(datetime(2026, 3, 25, tzinfo=timezone.utc))
+    result = finder.find(
+        start_date=datetime(2026, 3, 25, tzinfo=timezone.utc),
+        num_days=3
+    )
 
     print("\nRESULT:", result)
