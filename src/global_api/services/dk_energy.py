@@ -67,5 +67,5 @@ def get_dk_hourly(start: datetime, end: datetime) -> list[dict]:
     for reading in data:
         reading["timestamp"] = _ms_to_iso(reading["timestamp_ms"])
         del reading["timestamp_ms"]
-    log.info("global_api.dk_energy.hourly_fetch_succeeded", start=str(start), end=str(end), data=data)
+    log.debug("global_api.dk_energy.hourly_fetch_succeeded", start=str(start), end=str(end), data=data)
     return data
