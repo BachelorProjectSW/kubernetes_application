@@ -162,6 +162,7 @@ class K3dTestRunner:
         time.sleep(10) #ensure the other tests is done.
         config_name = self._start_test()
         self._wait_for_completion(test_duration=test_duration)
+        time.sleep(10) #ensure tests results is in db.
         config_id = self._find_config_id_by_name(config_name)
         summary = self._fetch_summary(config_id)
         self._run_assertions(summary)
