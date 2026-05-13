@@ -15,16 +15,10 @@ CONSTRAINTS = {
             "generation": {"min": 500},
             "consumption": {"max": 330}
         },
-        "NL": {
-            "pv": {"max": 200},
-        },
     },
     1: {
         "DK": {
             "generation": {"max": 50},
-        },
-        "NL": {
-            "pv": {"min": 200},
         },
     },
 }
