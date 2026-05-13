@@ -6,6 +6,8 @@ from pathlib import Path
 from multiprocessing import Process
 import json
 import uvicorn
+from src.custom_logging.logger import log
+
 
 from src.models.basemodels import ClusterInformation
 from .utils import get_cluster_config, get_test_config, run_cmd, run_cmd_bg
@@ -13,6 +15,8 @@ from src.cluster_api.util.cluster_config import config_store
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT_DIR / "src"
+
+log.info("Start_to_run_servers")
 
 
 # Ensure child processes can import the top-level src package regardless of launch cwd.
