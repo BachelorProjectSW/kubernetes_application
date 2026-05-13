@@ -22,7 +22,7 @@ from src.global_api.services.dk_energy import get_dk_hourly
 
 CONSTRAINTS = {
     "DK": {
-        "generation_min": 1_000_000,
+        "generation_min": 1000,
     },
     "ES": {
         "pv_watts_max": 500,
@@ -34,7 +34,7 @@ CONSTRAINTS = {
 
 PV_CAPACITY_W = 10000
 
-START_DATE = datetime(2026, 3, 1, tzinfo=timezone.utc)
+START_DATE = datetime(2026, 3, 25, tzinfo=timezone.utc)
 
 NUM_DAYS = 30
 
