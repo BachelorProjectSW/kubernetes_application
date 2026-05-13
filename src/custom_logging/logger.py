@@ -144,7 +144,7 @@ def log_sent(cluster_name: str, trace_id: str | None = None, payload: dict | Non
         log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="LogSent")
 
     row = entry.model_dump(mode="json")
-    log.info("custom_logging.sent.logged", **row)
+    log.debug("custom_logging.sent.logged", **row)
 
 
 def log_node_status_snapshot(cluster_name: str, node: WorkerNode):

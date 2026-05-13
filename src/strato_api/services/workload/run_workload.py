@@ -92,7 +92,7 @@ async def execute_workload(
                     "X-Trace-Id": trace_id,
                 }
 
-                log.info(
+                log.debug(
                     "strato.workload.request_started",
                     trace_id=trace_id,
                     target=f"{host}{endpoint}",
