@@ -85,6 +85,168 @@ class K3dTestRunner:
         self.assertions.append((f"global_carbon(max={max_gco2})", check))
         return self
 
+    def assert_total_cost(self, min_eur: float | None = None, max_eur: float | None = None):
+        """Assert the total cost (total_cost_eur) from the raw summary."""
+
+        def check(summary: dict) -> None:
+            value = float(summary.get("total_cost_eur", 0.0))
+            if min_eur is not None and value < min_eur:
+                raise AssertionError(f"Total cost {value:.6f} EUR < {min_eur}")
+            if max_eur is not None and value > max_eur:
+                raise AssertionError(f"Total cost {value:.6f} EUR > {max_eur}")
+
+        self.assertions.append((f"total_cost({min_eur}, {max_eur})", check))
+        return self
+
+    def assert_avg_latency(self, min_ms: float | None = None, max_ms: float | None = None):
+        """Assert the average latency across all requests."""
+
+        def check(summary: dict) -> None:
+            value = float(summary.get("avg_latency_ms", 0.0))
+            if min_ms is not None and value < min_ms:
+                raise AssertionError(f"Average latency {value:.1f}ms < {min_ms}")
+            if max_ms is not None and value > max_ms:
+                raise AssertionError(f"Average latency {value:.1f}ms > {max_ms}")
+
+        self.assertions.append((f"avg_latency({min_ms}, {max_ms})", check))
+        return self
+
+    def assert_request_latencies(
+            self,
+            position: str = "first",
+            count: int = 3,
+            min_ms: float | None = None,
+            max_ms: float | None = None
+        ):
+        """Assert min/max latency on first or last N requests.
+
+        Args:
+            position: "first" or "last"
+            count: number of requests to check
+            min_ms: minimum allowed latency for each request
+            max_ms: maximum allowed latency for each request
+        """
+
+        def check(summary: dict) -> None:
+            request_over_time = summary.get("request_over_time", [])
+            if not request_over_time:
+                raise AssertionError("No request_over_time data available")
+
+            if position == "first":
+                subset = request_over_time[:count]
+            elif position == "last":
+                subset = request_over_time[-count:]
+            else:
+                raise AssertionError(f"Invalid position '{position}', must be 'first' or 'last'")
+
+            if len(subset) < count:
+                raise AssertionError(
+                    f"Expected {count} {position} requests but only {len(subset)} available"
+                )
+
+            latencies = [float(r.get("latency_ms", 0)) for r in subset]
+            actual_min = min(latencies)
+            actual_max = max(latencies)
+
+            if min_ms is not None and actual_min < min_ms:
+                raise AssertionError(
+                    f"Minimum latency {actual_min:.1f}ms in {position} {count} requests < {min_ms}ms"
+                )
+            if max_ms is not None and actual_max > max_ms:
+                raise AssertionError(
+                    f"Maximum latency {actual_max:.1f}ms in {position} {count} requests > {max_ms}ms"
+                )
+
+        label = f"request_latencies({position}_{count}, min={min_ms}, max={max_ms})"
+        self.assertions.append((label, check))
+        return self
+
+    def assert_request_response_codes(
+            self,
+            position: str = "first",
+            count: int = 3,
+            expected_code: int = 200
+        ):
+        """Assert all response codes in first or last N requests match expected value.
+
+        Args:
+            position: "first" or "last"
+            count: number of requests to check
+            expected_code: expected HTTP status code
+        """
+
+        def check(summary: dict) -> None:
+            request_over_time = summary.get("request_over_time", [])
+            if not request_over_time:
+                raise AssertionError("No request_over_time data available")
+
+            if position == "first":
+                subset = request_over_time[:count]
+            elif position == "last":
+                subset = request_over_time[-count:]
+            else:
+                raise AssertionError(f"Invalid position '{position}', must be 'first' or 'last'")
+
+            if len(subset) < count:
+                raise AssertionError(
+                    f"Expected {count} {position} requests but only {len(subset)} available"
+                )
+
+            for i, req in enumerate(subset):
+                code = req.get("response_status_code", 0)
+                if code != expected_code:
+                    raise AssertionError(
+                        f"Request {i} in {position} {count}: "
+                        f"expected code {expected_code}, got {code}"
+                    )
+
+        label = f"request_response_codes({position}_{count}, code={expected_code})"
+        self.assertions.append((label, check))
+        return self
+
+    def assert_request_success_status(
+            self,
+            position: str = "first",
+            count: int = 3,
+            all_ok: bool = True
+        ):
+        """Assert all requests in first or last N have ok=True or ok=False.
+
+        Args:
+            position: "first" or "last"
+            count: number of requests to check
+            all_ok: if True, all must be ok; if False, all must be failed
+        """
+
+        def check(summary: dict) -> None:
+            request_over_time = summary.get("request_over_time", [])
+            if not request_over_time:
+                raise AssertionError("No request_over_time data available")
+
+            if position == "first":
+                subset = request_over_time[:count]
+            elif position == "last":
+                subset = request_over_time[-count:]
+            else:
+                raise AssertionError(f"Invalid position '{position}', must be 'first' or 'last'")
+
+            if len(subset) < count:
+                raise AssertionError(
+                    f"Expected {count} {position} requests but only {len(subset)} available"
+                )
+
+            for i, req in enumerate(subset):
+                ok = req.get("ok", False)
+                if all_ok and not ok:
+                    raise AssertionError(f"Request {i} in {position} {count}: expected ok=True, got ok=False")
+                if not all_ok and ok:
+                    raise AssertionError(f"Request {i} in {position} {count}: expected ok=False, got ok=True")
+
+        status_str = "ok" if all_ok else "failed"
+        label = f"request_success_status({position}_{count}, status={status_str})"
+        self.assertions.append((label, check))
+        return self
+
     def _start_test(self) -> str:
         print(f"[START] POST {self.api_url}/start_test")
         response = requests.post(
