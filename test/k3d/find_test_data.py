@@ -12,19 +12,26 @@ from src.global_api.services.dk_energy import get_dk_hourly
 CONSTRAINTS = {
     0: {
         "DK": {
-            "generation": {"min": 500},
-            "consumption": {"max": 330}
+            "surplus": {"max": 0},
         },
-        "TR": {
-            "pv": {"max": 200}
+        "DK-DK1": {
+            "gco2": {"max": 10000},
+        },
+        "FR": {
+            "pv": {"max": 0.0000001},
+            "gco2": {"max": 10000},
         }
     },
-    1: {
+    0: {
         "DK": {
-            "generation": {"max": 50},
+            "surplus": {"min": 50},
         },
-        "TR": {
-            "pv": {"min": 200}
+        "DK-DK1": {
+            "gco2": {"max": 10000},
+        },
+        "FR": {
+            "pv": {"max": 0.0000001},
+            "gco2": {"max": 10000},
         }
     },
 }
@@ -77,7 +84,7 @@ class TestDataFinder:
         for cluster, data in clusters_data.items():
             print(f"\n  {cluster}:")
 
-            if cluster.upper().startswith("DK"):
+            if cluster.upper() == "DK":
                 print(f"    generation   : {data.get('generation')}")
                 print(f"    consumption  : {data.get('consumption')}")
             else:
@@ -102,7 +109,7 @@ class TestDataFinder:
 
             cluster_data = {}
 
-            if cluster.upper().startswith("DK"):
+            if cluster.upper() == "DK":
 
                 dk_hourly = get_dk_hourly(start, end)
 
