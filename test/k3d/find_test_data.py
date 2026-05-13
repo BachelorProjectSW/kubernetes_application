@@ -15,31 +15,8 @@ from src.global_api.services.pv_power import get_power
 from src.global_api.services.dk_energy import get_dk_hourly
 
 
-# ============================================================================
-# CONFIG
-
-# DK 
-# "generation_min"
-# "generation_max"
-# "consumption_min"
-# "consumption_max"
-
-
-# NOT DK
-# "cost_eur_mwh_min"
-# "cost_eur_mwh_max"
-
-# "gco2_per_kwh_min"
-# "gco2_per_kwh_max"
-
-# "pv_watts_min"
-# "pv_watts_max"
-# ============================================================================
-
-
-
 CONSTRAINTS = {
-    0: {  
+    0: {
         "DK": {
             "generation_min": 500,
             "consumption_max": 300
@@ -48,7 +25,7 @@ CONSTRAINTS = {
             "pv_watts_max": 100
         }
     },
-    1: {  
+    1: {
         "DK": {
             "generation_max": 100
         },
@@ -74,17 +51,35 @@ class TestDataFinder:
         pv_capacity_w: float = 10000,
     ):
         self.constraints = constraints
-
-        # max timeline we need to evaluate
         self.max_offset = max(constraints.keys())
 
-        # collect all clusters used anywhere
         self.clusters = set()
         for c in constraints.values():
             self.clusters.update(c.keys())
 
         self.clusters = list(self.clusters)
         self.pv_capacity_w = pv_capacity_w
+
+    # ============================================================
+    # 🔥 NEW: CLEAN HOURLY DEBUG OUTPUT
+    # ============================================================
+    def _print_hour_summary(self, timestamp: datetime, clusters_data: dict):
+        print("\n" + "=" * 70)
+        print(f"🕒 {timestamp.isoformat()}")
+        print("=" * 70)
+
+        for cluster, data in clusters_data.items():
+            print(f"\n  {cluster}:")
+
+            if cluster.upper().startswith("DK"):
+                print(f"    generation   : {data.get('generation')}")
+                print(f"    consumption  : {data.get('consumption')}")
+            else:
+                print(f"    price        : {data.get('cost_eur_mwh')}")
+                print(f"    carbon       : {data.get('gco2_per_kwh')}")
+                print(f"    pv           : {data.get('pv_watts')}")
+
+    # ============================================================
 
     def _check_constraint(
         self,
@@ -185,8 +180,10 @@ class TestDataFinder:
             print(f"\nOffset +{offset}h → {current_time}")
 
             data = self._fetch_hour_data(current_time)
-
             clusters_data = data.get("clusters", {})
+
+            # 🔥 NEW: clean per-hour snapshot
+            self._print_hour_summary(current_time, clusters_data)
 
             for cluster, rules in constraints.items():
 
@@ -290,7 +287,6 @@ def main():
         print("MATCH")
         print(result)
         print("====================")
-
     else:
         print("No match")
 
