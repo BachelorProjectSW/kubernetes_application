@@ -199,30 +199,9 @@ def test_k3d_high_load():
 
 
 @pytest.mark.integration
-def test_k3d_high_load():
-    """Test it choose one cluster over another with weights.
-    
-    PV DATA:
-
-    """
-    config = get_test_config()
-
-    config.start_time_simulated = "25/03/2026 15:00:00"
-    config.start.duration_time_s = 60
-    config.workload.request_per_minute = 6
-
-    (
-        K3dTestRunner(config)
-        .assert_total_requests(min_count=10, max_count=10)
-        .assert_success_rate(min_rate=1)
-        .run(config.start.duration_time_s)
-    )
-
-
-@pytest.mark.integration
 def test_k3d_switch_clusters():
     """Test it choose one cluster over another with weights and then change when data changed.
-    
+
     PV DATA:
     hour0 Netherland PV = 372.78
     hour0 Portugal PV = 304.02
@@ -257,9 +236,9 @@ skip_on_ci = pytest.mark.skipif(
 
 @pytest.mark.integration
 @skip_on_ci()
-def test_k3d_switch_clusters_with_DK():
+def test_k3d_switch_clusters_with_dk():
     """Test it choose one cluster over another with weights and then change when data changed.
-    
+
     PV DATA:
     hour0 Netherland PV = 372.78
     hour0 Portugal PV = 304.02
