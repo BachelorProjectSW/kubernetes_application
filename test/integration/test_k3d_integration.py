@@ -213,7 +213,7 @@ def test_k3d_switch_clusters():
     """
     config = get_test_config()
 
-    config.start_time_simulated = "01/03/2026 09:59:00"
+    config.start.start_time_simulated = "01/03/2026 09:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
@@ -252,7 +252,7 @@ def test_k3d_switch_clusters_with_dk():
     """
     config = get_test_config()
 
-    config.start_time_simulated = "25/03/2026 06:59:00"
+    config.start.start_time_simulated = "25/03/2026 06:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
