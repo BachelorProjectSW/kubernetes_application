@@ -197,7 +197,7 @@ def save_model_log(config_id: str | None, log_model: BaseModel) -> None:
     with Session(_engine()) as session:
         session.add(row)
         session.commit()
-    log.info("db.save_model_log", config_id=config_id, log_type=type(log_model).__name__)
+    log.debug("db.save_model_log", config_id=config_id, log_type=type(log_model).__name__)
 
 
 def save_terminal_debug(config_id: str | None, message: str, level: str, payload: dict[str, Any]) -> None:

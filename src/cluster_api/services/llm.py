@@ -196,7 +196,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
                 target_port = worker_node.forwarded_port
             else:
                 target_port = config.cluster_config.llama_hostport
-            logger.info(
+            logger.debug(
                 "cluster_api.llm.worker_selected",
                 service="cluster_api",
                 cluster_name=cluster_name,
@@ -224,7 +224,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
 
         cluster_queue_time_ms = int((time.monotonic() - start_time) * 1000)
         llama_call_start = time.monotonic()
-        logger.info(
+        logger.debug(
             "cluster_api.llm.llama_inference_started",
             service="cluster_api",
             cluster_name=cluster_name,
@@ -296,7 +296,7 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
                 worker_node.inflight_requests = max(0, worker_node.inflight_requests - 1)
                 sync_worker_status(worker_node)
 
-                logger.info(
+                logger.debug(
                     "cluster_api.llm.worker_released",
                     service="cluster_api",
                     cluster_name=cluster_name,

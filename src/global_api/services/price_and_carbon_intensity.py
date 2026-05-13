@@ -111,6 +111,6 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
         raise
 
     entries = response.json().get("data", [])
-    log.info("global_api.market.carbon_fetch_succeeded", entry_count=len(entries), zone=zone, data=entries)
+    log.debug("global_api.market.carbon_fetch_succeeded", entry_count=len(entries), zone=zone, data=entries)
 
     return [(datetime.fromisoformat(e["datetime"]), e["carbonIntensity"]) for e in entries]

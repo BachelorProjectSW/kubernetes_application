@@ -121,7 +121,7 @@ def log_request(
     except Exception as e:
         log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="RequestLog")
 
-    log.info("custom_logging.request.logged", **row)
+    log.debug("custom_logging.request.logged", **row)
 
 
 def log_sent(cluster_name: str, trace_id: str | None = None, payload: dict | None = None):

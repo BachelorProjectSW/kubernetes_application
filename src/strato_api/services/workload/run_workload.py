@@ -108,7 +108,7 @@ async def execute_workload(
                     request_reached_host = True
                     body = await resp.text()
                     duration_ms = int((time.perf_counter() - request_start) * 1000)
-                    log.info(
+                    log.debug(
                         "strato.workload.request_completed",
                         trace_id=trace_id,
                         status_code=resp.status,
