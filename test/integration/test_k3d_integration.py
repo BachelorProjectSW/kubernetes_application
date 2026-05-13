@@ -239,26 +239,31 @@ def test_k3d_switch_clusters_with_dk():
     """Test it choose one cluster over another with weights and then change when data changed.
 
     PV DATA:
-    hour0 DK generation = 642.95
-    hour0 DK consumption = 232.95
-    hour0 Turkey PV = 211.485
+    hour0 DK generation = 74,6
+    hour0 DK consumption = 253,83
+    hour0 DK gco2 = 76
+    hour0 France PV = 0.0
+    hour0 France gco2 = 22
 
-    hour1 DK generation = 0
-    hour1 DK consumption = 232.95
-    hour1 Turkey PV = 434.955
+    hour1 DK generation = 541,76
+    hour1 DK consumption = 241,37
+    hour1 DK gco2 = 64
+    hour1 France PV = 0.0
+    hour1 France gco2 = 21
 
-    Therefore expected to swith cluster after one minute.
+    Therefore expected to swith from DK -> FR after one minute.
+    As France gco2 is lower than DK when no surplus energy from microgrid.
     """
     config = get_test_config()
 
     config.name = config.name + "DK_AND_TR"
-    config.start.start_time_simulated = "25/03/2026 06:59:00"
+    config.start.start_time_simulated = "25/03/2026 04:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
-    config.clusters[1].simulated_country_code = "AT"
+    config.clusters[1].simulated_country_code = "FR"
 
     (
         K3dTestRunner(config)
