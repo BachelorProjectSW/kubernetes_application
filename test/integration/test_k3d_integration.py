@@ -240,17 +240,19 @@ def test_k3d_switch_clusters_with_dk():
     """Test it choose one cluster over another with weights and then change when data changed.
 
     PV DATA:
-    hour0 Netherland PV = 372.78
-    hour0 Portugal PV = 304.02
+    hour0 DK generation = 642.95
+    hour0 DK consumption = 232.95
+    hour0 Turkey PV = 211.485
 
-    hour1 Netherland PV = 570.09
-    hour1 Portugal PV = 606.825
+    hour1 DK generation = 0
+    hour1 DK consumption = 232.95
+    hour1 Turkey PV = 434.955
 
     Therefore expected to swith cluster after one minute.
     """
     config = get_test_config()
 
-    config.start_time_simulated = "01/03/2026 09:59:00"
+    config.start_time_simulated = "25/03/2026 06:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
