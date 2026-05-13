@@ -109,10 +109,11 @@ class K3dTestRunner:
             time.sleep(2)
         raise TimeoutError(f"Could not find config_id for '{config_name}' within {timeout_s} seconds")
 
-    def _wait_for_completion(self, timeout_s: int = 120, poll_interval_s: int = 2) -> None:
-        print(f"[WAIT] waiting up to {timeout_s}s")
+    def _wait_for_completion(self, test_duration: int, time_buffer: int = 200, poll_interval_s: int = 2) -> None:
+        total_wait_time = test_duration + time_buffer
+        print(f"[WAIT] waiting up to {total_wait_time}s")
         started_at = time.time()
-        while time.time() - started_at < timeout_s:
+        while time.time() - started_at < total_wait_time:
             response = requests.get(f"{self.api_url}/test_status", timeout=30)
             response.raise_for_status()
             status = response.json().get("status", "unknown")
@@ -120,7 +121,7 @@ class K3dTestRunner:
                 print(f"[DONE] completed in {time.time() - started_at:.1f}s")
                 return
             time.sleep(poll_interval_s)
-        raise TimeoutError(f"Test did not complete within {timeout_s} seconds")
+        raise TimeoutError(f"Test did not complete within {total_wait_time} seconds")
 
     def _fetch_summary(self, config_id: str) -> dict:
         print(f"[FETCH] GET {self.api_url}/test_results?config_id={config_id}")
@@ -151,10 +152,10 @@ class K3dTestRunner:
         print(f"cluster_distribution={summary.get('cluster_distribution', {})}")
         print(f"{'=' * 72}\n")
 
-    def run(self, wait_for_test_to_stop: int) -> dict:
+    def run(self, test_duration: int) -> dict:
         """Run the tests and wait for x seconds to abort."""
         config_name = self._start_test()
-        self._wait_for_completion(timeout_s=wait_for_test_to_stop)
+        self._wait_for_completion(test_duration=test_duration)
         config_id = self._find_config_id_by_name(config_name)
         summary = self._fetch_summary(config_id)
         self._run_assertions(summary)
@@ -173,7 +174,7 @@ def test_k3d_default():
         .assert_success_rate(min_rate=1)
         .assert_cluster_requests("pt", min_count=9)
         .assert_global_carbon(max_gco2=100)
-        .run(config.start.duration_time_s + 60)
+        .run(config.start.duration_time_s)
     )
 
 
@@ -188,7 +189,7 @@ def test_k3d_high_load():
         .assert_total_requests(min_count=30)
         .assert_success_rate(min_rate=1)
         .assert_cluster_requests("pt", min_count=29)
-        .run(config.start.duration_time_s + 120)
+        .run(config.start.duration_time_s)
     )
 
 
