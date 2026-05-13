@@ -22,7 +22,7 @@ from src.global_api.services.dk_energy import get_dk_hourly
 
 CONSTRAINTS = {
     "DK": {
-        "generation_min": 1000,
+        "generation_min": 500,
     },
     "ES": {
         "pv_watts_max": 500,
@@ -55,17 +55,30 @@ class TestDataFinder:
 
     def _check_constraint(
         self,
+        cluster: str,
+        key: str,
         value: float,
         min_val: Optional[float],
         max_val: Optional[float],
     ) -> bool:
 
+        print(f"      → Checking {cluster}.{key}")
+        print(f"        value = {value}")
+
+        if min_val is not None:
+            print(f"        min   = {min_val}")
+        if max_val is not None:
+            print(f"        max   = {max_val}")
+
         if min_val is not None and value < min_val:
+            print("        ❌ FAILED (below min)")
             return False
 
         if max_val is not None and value > max_val:
+            print("        ❌ FAILED (above max)")
             return False
 
+        print("        ✅ PASS")
         return True
 
     def _fetch_hour_data(self, hour_time: datetime) -> dict:
@@ -91,7 +104,6 @@ class TestDataFinder:
                     dk_hourly = get_dk_hourly(start, end)
 
                     if dk_hourly:
-
                         entry = dk_hourly[0]
 
                         cluster_data["generation"] = entry.get("generation_w")
@@ -102,22 +114,18 @@ class TestDataFinder:
                     # Price
                     try:
                         prices = fetch_price_data(start, end, cluster)
-
                         if prices:
                             cluster_data["cost_eur_mwh"] = prices[0][1]
-
                     except Exception as e:
-                        print(f"Warning: Could not fetch price for {cluster}: {e}")
+                        print(f"Warning price {cluster}: {e}")
 
                     # Carbon
                     try:
                         carbons = fetch_carbon_intensity(start, end, cluster)
-
                         if carbons:
                             cluster_data["gco2_per_kwh"] = carbons[0][1]
-
                     except Exception as e:
-                        print(f"Warning: Could not fetch carbon for {cluster}: {e}")
+                        print(f"Warning carbon {cluster}: {e}")
 
                     # PV
                     try:
@@ -127,17 +135,15 @@ class TestDataFinder:
                             cluster,
                             self.pv_capacity_w,
                         )
-
                         if pv_data:
                             cluster_data["pv_watts"] = pv_data[0][1]
-
                     except Exception as e:
-                        print(f"Warning: Could not fetch PV for {cluster}: {e}")
+                        print(f"Warning PV {cluster}: {e}")
 
                 data["clusters"][cluster] = cluster_data
 
             except Exception as e:
-                print(f"Error fetching data for {cluster}: {e}")
+                print(f"Error cluster {cluster}: {e}")
 
         return data
 
@@ -161,7 +167,6 @@ class TestDataFinder:
                 if constraint_value is None:
                     continue
 
-                # Determine min/max constraint
                 if constraint_key.endswith("_min"):
 
                     value_key = constraint_key[:-4]
@@ -182,9 +187,12 @@ class TestDataFinder:
                 value = cluster_data.get(value_key)
 
                 if value is None:
+                    print(f"      ⚠ Missing {cluster}.{value_key}")
                     return False
 
                 if not self._check_constraint(
+                    cluster=cluster,
+                    key=value_key,
                     value=value,
                     min_val=min_val,
                     max_val=max_val,
@@ -202,15 +210,6 @@ class TestDataFinder:
 
         print("\nSearching for matching hour...")
         print(f"Clusters: {', '.join(self.clusters)}")
-
-        print("\nConstraints:")
-
-        for cluster, constraints in self.constraints.items():
-
-            print(f"\n{cluster}:")
-
-            for key, value in constraints.items():
-                print(f"  {key}: {value}")
 
         current_date = start_date.replace(
             hour=0,
@@ -230,17 +229,17 @@ class TestDataFinder:
 
                 hour_time = current_date + timedelta(hours=hour)
 
-                print(
-                    f"Checking {hour_time.strftime('%Y-%m-%d %H:%M')}...",
-                    end=" ",
-                    flush=True,
-                )
+                print(f"\nChecking {hour_time.strftime('%Y-%m-%d %H:%M')}")
 
                 data = self._fetch_hour_data(hour_time)
 
+                print("\n    Raw values:")
+                for c, cd in data["clusters"].items():
+                    print(f"      {c}: {cd}")
+
                 if self._check_hour_constraints(data):
 
-                    print("✓ MATCH")
+                    print("    ✅ MATCH FOUND")
 
                     data["simulated_start_time"] = hour_time.strftime(
                         "%d/%m/%Y %H:%M:%S"
@@ -248,13 +247,13 @@ class TestDataFinder:
 
                     return data
 
-                print("✗")
+                print("    ❌ No match")
 
             current_date += timedelta(days=1)
 
         print(
-            f"\nNo matching hour found in "
-            f"{num_days} days ({num_days * 24} hours)."
+            f"\nNo matching hour found in {num_days} days "
+            f"({num_days * 24} hours)."
         )
 
         return None
