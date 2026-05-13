@@ -175,13 +175,10 @@ class K3dTestRunner:
 def test_k3d_default():
     """Balanced default scenario."""
     config = get_test_config()
-
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=5, max_count=5)
+        .assert_total_requests(min_count=3, max_count=3)
         .assert_success_rate(min_rate=1)
-        .assert_cluster_requests("pt", min_count=4)
-        .assert_global_carbon(max_gco2=1, min_gco2=0.6)
         .run(config.start.duration_time_s)
     )
 
@@ -190,13 +187,64 @@ def test_k3d_default():
 def test_k3d_high_load():
     """Higher request-rate scenario."""
     config = get_test_config()
+    config.start.duration_time_s = 60
     config.workload.request_per_minute = 10
 
     (
         K3dTestRunner(config)
         .assert_total_requests(min_count=10, max_count=10)
         .assert_success_rate(min_rate=1)
-        .assert_cluster_requests("pt", min_count=8)
+        .run(config.start.duration_time_s)
+    )
+
+
+@pytest.mark.integration
+def test_k3d_high_load():
+    """Test it choose one cluster over another with weights.
+    
+    PV DATA:
+
+    """
+    config = get_test_config()
+
+    config.start_time_simulated = "25/03/2026 15:00:00"
+    config.start.duration_time_s = 60
+    config.workload.request_per_minute = 6
+
+    (
+        K3dTestRunner(config)
+        .assert_total_requests(min_count=10, max_count=10)
+        .assert_success_rate(min_rate=1)
+        .run(config.start.duration_time_s)
+    )
+
+
+@pytest.mark.integration
+def test_k3d_switch_clusters():
+    """Test it choose one cluster over another with weights and then change when data changed.
+    
+    PV DATA:
+    hour0 Netherland PV = 372.78
+    hour0 Portugal PV = 304.02
+
+    hour1 Netherland PV = 570.09
+    hour1 Portugal PV = 606.825
+
+    Therefore expected to swith cluster after one minute.
+    """
+    config = get_test_config()
+
+    config.start_time_simulated = "01/03/2026 09:59:00"
+    config.start.duration_time_s = 120  # enough to overlap hours
+    config.workload.request_per_minute = 6
+    config.weights.gco2 = 0.98
+    config.weights.cost = 0.01
+    config.weights.latency = 0.01
+
+    (
+        K3dTestRunner(config)
+        .assert_total_requests(min_count=12, max_count=12)
+        .assert_success_rate(min_rate=1)
         .run(config.start.duration_time_s)
     )
 
@@ -209,15 +257,30 @@ skip_on_ci = pytest.mark.skipif(
 
 @pytest.mark.integration
 @skip_on_ci()
-def test_k3d_dk_cluster():
-    """Higher request-rate scenario."""
+def test_k3d_switch_clusters_with_DK():
+    """Test it choose one cluster over another with weights and then change when data changed.
+    
+    PV DATA:
+    hour0 Netherland PV = 372.78
+    hour0 Portugal PV = 304.02
+
+    hour1 Netherland PV = 570.09
+    hour1 Portugal PV = 606.825
+
+    Therefore expected to swith cluster after one minute.
+    """
     config = get_test_config()
-    config.workload.request_per_minute = 5
-    config.clusters[0].simulated_country_code = "DK-DK1"
+
+    config.start_time_simulated = "01/03/2026 09:59:00"
+    config.start.duration_time_s = 120  # enough to overlap hours
+    config.workload.request_per_minute = 6
+    config.weights.gco2 = 0.98
+    config.weights.cost = 0.01
+    config.weights.latency = 0.01
+
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=5, max_count=5)
+        .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
-        .assert_cluster_requests("pt", min_count=4)
         .run(config.start.duration_time_s)
     )

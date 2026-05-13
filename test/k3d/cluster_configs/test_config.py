@@ -27,14 +27,14 @@ def get_test_config():
         id=None,
         name=config_name,
         start=StartConfig(
-            duration_time_s=60,
+            duration_time_s=30,
             start_time_simulated="25/03/2026 15:00:00",  # PT 0.645 (CROM LOW)
             start_time_real=None
         ),
         weights=WeightsConfig(
-            gco2=0.9,
-            cost=0.05,
-            latency=0.05
+            gco2=0.33,
+            cost=0.33,
+            latency=0.34
         ),
         power_scheduler=PowerSchedulerConfig(
             start=False,
@@ -46,7 +46,7 @@ def get_test_config():
             max_ms=20000
         ),
         workload=WorkloadConfig(
-            request_per_minute=5,
+            request_per_minute=6,
             pattern="steady",
             seed=10,
             peakiness=0

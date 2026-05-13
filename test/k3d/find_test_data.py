@@ -1,10 +1,4 @@
-import sys
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
 
 from src.custom_logging.logger import log
 
@@ -38,14 +32,16 @@ CONSTRAINTS = {
 
 PV_CAPACITY_W = 1500
 
-START_DATE = datetime(2026, 3, 25, tzinfo=timezone.utc)
+START_DATE = datetime(2026, 2, 25, tzinfo=timezone.utc)
 
 NUM_DAYS = 30
 
 
 class TestDataFinder:
+    """Test data finder."""
 
     def __init__(self, constraints: dict, pv_capacity_w: float = 10000):
+        """Init."""
         self.constraints = constraints
         self.max_offset = max(constraints.keys())
 
@@ -212,11 +208,8 @@ class TestDataFinder:
 
         return True
 
-    # ------------------------------------------------------------
-    # FIND LOOP
-    # ------------------------------------------------------------
     def find(self, start_date: datetime, num_days: int = 30):
-
+        """Find loop."""
         print("\nSearching timeline...")
 
         current_date = start_date.replace(
@@ -247,7 +240,7 @@ class TestDataFinder:
 
 
 def main():
-
+    """Start function."""
     finder = TestDataFinder(CONSTRAINTS, PV_CAPACITY_W)
 
     log.info(
