@@ -185,7 +185,7 @@ class TestDataFinder:
                 for metric_name, bounds in rules.items():
                     min_val = bounds.get("min")
                     max_val = bounds.get("max")
-                    value = self._metric_value(cluster, metric_name, cluster_data)
+                    value = self._metric_value(metric_name, cluster_data)
 
                     if value is None:
                         print(f"  Missing {cluster}.{metric_name}")
