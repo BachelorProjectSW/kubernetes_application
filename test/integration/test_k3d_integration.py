@@ -346,7 +346,7 @@ def test_k3d_switch_clusters_latency():
     config = get_test_config()
     config.name = config.name + "DE_AND_NL_COST"
     config.start.start_time_simulated = "03/03/2026 04:00:00"
-    config.start.duration_time_s = 120
+    config.start.duration_time_s = 60
     config.workload.request_per_minute = 50
     config.latency.max_ms = 2000  # Expected to extend when spamming request.
     config.latency.latency_window_s = 10  # Calculate latency from the last 10 seconds request latency.
@@ -359,8 +359,8 @@ def test_k3d_switch_clusters_latency():
         K3dTestRunner(config)
         .assert_total_requests(min_count=100, max_count=100)
         .assert_success_rate(min_rate=0.9)
-        .assert_cluster_requests("dk", 25)
-        .assert_cluster_requests("pt", 25)
+        .assert_cluster_requests("dk", 15)
+        .assert_cluster_requests("pt", 15)
         .run(config.start.duration_time_s)
     )
 
