@@ -300,7 +300,10 @@ def test_k3d_switch_clusters_gco2():
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
-        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=0)
+        .assert_which_cluster_is_asserted(
+            ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
+            max_errors=0
+        )
         .run(config.start.duration_time_s)
     )
 
@@ -312,7 +315,8 @@ def test_k3d_switch_clusters_cost():
     GERMANY 103.32 -> 136.05
     NETHER  105.79 -> 130.29
     So first choose Germany and afterward Netherlands
-    Max errors is set to 2 as the 0.01 latency could change it sligtly as the prices are very similar. 
+    Max errors is set to 2 as the 0.01 latency could change
+    it sligtly as the prices are very similar.
     """
     config = get_test_config()
     config.name = config.name + "DE_AND_NL_COST"
@@ -328,24 +332,24 @@ def test_k3d_switch_clusters_cost():
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
-        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=2)
+        .assert_which_cluster_is_asserted(
+            ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
+            max_errors=2
+        )
         .run(config.start.duration_time_s)
     )
 
 
 @pytest.mark.integration
 def test_k3d_switch_clusters_latency():
-    """Test it choose one cluster over another with weights and then change when data changed.
-
-
-    """
+    """Priotise latency therefore more or less equalised distribution."""
     config = get_test_config()
     config.name = config.name + "DE_AND_NL_COST"
     config.start.start_time_simulated = "03/03/2026 04:00:00"
     config.start.duration_time_s = 120
     config.workload.request_per_minute = 50
-    config.latency.max_ms = 2000 #Expected to extend when spamming request.
-    config.latency.latency_window_s = 10 #Calculate latency from the last 10 seconds request latency.
+    config.latency.max_ms = 2000  # Expected to extend when spamming request.
+    config.latency.latency_window_s = 10  # Calculate latency from the last 10 seconds request latency.
     config.weights.gco2 = 0.01
     config.weights.cost = 0.01
     config.weights.latency = 0.98
@@ -359,6 +363,7 @@ def test_k3d_switch_clusters_latency():
         .assert_cluster_requests("pt", 25)
         .run(config.start.duration_time_s)
     )
+
 
 skip_on_ci = pytest.mark.skipif(
     os.getenv("GITHUB_ACTIONS") == "true",
@@ -402,6 +407,9 @@ def test_k3d_switch_clusters_with_dk():
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
-        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=0)
+        .assert_which_cluster_is_asserted(
+            ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
+            max_errors=0
+        )
         .run(config.start.duration_time_s)
     )
