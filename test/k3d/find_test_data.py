@@ -11,26 +11,25 @@ from src.global_api.services.dk_energy import get_dk_hourly
 
 CONSTRAINTS = {
     0: {
-        "PT": {
+        "DL": {
             "pv": {"max": 0.00000001},
         },
-        "PT": {
+        "PL": {
             "pv": {"max": 0.0000001},
         }
     },
     1: {
-        "PT": {
+        "DL": {
             "pv": {"max": 0.01},
         },
-        "TR": {
+        "PL": {
             "pv": {"min": 50},
         }
     },
 }
 
-PV_CAPACITY_W = 1500
 
-START_DATE = datetime(2026, 3, 25, tzinfo=timezone.utc)
+START_DATE = datetime(2026, 2, 26, tzinfo=timezone.utc)
 
 NUM_DAYS = 30
 
