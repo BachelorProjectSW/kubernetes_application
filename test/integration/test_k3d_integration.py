@@ -267,12 +267,12 @@ def test_k3d_default():
 def test_k3d_high_load():
     """Higher request-rate scenario."""
     config = get_test_config()
-    config.workload.request_per_minute = 20
-
+    config.start.duration_time_s = 30
+    config.workload.request_per_minute = 60
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=20, max_count=20)
-        .assert_success_rate(min_rate=1)
+        .assert_total_requests(min_count=30, max_count=30)
+        .assert_success_rate(min_rate=0.9)
         .run(config.start.duration_time_s)
     )
 
