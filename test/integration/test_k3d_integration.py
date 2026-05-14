@@ -111,140 +111,58 @@ class K3dTestRunner:
         self.assertions.append((f"avg_latency({min_ms}, {max_ms})", check))
         return self
 
-    def assert_request_latencies(
-            self,
-            position: str = "first",
-            count: int = 3,
-            min_ms: float | None = None,
-            max_ms: float | None = None
-        ):
-        """Assert min/max latency on first or last N requests.
-
-        Args:
-            position: "first" or "last"
-            count: number of requests to check
-            min_ms: minimum allowed latency for each request
-            max_ms: maximum allowed latency for each request
-        """
+    def assert_which_cluster_is_asserted(
+        self,
+        cluster_list: list[str],
+        start_index: int | None = None,
+        end_index: int | None = None,
+        max_errors: int = 0,
+    ):
+        """Assert request routing order."""
 
         def check(summary: dict) -> None:
-            request_over_time = summary.get("request_over_time", [])
-            if not request_over_time:
+            requests = summary.get("request_over_time", [])
+
+            if not requests:
                 raise AssertionError("No request_over_time data available")
 
-            if position == "first":
-                subset = request_over_time[:count]
-            elif position == "last":
-                subset = request_over_time[-count:]
-            else:
-                raise AssertionError(f"Invalid position '{position}', must be 'first' or 'last'")
+            if start_index is not None:
+                requests = requests[start_index:]
 
-            if len(subset) < count:
+            if end_index is not None:
+                requests = requests[:end_index]
+
+            if len(requests) != len(cluster_list):
                 raise AssertionError(
-                    f"Expected {count} {position} requests but only {len(subset)} available"
+                    f"Length mismatch: got {len(requests)} requests "
+                    f"but expected {len(cluster_list)} clusters"
                 )
 
-            latencies = [float(r.get("latency_ms", 0)) for r in subset]
-            actual_min = min(latencies)
-            actual_max = max(latencies)
+            errors = 0
 
-            if min_ms is not None and actual_min < min_ms:
-                raise AssertionError(
-                    f"Minimum latency {actual_min:.1f}ms in {position} {count} requests < {min_ms}ms"
-                )
-            if max_ms is not None and actual_max > max_ms:
-                raise AssertionError(
-                    f"Maximum latency {actual_max:.1f}ms in {position} {count} requests > {max_ms}ms"
+            for i, (request, expected_cluster) in enumerate(zip(requests, cluster_list)):
+                actual_cluster = request["cluster"]
+
+                print(
+                    f"[{i}] expected={expected_cluster} "
+                    f"actual={actual_cluster}"
                 )
 
-        label = f"request_latencies({position}_{count}, min={min_ms}, max={max_ms})"
-        self.assertions.append((label, check))
-        return self
+                if actual_cluster != expected_cluster:
+                    errors += 1
 
-    def assert_request_response_codes(
-            self,
-            position: str = "first",
-            count: int = 3,
-            expected_code: int = 200
-        ):
-        """Assert all response codes in first or last N requests match expected value.
+                    if errors > max_errors:
+                        raise AssertionError(
+                            f"Too many cluster mismatches. "
+                            f"Index={i}, expected={expected_cluster}, "
+                            f"actual={actual_cluster}, "
+                            f"errors={errors}, allowed={max_errors}"
+                        )
 
-        Args:
-            position: "first" or "last"
-            count: number of requests to check
-            expected_code: expected HTTP status code
-        """
+        self.assertions.append(
+            ("check request cluster order", check)
+        )
 
-        def check(summary: dict) -> None:
-            request_over_time = summary.get("request_over_time", [])
-            if not request_over_time:
-                raise AssertionError("No request_over_time data available")
-
-            if position == "first":
-                subset = request_over_time[:count]
-            elif position == "last":
-                subset = request_over_time[-count:]
-            else:
-                raise AssertionError(f"Invalid position '{position}', must be 'first' or 'last'")
-
-            if len(subset) < count:
-                raise AssertionError(
-                    f"Expected {count} {position} requests but only {len(subset)} available"
-                )
-
-            for i, req in enumerate(subset):
-                code = req.get("response_status_code", 0)
-                if code != expected_code:
-                    raise AssertionError(
-                        f"Request {i} in {position} {count}: "
-                        f"expected code {expected_code}, got {code}"
-                    )
-
-        label = f"request_response_codes({position}_{count}, code={expected_code})"
-        self.assertions.append((label, check))
-        return self
-
-    def assert_request_success_status(
-            self,
-            position: str = "first",
-            count: int = 3,
-            all_ok: bool = True
-        ):
-        """Assert all requests in first or last N have ok=True or ok=False.
-
-        Args:
-            position: "first" or "last"
-            count: number of requests to check
-            all_ok: if True, all must be ok; if False, all must be failed
-        """
-
-        def check(summary: dict) -> None:
-            request_over_time = summary.get("request_over_time", [])
-            if not request_over_time:
-                raise AssertionError("No request_over_time data available")
-
-            if position == "first":
-                subset = request_over_time[:count]
-            elif position == "last":
-                subset = request_over_time[-count:]
-            else:
-                raise AssertionError(f"Invalid position '{position}', must be 'first' or 'last'")
-
-            if len(subset) < count:
-                raise AssertionError(
-                    f"Expected {count} {position} requests but only {len(subset)} available"
-                )
-
-            for i, req in enumerate(subset):
-                ok = req.get("ok", False)
-                if all_ok and not ok:
-                    raise AssertionError(f"Request {i} in {position} {count}: expected ok=True, got ok=False")
-                if not all_ok and ok:
-                    raise AssertionError(f"Request {i} in {position} {count}: expected ok=False, got ok=True")
-
-        status_str = "ok" if all_ok else "failed"
-        label = f"request_success_status({position}_{count}, status={status_str})"
-        self.assertions.append((label, check))
         return self
 
     def _start_test(self) -> str:
@@ -432,5 +350,6 @@ def test_k3d_switch_clusters_with_dk():
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
+        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=2)
         .run(config.start.duration_time_s)
     )
