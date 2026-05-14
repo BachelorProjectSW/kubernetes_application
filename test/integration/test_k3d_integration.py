@@ -298,7 +298,7 @@ def test_k3d_switch_clusters():
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
-    config.clusters[0].simulated_country_code = "PT"  # DK control is simulated in France.
+    config.clusters[0].simulated_country_code = "DE"  # DK control is simulated in France.
     config.clusters[1].simulated_country_code = "PL"  # PT control is simulated in Poland.
     (
         K3dTestRunner(config)
