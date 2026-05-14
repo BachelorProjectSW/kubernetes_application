@@ -361,7 +361,7 @@ def test_k3d_switch_clusters_latency():
         .assert_success_rate(min_rate=0.9)
         .assert_cluster_requests("dk", 10)
         .assert_cluster_requests("pt", 10)
-        .run(config.start.duration_time_s+60) #Expected longer queue buffer
+        .run(config.start.duration_time_s + 60)  # Expected longer queue buffer
     )
 
 
