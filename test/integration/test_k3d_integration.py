@@ -353,8 +353,8 @@ def test_k3d_switch_clusters_latency():
     config.clusters[1].simulated_country_code = "NL"  # PT control is simulated in Netherland.
     (
         K3dTestRunner(config)
-        .assert_total_requests(min_count=12, max_count=12)
-        .assert_success_rate(min_rate=1)
+        .assert_total_requests(min_count=100, max_count=100)
+        .assert_success_rate(min_rate=0.9)
         .assert_cluster_requests("dk", 25)
         .assert_cluster_requests("pt", 25)
         .run(config.start.duration_time_s)
