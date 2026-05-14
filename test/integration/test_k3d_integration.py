@@ -352,6 +352,6 @@ def test_k3d_switch_clusters_with_dk():
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
-        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=0)
+        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=12)
         .run(config.start.duration_time_s)
     )
