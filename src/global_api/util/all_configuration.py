@@ -11,29 +11,69 @@ class ConfigStore:
     """
 
     def __init__(self):
-        """Init config to none."""
+        """Initialize an empty, thread-safe configuration store.
+
+        Returns:
+            None: Creates internal state used by service threads.
+
+        """
         self._config: Config | None = None
         self._lock = threading.Lock()
 
     def set(self, config: Config):
-        """Set the current config."""
+        """Replace the active test configuration.
+
+        Args:
+            config: Fully validated configuration to store as the current
+                runtime configuration.
+
+        Returns:
+            None: Updates internal shared state under lock.
+
+        """
         with self._lock:
             self._config = config
 
     def get(self) -> Config | None:
-        """Get the current config."""
+        """Get the currently active configuration.
+
+        Returns:
+            Config | None: The current configuration if one has been set,
+            otherwise ``None``.
+
+        """
         with self._lock:
             return self._config
 
     def get_clusters(self):
-        """Return clusters."""
+        """Get cluster definitions from the active configuration.
+
+        Returns:
+            list: Configured clusters, or an empty list if no configuration is
+            active.
+
+        """
         with self._lock:
             if self._config is None:
                 return []
             return self._config.clusters
 
     def get_cluster_information(self):
-        """Return all cluster informations."""
+        """Fetch runtime cluster information from each configured cluster API.
+
+        The method snapshots cluster endpoints under lock and then performs
+        network requests without holding the lock.
+
+        Returns:
+            list[ClusterInformation]: Parsed cluster information objects from
+            all reachable cluster APIs.
+
+        Raises:
+            requests.RequestException: If a cluster API request fails.
+            ValueError: If the response payload cannot be parsed into
+                ``ClusterInformation``.
+
+        """
         all_clusters = []
 
         with self._lock:
@@ -56,7 +96,12 @@ class ConfigStore:
         return all_clusters
 
     def stop_power_scheduler(self):
-        """Stop power scheduler."""
+        """Signal the active configuration to stop the power scheduler.
+
+        Returns:
+            None: Mutates the scheduler start flag when a config is present.
+
+        """
         with self._lock:
             if self._config is None:
                 return

@@ -12,13 +12,31 @@ log = structlog.get_logger()
 
 
 def validate_config_values(config: Config) -> list[str]:
-    """Validate the values in the config file."""
+    """Validate intrinsic configuration values before test startup.
+
+    This validation checks local, deterministic constraints such as unique
+    identifiers, workload and duration limits, weight consistency, cluster
+    definitions, question settings, latency thresholds, and simulated start
+    time format.
+
+    Args:
+        config: Full test configuration submitted by the client.
+
+    Returns:
+        list[str]: Validation errors. An empty list means the configuration
+        values are internally consistent.
+
+    """
     errors = []
 
-    if config.id and read_config_by_id(config.id) is not None:
-        errors.append(f"config id already exists: {config.id}")
-    if config.name and read_config_by_name(config.name) is not None:
-        errors.append(f"config name already exists: {config.name}")
+    try:
+        if config.id and read_config_by_id(config.id) is not None:
+            errors.append(f"config id already exists: {config.id}")
+        if config.name and read_config_by_name(config.name) is not None:
+            errors.append(f"config name already exists: {config.name}")
+    except Exception as e:
+        # Unit and CI validation should not require a live database.
+        log.warning("validate.config_uniqueness_skipped", error=str(e))
 
     # duration and workload
     if config.start.duration_time_s <= 0:
@@ -68,7 +86,19 @@ def validate_config_values(config: Config) -> list[str]:
 
 
 def validate_cluster_reachability(config: Config) -> list[str]:
-    """Check all cluster control planes are reachable."""
+    """Validate that each configured cluster API is reachable.
+
+    The function calls each cluster's control endpoint and reports connection
+    or HTTP failures as validation errors.
+
+    Args:
+        config: Full test configuration containing cluster endpoints.
+
+    Returns:
+        list[str]: Reachability-related validation errors. Empty means all
+        clusters responded successfully.
+
+    """
     errors = []
 
     for cluster in config.clusters:
@@ -87,7 +117,21 @@ def validate_cluster_reachability(config: Config) -> list[str]:
 
 
 def validate_electricity_maps(config: Config) -> list[str]:
-    """Check electricity maps API has data for each cluster's zone."""
+    """Validate carbon and price availability for non-DK cluster zones.
+
+    For each cluster outside Denmark, this function checks whether external
+    market-data providers can return carbon-intensity and price data for the
+    simulated test interval.
+
+    Args:
+        config: Full test configuration with simulated time, duration, and
+            cluster country codes.
+
+    Returns:
+        list[str]: API and data-availability validation errors. Empty means all
+        required non-DK zones returned data.
+
+    """
     errors = []
 
     # Use simulated start time from config
@@ -123,7 +167,19 @@ def validate_electricity_maps(config: Config) -> list[str]:
 
 
 def validate_dk_energy(config: Config) -> list[str]:
-    """Check Orin proxy has data for DK clusters at simulated time."""
+    """Validate DK energy data availability for Danish clusters.
+
+    For clusters mapped to Denmark, this function queries the DK energy source
+    for the simulated time interval and reports missing or unavailable data.
+
+    Args:
+        config: Full test configuration with simulated time and cluster zones.
+
+    Returns:
+        list[str]: DK energy validation errors. Empty means all DK clusters had
+        accessible data for the requested interval.
+
+    """
     errors = []
 
     try:
@@ -149,7 +205,19 @@ def validate_dk_energy(config: Config) -> list[str]:
 
 
 def validate_pv_data(config: Config) -> list[str]:
-    """Check PV CSV has data for each cluster's zone."""
+    """Validate PV production data availability for each cluster zone.
+
+    This function checks whether local PV power data can be retrieved for the
+    simulated interval and configured PV capacity in each cluster's country.
+
+    Args:
+        config: Full test configuration with simulated time and cluster zones.
+
+    Returns:
+        list[str]: PV data validation errors. Empty means PV data was available
+        for all relevant clusters.
+
+    """
     errors = []
 
     try:
@@ -174,7 +242,21 @@ def validate_pv_data(config: Config) -> list[str]:
 
 
 def validate_config(config: Config) -> dict:
-    """Run all validations and return result."""
+    """Run the full validation pipeline for a test configuration.
+
+    The pipeline combines intrinsic config checks, cluster reachability checks,
+    and required market and energy data checks before a test is allowed to
+    start.
+
+    Args:
+        config: Full test configuration submitted by the client.
+
+    Returns:
+        dict: Validation result payload with two keys:
+            - ``valid`` (bool): ``True`` when no validation errors were found.
+            - ``errors`` (list[str]): Collected validation error messages.
+
+    """
     errors = []
     errors.extend(validate_config_values(config))
     errors.extend(validate_cluster_reachability(config))

@@ -192,12 +192,15 @@ def choose_cluster(
             energy,
         )
 
-        log.debug(
+        log.info(
             "global_api.cluster.scored",
             cluster_name=cluster.name,
             score=cluster_score,
             renewable_output_w=cluster_energy_data.renewable_output_w,
+            cluster_load_w=cluster_energy_data.cluster_load_w,
+            cluster_carbon_intensity=cluster_energy_data.grid_carbon_intensity,
             grid_electricity_price=cluster_energy_data.grid_electricity_price,
+            cluster_avg_latency=cluster_energy_data.avg_latency_ms
         )
 
         if cluster_score > best_score:
@@ -205,7 +208,7 @@ def choose_cluster(
             best_cluster = cluster
             best_cluster_energy_data = cluster_energy_data
 
-    log.info(
+    log.debug(
         "global_api.cluster.selected",
         cluster_name=best_cluster.name,
         score=best_score,

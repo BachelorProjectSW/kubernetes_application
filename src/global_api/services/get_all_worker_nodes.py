@@ -7,7 +7,16 @@ log = structlog.get_logger()
 
 
 def get_all_worker_nodes():
-    """Return all working nodes for each cluster."""
+    """Collect currently available worker nodes from all configured clusters.
+
+    Calls each cluster API and gathers node entries into a single list.
+    If configuration is missing, or one cluster request fails, the function
+    returns whatever data it could collect from the remaining clusters.
+
+    Returns:
+        List of worker-node payloads aggregated across all reachable clusters.
+
+    """
     worker_nodes = []
     config = config_store.get()
     if config is None:

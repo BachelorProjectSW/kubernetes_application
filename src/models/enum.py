@@ -7,6 +7,7 @@ class WorkerStatus(str, Enum):
     Values:
         OFF: Node is powered off.
         TURNING_ON: Node is in the process of starting up.
+        TURNING_OFF: Node is in the process of shutting down.
         WORKING: Node is actively handling workload.
         IDLE: Node is running but not currently processing tasks.
     """

@@ -4,15 +4,19 @@ from ...db.postgres import read_model_logs, read_config_by_id, read_latest_node_
 
 
 def get_avg_latency(config_id: str, time_interval_s: int, cluster_name: str | None = None) -> float:
-    """Return avg latency (ms) across requests in the last time_interval_s seconds.
+    """Calculate average response time for successful requests over a time window.
+
+    Looks back through completed requests and computes the mean latency,
+    filtering by cluster if provided. Useful for monitoring overall system
+    responsiveness and detecting performance degradation.
 
     Args:
-        config_id: Config id.
-        time_interval_s: How far back to look, in seconds.
-        cluster_name: The cluster name.
+        config_id: Configuration ID to identify which test run or scenario.
+        time_interval_s: How many seconds back to analyze.
+        cluster_name: Optional filter to consider only one cluster; if None, includes all.
 
     Returns:
-        Average latency in milliseconds, or 0.0 if no requests in the window.
+        Average latency in milliseconds across successful requests, or 0.0 if none found.
 
     """
     now = datetime.now(timezone.utc)
@@ -32,15 +36,19 @@ def get_avg_latency(config_id: str, time_interval_s: int, cluster_name: str | No
 
 
 def get_avg_llama_latency(config_id: str, time_interval_s: int, cluster_name: str | None = None) -> float:
-    """Return avg latency (ms) across requests in the last time_interval_s seconds.
+    """Calculate average inference time (time Llama model spent running) over a time window.
+
+    Focuses only on the model execution phase, excluding queue and overhead time.
+    Useful for understanding model performance independently of infrastructure delays.
+    Includes only successful requests.
 
     Args:
-        config_id: Config id.
-        time_interval_s: How far back to look, in seconds.
-        cluster_name: The cluster name.
+        config_id: Configuration ID to identify which test run or scenario.
+        time_interval_s: How many seconds back to analyze.
+        cluster_name: Optional filter to consider only one cluster; if None, includes all.
 
     Returns:
-        Average latency in milliseconds, or 0.0 if no requests in the window.
+        Average inference time in milliseconds, or 0.0 if no requests found.
 
     """
     now = datetime.now(timezone.utc)
@@ -60,7 +68,12 @@ def get_avg_llama_latency(config_id: str, time_interval_s: int, cluster_name: st
 
 
 def read_all_request_logs(config_id: str) -> list[RequestLog]:
-    """Return all request logs by config_id."""
+    """Retrieve all inference request records for a configuration.
+
+    Returns the complete history of completed requests (successes and failures)
+    to enable post-run analysis, debugging, and reporting.
+    Returns empty list if config_id is invalid or if a database error occurs.
+    """
     if not config_id:
         return []
 
@@ -71,7 +84,11 @@ def read_all_request_logs(config_id: str) -> list[RequestLog]:
 
 
 def get_config_by_id(config_id: str):
-    """Get config by id."""
+    """Load the test configuration object by its ID.
+
+    Retrieves the configuration settings used for a particular test run.
+    Returns None if the config is not found or if a database error occurs.
+    """
     try:
         return read_config_by_id(config_id)
     except Exception:
@@ -79,10 +96,10 @@ def get_config_by_id(config_id: str):
 
 
 def get_sent_logs(config_id: str, time_interval_s: int) -> list[LogSent]:
-    """Return `LogSent` entries for `config_id` within the last `time_interval_s` seconds.
+    """Retrieve records of requests dispatched to global schedueler in a recent time window.
 
-    This queries the DB with a time filter so callers don't need to filter by
-    age themselves.
+    Each LogSent entry marks when a request left the workload scheduler and
+    enter global scheduler. Used for calculate required nodes for power scheduler.
     """
     if not config_id:
         return []
@@ -96,7 +113,12 @@ def get_sent_logs(config_id: str, time_interval_s: int) -> list[LogSent]:
 
 
 def read_all_sent_logs(config_id: str) -> list[LogSent]:
-    """Return all sent logs by config_id."""
+    """Retrieve all request dispatch records for a configuration.
+
+    Returns the complete history of when requests were sent to clusters,
+    useful for analyzing dispatch patterns and end-to-end flow. Returns empty
+    list if config_id is invalid or if a database error occurs.
+    """
     if not config_id:
         return []
 
@@ -111,7 +133,11 @@ def get_worker_nodes_logs(
     cluster_name: str,
     node_name: str,
 ) -> NodeStatusLog | None:
-    """Return the latest node status entry for one worker node."""
+    """Retrieve the most recent status snapshot of a specific worker node.
+
+    Useful for checking if a node is currently idle, working, or offline.
+    Returns None if the node has no status record or if a database error occurs.
+    """
     try:
         return read_latest_node_status_log(config_id, cluster_name, node_name)
     except Exception:
@@ -119,10 +145,18 @@ def get_worker_nodes_logs(
 
 
 def read_all_node_status_logs(config_id: str) -> list[NodeStatusLog]:
-    """Read node status logs for a config as NodeStatusLog models."""
+    """Retrieve all node status records for a configuration.
+
+    Returns a time-ordered history of worker node state changes, enabling
+    reconstruction of cluster availability and performance during the test.
+    """
     return read_model_logs(log_model_class=NodeStatusLog, config_id=config_id)
 
 
 def read_all_market_snapshot_logs(config_id: str) -> list[MarketSnapshotLog]:
-    """Read market snapshot logs for a config as MarketSnapshotLog models."""
+    """Retrieve hourly energy market data (carbon intensity and electricity price) for a configuration.
+
+    Pairs each hour with its corresponding carbon and cost metrics, enabling
+    post-analysis of how energy conditions affected scheduling and cost efficiency.
+    """
     return read_model_logs(log_model_class=MarketSnapshotLog, config_id=config_id)

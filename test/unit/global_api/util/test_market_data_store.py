@@ -13,7 +13,7 @@ _END = datetime(2025, 6, 1, 13, tzinfo=timezone.utc)
 _NEXT_HOUR_START = datetime(2025, 6, 1, 13, tzinfo=timezone.utc)
 _NEXT_HOUR_END = datetime(2025, 6, 1, 14, tzinfo=timezone.utc)
 
-_DK_HOURLY = [{"timestamp": "2025-06-01 12:00:00", "consumption_w": 800.0, "generation_w": 350.0}]
+_DK_HOURLY = [{"timestamp": "2025-06-01 12:00:00", "avg_consumption_w": 800.0, "avg_generation_w": 350.0}]
 
 
 @pytest.mark.unit
@@ -61,7 +61,7 @@ def test_get_power_caches_result_within_same_simulated_hour():
 def test_get_power_refetches_on_new_simulated_hour():
     """Advancing to a new simulated hour should trigger a fresh fetch."""
     store = MarketDataStore()
-    dk_next = [{"timestamp": "2025-06-01 13:00:00", "consumption_w": 750.0, "generation_w": 200.0}]
+    dk_next = [{"timestamp": "2025-06-01 13:00:00", "avg_consumption_w": 750.0, "avg_generation_w": 200.0}]
 
     with patch(
         "src.global_api.util.market_data_store.get_dk_hourly",

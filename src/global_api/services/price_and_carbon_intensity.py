@@ -43,7 +43,7 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
         requests.HTTPError: If the Electricity Maps API returns an error response.
 
     """
-    log.info("global_api.market.price_fetch_started", zone=zone, start=str(start), end=str(end))
+    log.debug("global_api.market.price_fetch_started", zone=zone, start=str(start), end=str(end))
     try:
         response = requests.get(
             f"{BASE_URL}/price-day-ahead/past-range",
@@ -66,7 +66,7 @@ def fetch_price_data(start: datetime, end: datetime, zone: str) -> list[tuple[da
         raise
 
     entries = response.json().get("data", [])
-    log.info("global_api.market.price_fetch_succeeded", entry_count=len(entries), zone=zone)
+    log.debug("global_api.market.price_fetch_succeeded", entry_count=len(entries), zone=zone, data=entries)
 
     return [(datetime.fromisoformat(e["datetime"]), e["value"]) for e in entries]
 
@@ -87,7 +87,7 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
         requests.HTTPError: If the Electricity Maps API returns an error response.
 
     """
-    log.info("global_api.market.carbon_fetch_started", zone=zone, start=str(start), end=str(end))
+    log.debug("global_api.market.carbon_fetch_started", zone=zone, start=str(start), end=str(end))
     try:
         response = requests.get(
             f"{BASE_URL}/carbon-intensity/past-range",
@@ -111,6 +111,6 @@ def fetch_carbon_intensity(start: datetime, end: datetime, zone: str) -> list[tu
         raise
 
     entries = response.json().get("data", [])
-    log.info("global_api.market.carbon_fetch_succeeded", entry_count=len(entries), zone=zone)
+    log.debug("global_api.market.carbon_fetch_succeeded", entry_count=len(entries), zone=zone, data=entries)
 
     return [(datetime.fromisoformat(e["datetime"]), e["carbonIntensity"]) for e in entries]

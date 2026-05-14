@@ -19,7 +19,22 @@ current_config = None
 
 
 def start_test(config: Config):
-    """Start test in a background thread and return immediately."""
+    """Validate config, mark test state, and start execution in a thread.
+
+    This entrypoint first asks the global API to validate the incoming config.
+    If valid, it stores shared test state and starts the long-running test flow
+    in a daemon thread so the HTTP request can return immediately.
+
+    Args:
+        config: Full test configuration received from the caller.
+
+    Returns:
+        dict[str, str]: Confirmation message that the test was started.
+
+    Raises:
+        RuntimeError: If validation fails or a test is already running.
+
+    """
     global test_running, stop_requested, current_config
 
     try:
@@ -48,7 +63,7 @@ def start_test(config: Config):
         stop_requested = False
         current_config = config
 
-    # run the test in a background thread, such the main thread is still open
+    # Run the test on a separate thread so the API stays responsive.
     thread = threading.Thread(target=run_test, args=(config,), daemon=True, name="test-runner")
     thread.start()
     log.info("test.started_in_background", config_id=config.id, test_name=config.name)
@@ -56,13 +71,25 @@ def start_test(config: Config):
 
 
 def run_test(config: Config):
-    """Run the full test in a background thread."""
+    """Run the full test lifecycle in the background.
+
+    The flow is: persist config, ask global API to start test orchestration,
+    run the generated workload, then reset local state flags in ``finally``.
+
+    Args:
+        config: Active test configuration for this run.
+
+    Returns:
+        None: Logs outcomes and updates shared state.
+
+    """
     global test_running, stop_requested, current_config
     try:
         set_current_config_id(config.id)
         save_config(config)
         log.info("test.begins", source="strato_api", config_id=config.id, test_name=config.name)
 
+        # Forward start to global API, which configures all clusters.
         ip = config.global_scheduler.ip
         port = config.global_scheduler.port
         url = f"http://{ip}:{port}/start_test"
@@ -72,6 +99,7 @@ def run_test(config: Config):
         response.raise_for_status()
         log.info("test.global_started", status_code=response.status_code)
 
+        # This blocks inside the background thread until workload ends or stops.
         results = run_workload(
             f"http://{ip}:{port}",
             "/handle_llm_question",
@@ -92,7 +120,7 @@ def run_test(config: Config):
     except Exception as e:
         log.exception("test.failed", error=str(e))
     finally:
-        # regardless we return them to default values, such that we are ready for new test
+        # Always reset shared flags so a new test can start cleanly.
         with test_state_lock:
             test_running = False
             stop_requested = False
@@ -100,17 +128,28 @@ def run_test(config: Config):
 
 
 def should_stop_test() -> bool:
-    """Return True if the running test should stop."""
+    """Return whether the current test run should stop.
+
+    Returns:
+        bool: ``True`` when a stop request has been issued.
+
+    """
     with test_state_lock:
         return stop_requested
 
 
 def stop_test():
-    """Stop the currently running test.
+    """Request stop for the currently running test.
 
-    Sets the stop flag which signals the workload generator to cancel all in-flight requests.
-    Then calls global to stop the power scheduler and delete all llama pods on all clusters.
-    Raises RuntimeError if no test is currently running.
+    This sets a shared stop flag that is polled by the workload runner. It
+    also notifies the global API to stop scheduler-side activity.
+
+    Returns:
+        dict[str, str]: Confirmation that stop was requested.
+
+    Raises:
+        RuntimeError: If no test is currently running.
+
     """
     global stop_requested
     with test_state_lock:
@@ -125,7 +164,16 @@ def stop_test():
 
 
 def stop_global_power_scheduler(ip, port):
-    """Tell global API to stop the power scheduler."""
+    """Notify global API to stop test-side scheduler activity.
+
+    Args:
+        ip: Global API host.
+        port: Global API port.
+
+    Returns:
+        None: Emits logs for success or failure.
+
+    """
     try:
         requests.post(f"http://{ip}:{port}/stop_test", timeout=300)
         log.info("test.global_stop_requested")
@@ -134,12 +182,22 @@ def stop_global_power_scheduler(ip, port):
 
 
 def start_test_test():
-    """Start test test."""
+    """Start a predefined test configuration used for quick checks.
+
+    Returns:
+        dict[str, str]: Response from ``start_test``.
+
+    """
     return start_test(get_test_config())
 
 
 def get_test_status() -> dict:
-    """Return current test status."""
+    """Return the current local test-runner state.
+
+    Returns:
+        dict: Status payload with ``status`` and ``current_config_id``.
+
+    """
     with test_state_lock:
         if not test_running:
             return {

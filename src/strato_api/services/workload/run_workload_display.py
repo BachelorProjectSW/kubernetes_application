@@ -4,28 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def generate_workload_charts(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5):
-    """Generate request timestamps over a given duration.
-
-    This function simulates incoming request timestamps based on a specified
-    workload pattern. It supports steady traffic as well peaks
-    generated from sine waves.
-
-    Args:
-        duration_s (int): Total duration of the workload in seconds.
-        rpm (float): Target requests per minute.
-        pattern (str, optional): Traffic pattern to generate. Supported values:
-            - "steady": Evenly spaced requests with slight randomness.
-            - "peaks": Bursty traffic based on overlapping sine waves.
-            Defaults to "steady".
-        seed (int, optional): Random seed for reproducibility. Defaults to 42.
-        peakiness (float, optional): Controls the variability and number of peaks
-            in the "peaks" pattern. Higher values produce more intense and complex
-            bursts. Defaults to 0.5.
-
-    Returns:
-        list[float]: Sorted list of request timestamps (in seconds).
-
-    """
+    """Code is stolen from run_workload however congiured to display for the paper/debug."""
     random.seed(seed)
 
     if rpm <= 0 or duration_s <= 0:
@@ -79,11 +58,6 @@ def generate_workload_charts(duration_s, rpm, pattern="steady", seed=42, peakine
             timestamps.append(ts)
 
     timestamps.sort()
-
-
-
-
-
 
     plt.rcParams.update({
         "font.size": 16,          # Base font size

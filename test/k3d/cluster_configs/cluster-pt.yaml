@@ -4,7 +4,7 @@ metadata:
   name: devcluster-pt
 
 servers: 1
-agents: 1
+agents: 2
 
 network: k3d-network-pt
 

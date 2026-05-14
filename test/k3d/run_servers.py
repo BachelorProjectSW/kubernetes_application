@@ -1,9 +1,13 @@
 import os
 import sys
+import socket
+import time
 from pathlib import Path
 from multiprocessing import Process
 import json
 import uvicorn
+from src.custom_logging.logger import log
+
 
 from src.models.basemodels import ClusterInformation
 from .utils import get_cluster_config, get_test_config, run_cmd, run_cmd_bg
@@ -11,6 +15,8 @@ from src.cluster_api.util.cluster_config import config_store
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT_DIR / "src"
+
+log.info("Start_to_run_servers")
 
 
 # Ensure child processes can import the top-level src package regardless of launch cwd.
@@ -83,9 +89,11 @@ def start_pod_forwards(cluster_name: str, base_local_port: int):
     """Start one port-forward per llama pod."""
     kubeconfig = SRC_DIR / "cluster_api" / "auth" / f"k3d-devcluster-{cluster_name}.yaml"
     pods = get_llama_pods(cluster_name)
+    forwarded_ports = []
 
     for index, pod in enumerate(pods):
         local_port = base_local_port + index
+        forwarded_ports.append(local_port)
 
         run_cmd_bg([
             "kubectl",
@@ -95,10 +103,37 @@ def start_pod_forwards(cluster_name: str, base_local_port: int):
             f"{local_port}:8080",
         ])
 
+    return forwarded_ports
+
+
+def wait_for_local_port(port: int, timeout_s: float = 30.0, poll_interval_s: float = 0.25) -> bool:
+    """Wait until a localhost TCP port is accepting connections."""
+    deadline = time.time() + timeout_s
+
+    while time.time() < deadline:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(poll_interval_s)
+            if sock.connect_ex(("127.0.0.1", port)) == 0:
+                return True
+        time.sleep(poll_interval_s)
+
+    return False
+
+
+def _set_db_env():
+    os.environ["POSTGRES_HOST"] = "127.0.0.1"
+    os.environ["POSTGRES_PORT"] = "5433"
+    os.environ["POSTGRES_USER"] = "strato"
+    os.environ["POSTGRES_PASSWORD"] = "strato"
+    os.environ["POSTGRES_DB"] = "strato"
+
 
 def start_all_servers():
     """Start strato, global scheduler, all cluster control planes, and port-forward the llama-services."""
+    _set_db_env()
+
     configs = get_test_config()
+
     cluster_config = get_cluster_config()
     server_processes = []
 
@@ -113,13 +148,16 @@ def start_all_servers():
     server_processes.append(g_server)
 
     for cluster in cluster_config:
-        # Start the cluster API server
+        # Start the llama port-forwards first so the cluster API can probe them.
+        forwarded_ports = start_pod_forwards(cluster.name, base_local_port=int(cluster.llama_service_port))
+
+        for port in forwarded_ports:
+            wait_for_local_port(port)
+
+        # Start the cluster API server after the forwarded ports are ready.
         p_server = Process(target=run_cluster_server, args=(cluster.name, int(cluster.port)))
         p_server.start()
         server_processes.append(p_server)
-
-        # Start port-forward directly (non-blocking)
-        start_pod_forwards(cluster.name, base_local_port=int(cluster.llama_service_port))
 
     # Wait for Uvicorn servers to finish
     for p in server_processes:

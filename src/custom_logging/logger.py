@@ -11,23 +11,37 @@ import os
 
 log = structlog.get_logger()
 
+# Change the level of logging set to DEBUG for all, info (exclude debug etc...)
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
-SAVE_LOGS_IN_DB = os.getenv("SAVE_LOGS_IN_DB", "false").upper() == "TRUE"
+# whether the debug, info, error, warning logs should be saved in the DB or just printed.
+SAVE_LOGS_IN_DB = os.getenv("SAVE_LOGS_IN_DB", "FALSE").upper() == "TRUE"
 _LOGGER_CONFIG_ID: str | None = None
 
 
 def set_current_config_id(config_id: str | None):
-    """Set logger-scoped config id for this service instance."""
+    """Associate future log entries with a test configuration.
+
+    All logging calls after this will tag entries with the provided config_id,
+    allowing logs to be grouped and filtered by test run. Set to None to clear.
+    """
     global _LOGGER_CONFIG_ID
     _LOGGER_CONFIG_ID = config_id
 
 
 def _current_config_id() -> str | None:
+    """Retrieve the active test configuration ID for the current logger.
+
+    Returns None if no configuration has been set.
+    """
     return _LOGGER_CONFIG_ID
 
 
 def _get_terminal_logs(_, __, event_dict):
-    """Get all logs printed to terminal."""
+    """Intercept and store terminal logs to the database for later retrieval.
+
+    Processes every log event, optionally saving it to the database if enabled.
+    Also logs to console via structlog's ConsoleRenderer.
+    """
     level = str(event_dict.get("level", "info"))
     message = str(event_dict.get("event", ""))
     config_id = _current_config_id()
@@ -72,7 +86,13 @@ def log_request(
     cluster_queue_time_ms: int | None = None,
     cluster_llama_inference_ms: int | None = None,
 ):
-    """Log a completed request to the CSV and console."""
+    """Record a completed inference request with timing and energy data.
+
+    Creates a RequestLog entry capturing the full lifecycle: from dispatch to
+    response, including queue time, inference time, cluster load, renewable energy
+    fraction, and carbon intensity. Saves to database and logs to console.
+    All values are rounded appropriately for storage.
+    """
     entry = RequestLog(
         trace_id=trace_id,
         timestamp=datetime.now(timezone.utc),
@@ -101,11 +121,16 @@ def log_request(
     except Exception as e:
         log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="RequestLog")
 
-    log.info("custom_logging.request.logged", **row)
+    log.debug("custom_logging.request.logged", **row)
 
 
 def log_sent(cluster_name: str, trace_id: str | None = None, payload: dict | None = None):
-    """Log a sent request (before response) so RPS can be measured from sent events."""
+    """Record when a request is dispatched to a cluster (before response arrives).
+
+    Marks the dispatch point in time, allowing measurement of total request
+    latency by correlating with completed RequestLog entries via trace_id.
+    Enables calculation of requests-per-second metrics from event timestamps.
+    """
     entry = LogSent(
         timestamp=datetime.now(timezone.utc),
         cluster=cluster_name,
@@ -119,11 +144,15 @@ def log_sent(cluster_name: str, trace_id: str | None = None, payload: dict | Non
         log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="LogSent")
 
     row = entry.model_dump(mode="json")
-    log.info("custom_logging.sent.logged", **row)
+    log.debug("custom_logging.sent.logged", **row)
 
 
 def log_node_status_snapshot(cluster_name: str, node: WorkerNode):
-    """Log a snapshot of all node statuses for a cluster."""
+    """Record the current state of a worker node (idle, working, or offline).
+
+    Creates a timestamped snapshot for monitoring cluster health and reconstructing
+    availability history. Enables post-run analysis of when and why nodes changed state.
+    """
     timestamp = datetime.now(timezone.utc)
 
     entry = NodeStatusLog(

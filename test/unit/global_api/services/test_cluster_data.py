@@ -33,7 +33,7 @@ def _mock_worker_nodes(*statuses: str):
 
 @pytest.mark.unit
 def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
-    """Denmark clusters include Orin base load in the total cluster load."""
+    """Denmark runtime load includes extra fixed background power usage."""
     cluster = _make_cluster("DK-DK1")
 
     with (
@@ -41,10 +41,9 @@ def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
         patch("src.global_api.services.cluster_data.market_data_store.get_carbon", return_value=[]),
         patch("src.global_api.services.cluster_data.market_data_store.get_price", return_value=[]),
         patch("src.global_api.services.cluster_data.compute_cluster_load", return_value=1000.0),
-        patch("src.global_api.services.cluster_data.get_avg_latency_for_cluster", return_value=0.0),
         patch(
             "src.global_api.services.cluster_data.get_dk_hourly",
-            return_value=[{"consumption_w": 250.0}],
+            return_value=[{"avg_consumption_w": 250.0}],
         ) as mock_dk,
         patch("src.global_api.services.cluster_data.requests.get") as mock_requests_get,
     ):
@@ -57,8 +56,6 @@ def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
             cluster,
             datetime(2025, 1, 1, tzinfo=timezone.utc),
             EnergyConfig(),
-            latency_window_s=300,
-            config_id="123",
             avg_latency_ms=7000.2,
 
         )
@@ -69,7 +66,7 @@ def test_runtime_data_adds_orin_base_load_for_denmark_cluster():
 
 @pytest.mark.unit
 def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
-    """Non-Denmark clusters should not fetch Orin base load."""
+    """Non-Denmark clusters should not add the Denmark background load."""
     cluster = _make_cluster("PT")
 
     with (
@@ -77,7 +74,6 @@ def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
         patch("src.global_api.services.cluster_data.market_data_store.get_carbon", return_value=[]),
         patch("src.global_api.services.cluster_data.market_data_store.get_price", return_value=[]),
         patch("src.global_api.services.cluster_data.compute_cluster_load", return_value=1000.0),
-        patch("src.global_api.services.cluster_data.get_avg_latency_for_cluster", return_value=0.0),
         patch("src.global_api.services.cluster_data.get_dk_hourly") as mock_dk,
         patch("src.global_api.services.cluster_data.requests.get") as mock_requests_get,
     ):
@@ -90,8 +86,6 @@ def test_runtime_data_keeps_cluster_load_for_non_denmark_cluster():
             cluster,
             datetime(2025, 1, 1, tzinfo=timezone.utc),
             EnergyConfig(),
-            latency_window_s=300,
-            config_id="123",
             avg_latency_ms=7000.2,
         )
 

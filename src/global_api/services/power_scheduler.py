@@ -18,8 +18,16 @@ from ...db.postgres import read_model_logs
 log = structlog.get_logger()
 
 
-
 def _get_simulated_time(config: Config) -> datetime:
+    """Return the simulated current time for the active test run.
+
+    Args:
+        config: Current scheduler configuration.
+
+    Returns:
+        The current simulated time.
+
+    """
     try:
         return compute_simulated_now(
             config.start.start_time_simulated,
@@ -35,7 +43,18 @@ def _get_scored_clusters(
     clusters: list[ClusterInformation],
     simulated_time: datetime,
 ) -> list[tuple[float, ClusterInformation, ClusterRuntimeData]]:
+    """Build a score for each cluster using its current runtime data.
 
+    Args:
+        config: Current scheduler configuration.
+        clusters: Cluster metadata with worker nodes.
+        simulated_time: Current simulated time used for energy lookup.
+
+    Returns:
+        A list of scored clusters and their runtime data.
+
+    """
+    # Read recent request logs once so every cluster uses the same latency view.
     now = datetime.now(timezone.utc)
     start = now - timedelta(seconds=config.latency.latency_window_s)
     try:
@@ -43,11 +62,13 @@ def _get_scored_clusters(
     except Exception:
         recent_requests = []
 
+    # Turn the recent request history into one average latency per cluster.
     avg_latency_by_cluster: dict[str, float] = {}
     for cluster in config.clusters:
         latencies = [r.latency_ms for r in recent_requests if r.cluster == cluster.name]
         avg_latency_by_cluster[cluster.name] = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
+    # Gather runtime energy data and compute a score for each cluster.
     scored_clusters = []
     for cluster in clusters:
         runtime_data = get_cluster_runtime_data(
@@ -76,7 +97,15 @@ def _get_scored_clusters(
 
 
 def get_current_active_nodes(clusters: list[ClusterInformation]):
-    """Analise logs."""
+    """Count worker nodes that are currently on or active.
+
+    Args:
+        clusters: Cluster metadata with worker nodes.
+
+    Returns:
+        Number of worker nodes that are on.
+
+    """
     active_nodes_counter = 0
     for cluster in clusters:
         for worker_node in cluster.worker_nodes:
@@ -88,7 +117,19 @@ def get_current_active_nodes(clusters: list[ClusterInformation]):
 
 
 def get_current_rps(time_interval_s: int, config_id: str | None) -> float:
-    """Return requests per second (RPS) in the last time_interval_s seconds."""
+    """Return requests per second (RPS) for the given time window.
+
+    This is received by the workload scheduler who log when a request is sent.
+    This could be discussed whether it should be on when its received on global api.
+
+    Args:
+        time_interval_s: Number of seconds to look back.
+        config_id: Optional configuration id for the current run.
+
+    Returns:
+        Requests per second in the selected time window.
+
+    """
     if not config_id or time_interval_s <= 0:
         return 0.0
 
@@ -102,13 +143,20 @@ def estimate_required_nodes(
     avg_llama_latency_ms: float,
     current_rps: float,
 ) -> int:
-    """Estimate required nodes from demand.
+    """Estimate how many nodes are needed from current demand.
 
     If avg latency per node is 8000 and the request pr second is 1 (60 request pr minute)
     Then a worker nodes handle 1000/8000=0.125 request pr second.
     Therefore to handle 1 request pr second the required nodes is 1/0.125=8
-    """
 
+    Args:
+        avg_llama_latency_ms: Average observed latency for one node.
+        current_rps: Current requests per second.
+
+    Returns:
+        Estimated number of nodes needed to handle the demand.
+
+    """
     if current_rps <= 0:
         log.info("global_api.power.no_current_rps", current_rps=current_rps)
         return 0
@@ -132,17 +180,26 @@ def apply_lantecy_scaling(
     avg_latency_ms: float,
     max_latency_ms: float,
 ) -> int:
-    """Calculate nodes to add based on latency scaling alone.
+    """Calculate extra nodes needed when latency is above the limit.
 
     When avg_latency > max_latency, scale current nodes proportionally.
     Scale factor = avg_latency / max_latency, then subtract current active nodes.
-    
+
     Example: If current=2, avg_latency=16000ms, max_latency=8000ms,
     scale_factor=2, scaled_needed=4, nodes_to_add=4-2=2.
+
+    Args:
+        current_active_nodes: Number of nodes currently active.
+        avg_latency_ms: Average observed latency.
+        max_latency_ms: Maximum acceptable latency.
+
+    Returns:
+        Number of extra nodes to add from latency scaling.
+
     """
     if max_latency_ms <= 0 or avg_latency_ms <= 0 or current_active_nodes <= 0:
         return 0
-    
+
     if avg_latency_ms > max_latency_ms:
         scale_factor = avg_latency_ms / max_latency_ms
         scaled_nodes_needed = int(math.ceil(current_active_nodes * scale_factor))
@@ -157,7 +214,7 @@ def apply_lantecy_scaling(
             nodes_to_add=nodes_to_add,
         )
         return nodes_to_add
-    
+
     return 0
 
 
@@ -166,7 +223,17 @@ def estimate_nodes_to_add(
     current_rps: float,
     current_active_nodes: int,
 ) -> int:
-    """Estimate how many more worker nodes are needed from lambda and mu."""
+    """Estimate how many additional worker nodes should be turned on.
+
+    Args:
+        avg_llama_latency_ms: Average observed latency for one node.
+        current_rps: Current requests per second.
+        current_active_nodes: Number of worker nodes already on.
+
+    Returns:
+        Number of additional worker nodes to power on.
+
+    """
     required_nodes = estimate_required_nodes(
         avg_llama_latency_ms,
         current_rps,
@@ -189,22 +256,32 @@ def estimate_nodes_to_add(
 
 
 def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
-    """Turn nodes on."""
-    # Sort clusters by score (highest first)
+    """Turn on worker nodes when demand or latency requires more capacity.
 
+    Args:
+        config: Current scheduler configuration.
+        clusters: Cluster information and worker node state.
+
+    Returns:
+        None.
+
+    """
+    # Start from the current simulated time and score every cluster.
     simulated_time = _get_simulated_time(config)
     scored_clusters = _get_scored_clusters(config, clusters, simulated_time)
 
+    # Process the best-scoring clusters first.
     sorted_clusters = [
         cluster
         for _, cluster, _ in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
     ]
 
+    # Read the current demand and latency signals before deciding to scale.
     avg_llama_latency_ms = get_avg_llama_latency(config.id, config.latency.latency_window_s)
     current_active_nodes = get_current_active_nodes(clusters)
     current_rps = get_current_rps(config.latency.latency_window_s, config.id)
     log.debug(
-        "global_api.power.math.variables", 
+        "global_api.power.math.variables",
         current_nodes=current_active_nodes,
         avg_llama_latency_ms=avg_llama_latency_ms,
         current_rps=current_rps,
@@ -223,24 +300,24 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
         )
         return
 
+    # Estimate the scale-up need from throughput, then take the larger one.
     nodes_to_add = estimate_nodes_to_add(
         avg_llama_latency_ms,
         current_rps,
         current_active_nodes,
     )
-    
-    # Also calculate nodes needed from latency scaling, use the max of both approaches
+
+    # Also calculate nodes needed from latency scaling, then keep the larger estimate.
     latency_scaling_nodes = apply_lantecy_scaling(
         current_active_nodes,
         avg_llama_latency_ms,
         config.latency.max_ms,
     )
-    
+
     nodes_to_add = max(nodes_to_add, latency_scaling_nodes)
 
-    best_cluster_flag = True
     for cluster in sorted_clusters:
-        if nodes_to_add <= 0 and not best_cluster_flag:
+        if nodes_to_add <= 0:
             break
         powered_off_nodes = 0
         for worker_node in cluster.worker_nodes:
@@ -248,15 +325,12 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
                 powered_off_nodes += 1
 
         amount = min(nodes_to_add, powered_off_nodes)
-        if best_cluster_flag and powered_off_nodes == len(cluster.worker_nodes) and amount <= 0:
-            # Always have at least one node on on the best cluster.
-            amount = 1
 
-        best_cluster_flag = False
         if amount <= 0:
             continue
 
         try:
+            # Ask the selected cluster to power on only the number of OFF nodes needed.
             url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_on_nodes/"
             response = requests.post(url, params={"number_of_nodes": amount}, timeout=500)
             response.raise_for_status()
@@ -280,7 +354,15 @@ def turn_nodes_on(config: Config, clusters: list[ClusterInformation]):
 
 
 def turn_off_idle_nodes(config: Config):
-    """Turn nodes off."""
+    """Turn off idle worker nodes when latency is healthy enough.
+
+    Args:
+        config: Current scheduler configuration.
+
+    Returns:
+        None.
+
+    """
     avg_latency_ms = get_avg_latency(config.id, config.latency.latency_window_s)
     if avg_latency_ms > config.latency.max_ms:
         log.info(
@@ -290,54 +372,57 @@ def turn_off_idle_nodes(config: Config):
         )
         return
 
-    simulated_time = _get_simulated_time(config)
-    scored_clusters = _get_scored_clusters(config, config_store.get_cluster_information(), simulated_time)
-    sorted_clusters = [
-        cluster
-        for _, cluster, _ in sorted(scored_clusters, key=lambda item: item[0], reverse=True)
-    ]
-
-    top_cluster_name = sorted_clusters[0].cluster_config.name if sorted_clusters else None
-
-    for cluster in sorted_clusters:
+    for cluster in config.clusters:
         try:
-            url = f"http://{cluster.cluster_config.ip}:{cluster.cluster_config.port}/turn_off_idle_nodes/"
+            # Ask each cluster to shut down nodes that have stayed idle long enough.
+            url = f"http://{cluster.ip}:{cluster.port}/turn_off_idle_nodes/"
             idle_time = config.power_scheduler.idle_time_for_turn_off_s
             log.debug(
                 "global_api.power.turn_off_idle_requested",
-                cluster_name=cluster.cluster_config.name,
+                cluster_name=cluster.name,
                 idle_time_s=idle_time,
             )
             response = requests.post(
                 url,
-                params={"idle_time": idle_time, "stay_one": cluster.cluster_config.name == top_cluster_name},
+                params={"idle_time": idle_time},
                 timeout=500,
             )
             response.raise_for_status()
         except Exception as e:
             log.error(
                 "global_api.power.turn_off_idle_request_failed",
-                cluster_name=cluster.cluster_config.name,
+                cluster_name=cluster.name,
                 target_url=url,
                 error=str(e),
             )
 
 
 async def power_scheduler_loop():
-    """Check every x seconds whether more working nodes should be turn on or off."""
+    """Periodically decide whether the cluster should scale up or down.
+
+    Returns:
+        None.
+
+    """
     log.info("global_api.power.scheduler_started")
     while True:
+        # Stop early if the scheduler has no active configuration.
         config = config_store.get()
         if config is None:
             log.warning("global_api.power.scheduler_missing_config")
             break
 
+        # Wait for the configured interval before evaluating the next cycle.
         timeout = config.power_scheduler.timeout_s
         log.info("global_api.power.scheduler_iteration_started", timeout_s=timeout)
         await asyncio.sleep(timeout)
+
+        # Re-read the config in case the test was stopped.
         latest_config = config_store.get()
         if latest_config is None or not latest_config.power_scheduler.start:
             break
+
+        # Turn nodes on first, then try turning off idle nodes with the same config.
         all_clusters = config_store.get_cluster_information()
         turn_nodes_on(latest_config, all_clusters)
         turn_off_idle_nodes(latest_config)

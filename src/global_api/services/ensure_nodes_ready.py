@@ -7,7 +7,23 @@ log = structlog.get_logger()
 
 
 def ensure_nodes_ready(cluster, timeout_s, poll_interval_s: int = 5):
-    """Turn on all nodes in cluster and wait until they are ready."""
+    """Power on cluster nodes and wait until the cluster is ready for traffic.
+
+    Readiness here means:
+    1. Every node reports a usable runtime state (`IDLE` or `WORKING`) and has
+       capacity (`max_slots > 0`).
+    2. No node has in-flight requests, so the cluster is fully settled before
+       the next workload starts.
+
+    For local `k3d` clusters this check is skipped because power-control
+    endpoints are not used there.
+
+    Args:
+        cluster: Cluster configuration object with name, host, port, and k3d flag.
+        timeout_s: Maximum number of seconds to wait for each readiness phase.
+        poll_interval_s: Seconds between status checks.
+
+    """
     if cluster.k3d:
         return
 
