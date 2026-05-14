@@ -11,18 +11,18 @@ from src.global_api.services.dk_energy import get_dk_hourly
 
 CONSTRAINTS = {
     0: {
-        "FR": {
+        "PT": {
             "pv": {"max": 0.00000001},
         },
-        "PL": {
+        "AL": {
             "pv": {"max": 0.0000001},
         }
     },
     1: {
-        "FR": {
+        "PT": {
             "pv": {"max": 0.01},
         },
-        "PL": {
+        "AL": {
             "pv": {"min": 50},
         }
     },
