@@ -251,60 +251,62 @@ class K3dTestRunner:
         return summary
 
 
-# @pytest.mark.integration
-# def test_k3d_default():
-#     """Balanced default scenario."""
-#     config = get_test_config()
-#     (
-#         K3dTestRunner(config)
-#         .assert_total_requests(min_count=3, max_count=3)
-#         .assert_success_rate(min_rate=1)
-#         .run(config.start.duration_time_s)
-#     )
+@pytest.mark.integration
+def test_k3d_default():
+    """Balanced default scenario."""
+    config = get_test_config()
+    (
+        K3dTestRunner(config)
+        .assert_total_requests(min_count=3, max_count=3)
+        .assert_success_rate(min_rate=1)
+        .run(config.start.duration_time_s)
+    )
 
 
-# @pytest.mark.integration
-# def test_k3d_high_load():
-#     """Higher request-rate scenario."""
-#     config = get_test_config()
-#     config.workload.request_per_minute = 20
+@pytest.mark.integration
+def test_k3d_high_load():
+    """Higher request-rate scenario."""
+    config = get_test_config()
+    config.workload.request_per_minute = 20
 
-#     (
-#         K3dTestRunner(config)
-#         .assert_total_requests(min_count=10, max_count=10)
-#         .assert_success_rate(min_rate=1)
-#         .run(config.start.duration_time_s)
-#     )
+    (
+        K3dTestRunner(config)
+        .assert_total_requests(min_count=20, max_count=20)
+        .assert_success_rate(min_rate=1)
+        .run(config.start.duration_time_s)
+    )
 
 
-# @pytest.mark.integration
-# def test_k3d_switch_clusters():
-#     """Test it choose one cluster over another with weights and then change when data changed.
+@pytest.mark.integration
+def test_k3d_switch_clusters():
+    """Test it choose one cluster over another with weights and then change when data changed.
 
-#     PV DATA:
-#     hour0 Netherland PV = 372.78
-#     hour0 Portugal PV = 304.02
+    PV DATA:
+    hour0 Netherland PV = 372.78
+    hour0 Portugal PV = 304.02
 
-#     hour1 Netherland PV = 570.09
-#     hour1 Portugal PV = 606.825
+    hour1 Netherland PV = 570.09
+    hour1 Portugal PV = 606.825
 
-#     Therefore expected to swith cluster after one minute.
-#     """
-#     config = get_test_config()
-#     config.name = config.name + "NL_AND_PT"
-#     config.start.start_time_simulated = "01/03/2026 09:59:00"
-#     config.start.duration_time_s = 120  # enough to overlap hours
-#     config.workload.request_per_minute = 6
-#     config.weights.gco2 = 0.98
-#     config.weights.cost = 0.01
-#     config.weights.latency = 0.01
-#     config.clusters[0].simulated_country_code = "NL"  # DK control is simulated in Netherlands.
-#     (
-#         K3dTestRunner(config)
-#         .assert_total_requests(min_count=12, max_count=12)
-#         .assert_success_rate(min_rate=1)
-#         .run(config.start.duration_time_s)
-#     )
+    Therefore expected to swith cluster after one minute.
+    """
+    config = get_test_config()
+    config.name = config.name + "PL_AND_FR"
+    config.start.start_time_simulated = "25/03/2026 04:59:00"
+    config.start.duration_time_s = 120  # enough to overlap hours
+    config.workload.request_per_minute = 6
+    config.weights.gco2 = 0.98
+    config.weights.cost = 0.01
+    config.weights.latency = 0.01
+    config.clusters[0].simulated_country_code = "FR"  # DK control is simulated in France.
+    config.clusters[1].simulated_country_code = "PL"  # PT control is simulated in Poland.
+    (
+        K3dTestRunner(config)
+        .assert_total_requests(min_count=12, max_count=12)
+        .assert_success_rate(min_rate=1)
+        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=0)
+        .run(config.start.duration_time_s)
+    )
 
 
 skip_on_ci = pytest.mark.skipif(
@@ -350,6 +352,6 @@ def test_k3d_switch_clusters_with_dk():
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
-        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=2)
+        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=0)
         .run(config.start.duration_time_s)
     )
