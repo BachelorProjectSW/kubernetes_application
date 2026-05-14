@@ -376,26 +376,17 @@ skip_on_ci = pytest.mark.skipif(
 def test_k3d_switch_clusters_with_dk():
     """Test it choose one cluster over another with weights and then change when data changed.
 
-    PV DATA:
-    hour0 DK generation = 74,6
-    hour0 DK consumption = 253,83
-    hour0 DK gco2 = 76
-    hour0 France PV = 0.0
-    hour0 France gco2 = 22
-
-    hour1 DK generation = 541,76
-    hour1 DK consumption = 241,37
-    hour1 DK gco2 = 64
-    hour1 France PV = 0.0
-    hour1 France gco2 = 21
-
-    Therefore expected to swith from DK -> FR after one minute.
-    As France gco2 is lower than DK when no surplus energy from microgrid.
+    Hour0 is none surplus energy in both dk and france.
+    but gco2 is lower in france therefore starting with france.
+    Afterward there is still no sun in france however wind turbine start
+    dk hour1: 
+    generation   : 783.32
+    consumption  : 218.49
     """
     config = get_test_config()
 
     config.name = config.name + "DK_AND_FR"
-    config.start.start_time_simulated = "1/02/2025 08:59:00"
+    config.start.start_time_simulated = "24/03/2025 22:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
@@ -409,7 +400,7 @@ def test_k3d_switch_clusters_with_dk():
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
         .assert_which_cluster_is_asserted(
-            ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
+            ["pt", "pt", "pt", "pt", "pt", "pt", "dk", "dk", "dk", "dk", "dk", "dk"],
             max_errors=2
         )
         .run(config.start.duration_time_s)
