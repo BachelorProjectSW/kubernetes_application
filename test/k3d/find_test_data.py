@@ -27,7 +27,7 @@ CONSTRAINTS = {
         }
     },
 }
-
+PV_CAPACITY_W = 1500
 
 START_DATE = datetime(2026, 2, 26, tzinfo=timezone.utc)
 
