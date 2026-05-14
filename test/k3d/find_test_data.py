@@ -225,6 +225,8 @@ class TestDataFinder:
             print(f"\nDAY {day + 1}: {current_date.date()}")
 
             for hour in range(24):
+                if hour >= 8 and hour <=16: 
+                    continue  
                 base_time = current_date + timedelta(hours=hour)
 
                 if self._check_timeline(base_time):
