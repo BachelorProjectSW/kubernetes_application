@@ -166,8 +166,8 @@ class EnergyConfig(BaseModel):
 
     # Power consumption per node (watts)
     node_power_off_w: float = 0
-    node_power_idle_w: float = 5
-    node_power_active_w: float = 8
+    node_power_idle_w: float = 1.19
+    node_power_active_w: float = 6.10
 
     # How many nanos each nano is scaled up to
     power_scale_factor: int = 50
