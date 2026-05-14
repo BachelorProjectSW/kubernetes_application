@@ -11,27 +11,19 @@ from src.global_api.services.dk_energy import get_dk_hourly
 
 CONSTRAINTS = {
     0: {
-        "DK": {
-            "surplus": {"max": 0},
-        },
-        "DK-DK1": {
-            "gco2": {"max": 10000},
-        },
         "FR": {
+            "pv": {"max": 0.00000001},
+        },
+        "PL": {
             "pv": {"max": 0.0000001},
-            "gco2": {"max": 10000},
         }
     },
     1: {
-        "DK": {
-            "surplus": {"min": 50},
-        },
-        "DK-DK1": {
-            "gco2": {"max": 10000},
-        },
         "FR": {
-            "pv": {"max": 0.0000001},
-            "gco2": {"max": 10000},
+            "pv": {"max": 0.01},
+        },
+        "PL": {
+            "pv": {"min": 50},
         }
     },
 }
