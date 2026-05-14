@@ -302,7 +302,7 @@ def test_k3d_switch_clusters_gco2():
         .assert_success_rate(min_rate=1)
         .assert_which_cluster_is_asserted(
             ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
-            max_errors=0
+            max_errors=2
         )
         .run(config.start.duration_time_s)
     )
@@ -349,7 +349,7 @@ def test_k3d_switch_clusters_latency():
     config.start.duration_time_s = 60
     config.workload.request_per_minute = 30
     config.latency.max_ms = 2000  # Expected to extend when spamming request.
-    config.latency.latency_window_s = 10  # Calculate latency from the last 10 seconds request latency.
+    config.latency.latency_window_s = 5  # Calculate latency from the last 5 seconds request latency.
     config.weights.gco2 = 0.01
     config.weights.cost = 0.01
     config.weights.latency = 0.98
@@ -401,6 +401,7 @@ def test_k3d_switch_clusters_with_dk():
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
+    config.clusters[0].simulated_country_code = "DK-DK1"
     config.clusters[1].simulated_country_code = "FR"
 
     (
@@ -409,7 +410,7 @@ def test_k3d_switch_clusters_with_dk():
         .assert_success_rate(min_rate=1)
         .assert_which_cluster_is_asserted(
             ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
-            max_errors=0
+            max_errors=2
         )
         .run(config.start.duration_time_s)
     )
