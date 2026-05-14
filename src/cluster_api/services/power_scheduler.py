@@ -293,6 +293,10 @@ def wait_for_nodes_to_be_ready(
             if capacity_ready:
                 ready_nodes.append(node)
 
+        for node in ready_nodes:
+            if node not in {WorkerStatus.IDLE, WorkerStatus.WORKING}:
+                node.status = WorkerStatus.IDLE
+                log_node_status_snapshot(cluster_config.cluster_config.name,node)
         if len(ready_nodes) == len(worker_nodes):
             return True
 
