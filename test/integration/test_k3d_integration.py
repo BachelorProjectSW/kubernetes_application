@@ -345,8 +345,7 @@ def test_k3d_switch_clusters_with_dk():
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
-    config.clusters[1].simulated_country_code = "SI"
-    config.clusters[0].simulated_country_code = "LU"
+    config.clusters[1].simulated_country_code = "FR"
 
     (
         K3dTestRunner(config)

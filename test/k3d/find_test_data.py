@@ -11,7 +11,7 @@ from src.global_api.services.dk_energy import get_dk_hourly
 
 CONSTRAINTS = {
     0: {
-        "DL": {
+        "DE": {
             "pv": {"max": 0.00000001},
         },
         "PL": {
@@ -19,7 +19,7 @@ CONSTRAINTS = {
         }
     },
     1: {
-        "DL": {
+        "DE": {
             "pv": {"max": 0.01},
         },
         "PL": {
