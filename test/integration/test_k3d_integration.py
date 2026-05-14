@@ -292,7 +292,7 @@ def test_k3d_switch_clusters():
     """
     config = get_test_config()
     config.name = config.name + "PL_AND_FR"
-    config.start.start_time_simulated = "26/02/2026 04:59:00"
+    config.start.start_time_simulated = "26/02/2026 07:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
