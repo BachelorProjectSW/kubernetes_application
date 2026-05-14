@@ -315,15 +315,15 @@ def test_k3d_switch_clusters_cost():
     But 08:00 pv is rising in poland and therefore renewable energy.
     """
     config = get_test_config()
-    config.name = config.name + "DE_AND_PL"
-    config.start.start_time_simulated = "26/02/2026 07:59:00"
+    config.name = config.name + "DE_AND_NL_COST"
+    config.start.start_time_simulated = "03/03/2026 04:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.01
     config.weights.cost = 0.98
     config.weights.latency = 0.01
     config.clusters[0].simulated_country_code = "DE"  # DK control is simulated in Germany.
-    config.clusters[1].simulated_country_code = "PL"  # PT control is simulated in Poland.
+    config.clusters[1].simulated_country_code = "NL"  # PT control is simulated in Netherland.
     (
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
