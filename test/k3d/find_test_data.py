@@ -11,10 +11,10 @@ from src.global_api.services.dk_energy import get_dk_hourly
 
 CONSTRAINTS = {
     0: {
-        "PT": {
+        "TR": {
             "pv": {"max": 0.00000001},
         },
-        "AL": {
+        "PT": {
             "pv": {"max": 0.0000001},
         }
     },
@@ -22,7 +22,7 @@ CONSTRAINTS = {
         "PT": {
             "pv": {"max": 0.01},
         },
-        "AL": {
+        "TR": {
             "pv": {"min": 50},
         }
     },
@@ -226,7 +226,7 @@ class TestDataFinder:
             print(f"\nDAY {day + 1}: {current_date.date()}")
 
             for hour in range(24):
-                if hour > 8 or hour < 3:
+                if hour >= 23 or hour < 20:
                     continue
                 base_time = current_date + timedelta(hours=hour)
 
