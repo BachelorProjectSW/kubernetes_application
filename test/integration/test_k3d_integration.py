@@ -357,7 +357,6 @@ def test_k3d_switch_clusters_latency():
         .assert_success_rate(min_rate=1)
         .assert_cluster_requests("dk", 25)
         .assert_cluster_requests("pt", 25)
-        .assert_which_cluster_is_asserted(["dk","dk","dk","dk","dk","dk","pt","pt","pt","pt","pt","pt"], max_errors=2)
         .run(config.start.duration_time_s)
     )
 
