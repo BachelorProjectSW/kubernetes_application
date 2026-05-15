@@ -379,7 +379,7 @@ def test_k3d_switch_clusters_with_dk():
     Hour0 is none surplus energy in both dk and france.
     but gco2 is lower in france therefore starting with france.
     Afterward there is still no sun in france however wind turbine start
-    dk hour1: 
+    dk hour1:
     generation   : 783.32
     consumption  : 218.49
     """

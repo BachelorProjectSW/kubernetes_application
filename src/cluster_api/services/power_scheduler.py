@@ -297,7 +297,7 @@ def wait_for_nodes_to_be_ready(
             log.debug("cluster_api.pod.should_be_ready", node=node.name, status=node.status)
             if node.status not in {WorkerStatus.IDLE, WorkerStatus.WORKING}:
                 node.status = WorkerStatus.IDLE
-                log_node_status_snapshot(cluster_config.cluster_config.name,node)
+                log_node_status_snapshot(cluster_config.cluster_config.name, node)
         if len(ready_nodes) == len(worker_nodes):
             return True
 
