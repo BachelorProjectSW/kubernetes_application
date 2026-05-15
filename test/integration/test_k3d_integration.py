@@ -380,13 +380,13 @@ def test_k3d_switch_clusters_with_dk():
     but gco2 is lower in france therefore starting with france.
     Afterward there is still no sun in france however wind turbine start
     dk hour1:
-    generation   : 783.32
-    consumption  : 218.49
+    generation   : 541.76
+    consumption  : 241.37
     """
     config = get_test_config()
 
     config.name = config.name + "DK_AND_FR"
-    config.start.start_time_simulated = "24/03/2026 22:59:00"
+    config.start.start_time_simulated = "24/03/2026 04:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98

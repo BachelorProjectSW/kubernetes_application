@@ -11,25 +11,30 @@ from src.global_api.services.dk_energy import get_dk_hourly
 
 CONSTRAINTS = {
     0: {
-        "DE": {
-            "pv": {"max": 0.00000001},
+        "DK": {
+            "surplus": {"max": 0},
         },
-        "PL": {
+        "DK-DK1": {
+            "gco2": {"max": 50000000},
+        },
+        "FR": {
             "pv": {"max": 0.0000001},
         }
     },
     1: {
-        "DE": {
-            "pv": {"max": 0.01},
+        "DK": {
+            "surplus": {"min": 50},
         },
-        "PL": {
-            "pv": {"min": 50},
+        "DK-DK1": {
+            "gco2": {"max": 50000000},
+        },
+        "FR": {
+            "pv": {"max": 0.0000001},
         }
     },
 }
 PV_CAPACITY_W = 1500
-
-START_DATE = datetime(2026, 2, 26, tzinfo=timezone.utc)
+START_DATE = datetime(2026, 3, 25, tzinfo=timezone.utc)
 
 NUM_DAYS = 30
 
