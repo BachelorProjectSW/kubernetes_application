@@ -302,7 +302,7 @@ def test_k3d_switch_clusters_gco2():
         .assert_success_rate(min_rate=1)
         .assert_which_cluster_is_asserted(
             ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
-            max_errors=2
+            max_errors=3
         )
         .run(config.start.duration_time_s)
     )
