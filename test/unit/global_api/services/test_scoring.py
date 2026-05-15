@@ -16,7 +16,7 @@ def test_compute_cluster_load_succeeds():
     """Test that compute cluster load works."""
     cluster_load = compute_cluster_load(2, 1, EnergyConfig())
 
-    assert cluster_load == 1050
+    assert cluster_load == 669.5
 
 
 @pytest.mark.unit

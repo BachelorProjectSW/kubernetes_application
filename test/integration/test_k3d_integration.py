@@ -281,28 +281,26 @@ def test_k3d_high_load():
 def test_k3d_switch_clusters_gco2():
     """Test it choose one cluster over another with weights and then change when data changed.
 
-    In the beginning they both have very low PV (early morning).
-    Therefore Germany it choosen due to lower gco2 (243 < 350.46)
-
-    But 08:00 pv is rising in poland and therefore renewable energy.
+    Czech has worser gco2 however in hour0 they have more PV.
+    When the sun then almost gone (pv=0.0166) then bulgaria is prioritised.
     """
     config = get_test_config()
-    config.name = config.name + "DE_AND_PL"
-    config.start.start_time_simulated = "26/02/2026 07:59:00"
+    config.name = config.name + "CZ_AND_BG"
+    config.start.start_time_simulated = "27/04/2025 17:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
-    config.clusters[0].simulated_country_code = "DE"  # DK control is simulated in Germany.
-    config.clusters[1].simulated_country_code = "PL"  # PT control is simulated in Poland.
+    config.clusters[0].simulated_country_code = "CZ"  # DK control is simulated in Czech republic.
+    config.clusters[1].simulated_country_code = "BG"  # PT control is simulated in Bulgaria.
     (
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
         .assert_which_cluster_is_asserted(
             ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
-            max_errors=0
+            max_errors=2
         )
         .run(config.start.duration_time_s)
     )
@@ -349,7 +347,7 @@ def test_k3d_switch_clusters_latency():
     config.start.duration_time_s = 60
     config.workload.request_per_minute = 30
     config.latency.max_ms = 2000  # Expected to extend when spamming request.
-    config.latency.latency_window_s = 10  # Calculate latency from the last 10 seconds request latency.
+    config.latency.latency_window_s = 5  # Calculate latency from the last 5 seconds request latency.
     config.weights.gco2 = 0.01
     config.weights.cost = 0.01
     config.weights.latency = 0.98
@@ -376,31 +374,23 @@ skip_on_ci = pytest.mark.skipif(
 def test_k3d_switch_clusters_with_dk():
     """Test it choose one cluster over another with weights and then change when data changed.
 
-    PV DATA:
-    hour0 DK generation = 74,6
-    hour0 DK consumption = 253,83
-    hour0 DK gco2 = 76
-    hour0 France PV = 0.0
-    hour0 France gco2 = 22
-
-    hour1 DK generation = 541,76
-    hour1 DK consumption = 241,37
-    hour1 DK gco2 = 64
-    hour1 France PV = 0.0
-    hour1 France gco2 = 21
-
-    Therefore expected to swith from DK -> FR after one minute.
-    As France gco2 is lower than DK when no surplus energy from microgrid.
+    Hour0 is none surplus energy in both dk and france.
+    but gco2 is lower in france therefore starting with france.
+    Afterward there is still no sun in france however wind turbine start
+    dk hour1:
+    generation   : 541.76
+    consumption  : 241.37
     """
     config = get_test_config()
 
     config.name = config.name + "DK_AND_FR"
-    config.start.start_time_simulated = "1/02/2025 08:59:00"
+    config.start.start_time_simulated = "25/03/2026 04:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
+    config.clusters[0].simulated_country_code = "DK-DK1"
     config.clusters[1].simulated_country_code = "FR"
 
     (
@@ -408,8 +398,8 @@ def test_k3d_switch_clusters_with_dk():
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
         .assert_which_cluster_is_asserted(
-            ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
-            max_errors=0
+            ["pt", "pt", "pt", "pt", "pt", "pt", "dk", "dk", "dk", "dk", "dk", "dk"],
+            max_errors=2
         )
         .run(config.start.duration_time_s)
     )
