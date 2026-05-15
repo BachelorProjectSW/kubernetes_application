@@ -281,7 +281,7 @@ def test_k3d_high_load():
 def test_k3d_switch_clusters_gco2():
     """Test it choose one cluster over another with weights and then change when data changed.
 
-    Czech has worser gco2 however in hour0 they have more PV. 
+    Czech has worser gco2 however in hour0 they have more PV.
     When the sun then almost gone (pv=0.0166) then bulgaria is prioritised.
     """
     config = get_test_config()
@@ -304,6 +304,7 @@ def test_k3d_switch_clusters_gco2():
         )
         .run(config.start.duration_time_s)
     )
+
 
 @pytest.mark.integration
 def test_k3d_switch_clusters_cost():
