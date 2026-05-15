@@ -281,32 +281,29 @@ def test_k3d_high_load():
 def test_k3d_switch_clusters_gco2():
     """Test it choose one cluster over another with weights and then change when data changed.
 
-    In the beginning they both have very low PV (early morning).
-    Therefore Germany it choosen due to lower gco2 (243 < 350.46)
-
-    But 08:00 pv is rising in poland and therefore renewable energy.
+    Czech has worser gco2 however in hour0 they have more PV. 
+    When the sun then almost gone (pv=0.0166) then bulgaria is prioritised.
     """
     config = get_test_config()
-    config.name = config.name + "DE_AND_PL"
-    config.start.start_time_simulated = "26/02/2026 07:59:00"
+    config.name = config.name + "CZ_AND_BG"
+    config.start.start_time_simulated = "27/04/2025 17:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
     config.weights.cost = 0.01
     config.weights.latency = 0.01
-    config.clusters[0].simulated_country_code = "DE"  # DK control is simulated in Germany.
-    config.clusters[1].simulated_country_code = "PL"  # PT control is simulated in Poland.
+    config.clusters[0].simulated_country_code = "CZ"  # DK control is simulated in Czech republic.
+    config.clusters[1].simulated_country_code = "BG"  # PT control is simulated in Bulgaria.
     (
         K3dTestRunner(config)
         .assert_total_requests(min_count=12, max_count=12)
         .assert_success_rate(min_rate=1)
         .assert_which_cluster_is_asserted(
             ["dk", "dk", "dk", "dk", "dk", "dk", "pt", "pt", "pt", "pt", "pt", "pt"],
-            max_errors=3
+            max_errors=2
         )
         .run(config.start.duration_time_s)
     )
-
 
 @pytest.mark.integration
 def test_k3d_switch_clusters_cost():
@@ -386,7 +383,7 @@ def test_k3d_switch_clusters_with_dk():
     config = get_test_config()
 
     config.name = config.name + "DK_AND_FR"
-    config.start.start_time_simulated = "24/03/2026 04:59:00"
+    config.start.start_time_simulated = "25/03/2026 04:59:00"
     config.start.duration_time_s = 120  # enough to overlap hours
     config.workload.request_per_minute = 6
     config.weights.gco2 = 0.98
