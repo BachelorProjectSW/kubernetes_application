@@ -280,7 +280,7 @@ def wait_for_nodes_to_be_ready(
 
         for node in worker_nodes:
             pod_ready = check_if_llama_pod_is_ready(node, api_client, cluster_name)
-
+            log.debug("cluster_api.pod.pod_ready", pod_ready=pod_ready, node=node.name)
             if not pod_ready:
                 continue
 
@@ -289,12 +289,13 @@ def wait_for_nodes_to_be_ready(
                 continue
 
             capacity_ready = refresh_worker_capacity(node, cluster_config)  # Valid capacity >0
-
+            log.debug("cluster_api.pod.capacity", capacity_ready=capacity_ready, node=node.name)
             if capacity_ready:
                 ready_nodes.append(node)
 
         for node in ready_nodes:
-            if node not in {WorkerStatus.IDLE, WorkerStatus.WORKING}:
+            log.debug("cluster_api.pod.should_be_ready", node=node.name, status=node.status)
+            if node.status not in {WorkerStatus.IDLE, WorkerStatus.WORKING}:
                 node.status = WorkerStatus.IDLE
                 log_node_status_snapshot(cluster_config.cluster_config.name,node)
         if len(ready_nodes) == len(worker_nodes):
