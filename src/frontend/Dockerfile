@@ -13,6 +13,11 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Receive the build arg from compose
+ARG VITE_CONFIG_API_URL
+# Write it to .env.production so Vite picks it up during build
+RUN echo "VITE_CONFIG_API_URL=$VITE_CONFIG_API_URL" > .env.production
+
 # Build the app
 RUN npm run build
 

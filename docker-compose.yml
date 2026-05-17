@@ -14,6 +14,8 @@ services: #Containers it will run
   frontend:
     build:
       context: ./src/frontend
+      args:
+        VITE_CONFIG_API_URL: ${VITE_CONFIG_API_URL}
     restart: unless-stopped
     ports:
       - "8091:80"
