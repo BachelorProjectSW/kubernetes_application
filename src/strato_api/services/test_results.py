@@ -323,19 +323,20 @@ def get_test_results(config_id: str) -> dict:
             )
             energy_kwh = energy_wh / 1000.0
 
-            # Approximate the microgrid (PV) for one hour.
-            interval_requests = [
-                r
-                for r in cluster_requests
-                if interval_start <= r.timestamp < interval_end
-                or (is_last_snapshot and r.timestamp == interval_end)
-            ]
+            # Approximate the microgrid fraction for this interval
+            interval_requests = []
+            for request in cluster_requests:
+                inside_interval = interval_start <= request.timestamp < interval_end
+                on_final_boundary = is_last_snapshot and request.timestamp == interval_end
+                if inside_interval or on_final_boundary:
+                    interval_requests.append(request)
+
             if interval_requests:
-                avg_renewable_fraction = sum(
-                    r.renewable_fraction for r in interval_requests
-                ) / len(interval_requests)
+                total_renewable_fraction = sum(r.renewable_fraction for r in interval_requests)
+                avg_renewable_fraction = total_renewable_fraction / len(interval_requests)
             else:
                 avg_renewable_fraction = 0.0
+
             grid_fraction = max(0.0, 1.0 - avg_renewable_fraction)
 
             # Apply blended (PV-netted) market factors to interval energy.
