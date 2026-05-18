@@ -323,12 +323,7 @@ def get_test_results(config_id: str) -> dict:
             )
             energy_kwh = energy_wh / 1000.0
 
-            # Approximate the microgrid (PV) offset for this cluster-hour by
-            # averaging the renewable fraction recorded on requests routed to
-            # this cluster during the interval. Only the grid-supplied share of
-            # the energy emits carbon / costs money; the PV-supplied share is
-            # free and carbon-neutral. Intervals with no requests fall back to
-            # the raw grid rate (renewable share conservatively assumed zero).
+            # Approximate the microgrid (PV) for one hour.
             interval_requests = [
                 r
                 for r in cluster_requests
