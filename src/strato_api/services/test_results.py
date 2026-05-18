@@ -14,19 +14,21 @@ from ...custom_logging.util.log_reader import (
 )
 
 
-def _request_energy_kwh(request: RequestLog) -> float:
-    """Estimate energy used by one request in kWh.
+def _request_energy_kwh(request: RequestLog, energy: EnergyConfig) -> float:
+    """Estimate the marginal energy used by one request in kWh.
 
-    The estimate is based on power (W) multiplied by duration (hours).
 
     Args:
-        request: Request log entry containing cluster load and latency.
+        request: Request log entry containing the cluster-side timing.
+        energy: Energy constants and scaling factors.
 
     Returns:
-        float: Estimated energy use in kWh.
+        float: Estimated energy use in kWh for this request.
 
     """
-    return (request.cluster_load_w / 1000.0) * (request.latency_ms / 3_600_000.0)
+    node_power_w = energy.node_power_active_w * energy.power_scale_factor
+    inference_ms = request.cluster_llama_inference_ms or 0.0
+    return (node_power_w / 1000.0) * (inference_ms / 3_600_000.0)
 
 
 def _build_node_status_timeline(node_logs: list[NodeStatusLog]) -> list[dict]:
@@ -209,8 +211,9 @@ def get_test_results(config_id: str) -> dict:
     cumulative_cost_eur = 0.0
 
     for entry in sorted_requests:
-        # Convert per-request load + time into request-level carbon and cost.
-        energy_kwh = _request_energy_kwh(entry)
+        # Convert per-request inference energy + blended rates into
+        # request-level carbon and cost.
+        energy_kwh = _request_energy_kwh(entry, config.energy)
         request_gco2_g = energy_kwh * entry.blended_carbon_gco2_per_kwh
         request_cost_eur = energy_kwh * entry.blended_cost_eur_per_kwh
         cumulative_gco2_g += request_gco2_g
@@ -306,6 +309,7 @@ def get_test_results(config_id: str) -> dict:
     total_cost_eur = 0.0
 
     for cluster_name, snapshots in snapshots_by_cluster.items():
+        cluster_requests = [r for r in sorted_requests if r.cluster == cluster_name]
         for i, snapshot in enumerate(snapshots):
             interval_start = snapshot.timestamp
             is_last_snapshot = i + 1 == len(snapshots)
@@ -320,9 +324,29 @@ def get_test_results(config_id: str) -> dict:
             )
             energy_kwh = energy_wh / 1000.0
 
-            # Apply market snapshot factors to interval energy to get totals.
-            total_gco2_g += energy_kwh * snapshot.carbon_gco2_per_kwh
-            total_cost_eur += energy_kwh * snapshot.cost_eur_per_kwh
+            # Approximate the microgrid (PV) offset for this cluster-hour by
+            # averaging the renewable fraction recorded on requests routed to
+            # this cluster during the interval. Only the grid-supplied share of
+            # the energy emits carbon / costs money; the PV-supplied share is
+            # free and carbon-neutral. Intervals with no requests fall back to
+            # the raw grid rate (renewable share conservatively assumed zero).
+            interval_requests = [
+                r
+                for r in cluster_requests
+                if interval_start <= r.timestamp < interval_end
+                or (is_last_snapshot and r.timestamp == interval_end)
+            ]
+            if interval_requests:
+                avg_renewable_fraction = sum(
+                    r.renewable_fraction for r in interval_requests
+                ) / len(interval_requests)
+            else:
+                avg_renewable_fraction = 0.0
+            grid_fraction = max(0.0, 1.0 - avg_renewable_fraction)
+
+            # Apply blended (PV-netted) market factors to interval energy.
+            total_gco2_g += energy_kwh * snapshot.carbon_gco2_per_kwh * grid_fraction
+            total_cost_eur += energy_kwh * snapshot.cost_eur_per_kwh * grid_fraction
 
     return {
         "config_id": config_id,
