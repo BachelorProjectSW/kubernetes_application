@@ -17,7 +17,6 @@ from ...custom_logging.util.log_reader import (
 def _request_energy_kwh(request: RequestLog, energy: EnergyConfig) -> float:
     """Estimate the marginal energy used by one request in kWh.
 
-
     Args:
         request: Request log entry containing the cluster-side timing.
         energy: Energy constants and scaling factors.
