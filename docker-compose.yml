@@ -8,6 +8,7 @@ services: #Containers it will run
       - "8090:8090"
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - ELECTRICITY_MAPS_API_KEY=${ELECTRICITY_MAPS_API_KEY}
     extra_hosts:
       - "host.docker.internal:host-gateway" #This is to reach the postgres database, as they run on different networks
 
