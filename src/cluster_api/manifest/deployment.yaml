@@ -32,9 +32,17 @@ spec:
       containers:
         - name: cluster-api
           image: ghcr.io/bachelorprojectsw/cluster-api:5a64fdd7e5fde7cdaf634edd53f69de6064a11ec
-
           imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: gpiochip4
+              mountPath: /dev/gpiochip4
           ports:
             - containerPort: 8040
               hostPort: 8040
               protocol: TCP
+      volumes:
+        - name: gpiochip4
+          hostPath:
+            path: /dev/gpiochip4
