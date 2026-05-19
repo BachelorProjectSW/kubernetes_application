@@ -53,9 +53,9 @@ def turn_on_node(worker_node: WorkerNode, cluster_name: str):
             worker_node=worker_node.name,
             gpio=gpio,
         )
-        run_cmd(f"sudo gpioset gpiochip4 {gpio}=1")
+        run_cmd(f"gpioset gpiochip4 {gpio}=1")
         time.sleep(0.5)
-        run_cmd(f"sudo gpioset gpiochip4 {gpio}=0")
+        run_cmd(f"gpioset gpiochip4 {gpio}=0")
         log.debug(
             "cluster_api.power.turn_on_gpio_pulse_completed",
             cluster_name=cluster_name,

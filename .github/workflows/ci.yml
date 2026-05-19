@@ -27,7 +27,6 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt update
-          sudo apt install -y python3-lgpio
 
       - name: Install dependencies
         run: |
