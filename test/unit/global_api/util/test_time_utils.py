@@ -6,15 +6,13 @@ from src.global_api.util.time_utils import SIMULATED_TIME_FORMAT, compute_simula
 from test.k3d.cluster_configs.test_config import get_test_config
 
 
-pytestmark = pytest.mark.unit
-
-
 def _simulated_start() -> datetime:
     """Parse the simulated start string from the canonical test config."""
     raw = get_test_config().start.start_time_simulated
     return datetime.strptime(raw, SIMULATED_TIME_FORMAT).replace(tzinfo=timezone.utc)
 
 
+@pytest.mark.unit
 def test_zero_elapsed_returns_simulated_start():
     """When real start is 'now', simulated time equals the simulated start."""
     config = get_test_config()
@@ -25,6 +23,7 @@ def test_zero_elapsed_returns_simulated_start():
     assert abs((result - _simulated_start()).total_seconds()) < 2
 
 
+@pytest.mark.unit
 def test_elapsed_real_time_advances_the_simulated_clock():
     """An hour of real elapsed time advances simulated time by an hour."""
     config = get_test_config()
@@ -36,6 +35,7 @@ def test_elapsed_real_time_advances_the_simulated_clock():
     assert abs((result - expected).total_seconds()) < 2
 
 
+@pytest.mark.unit
 def test_accepts_zulu_suffix_real_start():
     """A real-start timestamp using a trailing 'Z' is parsed as UTC."""
     config = get_test_config()
@@ -47,6 +47,7 @@ def test_accepts_zulu_suffix_real_start():
     assert abs((result - _simulated_start()).total_seconds()) < 5
 
 
+@pytest.mark.unit
 def test_naive_real_start_is_treated_as_utc():
     """A real-start timestamp without tz info is assumed to be UTC."""
     config = get_test_config()
@@ -57,6 +58,7 @@ def test_naive_real_start_is_treated_as_utc():
     assert abs((result - _simulated_start()).total_seconds()) < 5
 
 
+@pytest.mark.unit
 def test_invalid_simulated_format_raises_value_error():
     """A malformed simulated start string fails fast with ValueError."""
     with pytest.raises(ValueError):

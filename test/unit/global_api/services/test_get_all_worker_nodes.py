@@ -10,9 +10,6 @@ from test.k3d.cluster_configs.test_config import get_test_config
 from test.k3d.cluster_configs.worker_nodes import UnitTestWorkerNodes
 
 
-pytestmark = pytest.mark.unit
-
-
 class _FakeResponse:
     """Minimal stand-in for requests.Response (no MagicMock)."""
 
@@ -37,6 +34,7 @@ def restore_config_store():
     config_store.set(original)
 
 
+@pytest.mark.unit
 def test_aggregates_worker_nodes_from_all_clusters():
     """Nodes returned by every cluster API are concatenated into one list."""
     config_store.set(get_test_config())
@@ -57,6 +55,7 @@ def test_aggregates_worker_nodes_from_all_clusters():
     }
 
 
+@pytest.mark.unit
 def test_failing_cluster_does_not_lose_other_clusters_nodes():
     """A RequestException from one cluster still returns the reachable one."""
     config_store.set(get_test_config())
@@ -71,6 +70,7 @@ def test_failing_cluster_does_not_lose_other_clusters_nodes():
     assert [node["name"] for node in result] == ["n1", "n2", "n3", "n4"]
 
 
+@pytest.mark.unit
 def test_non_list_payload_is_ignored():
     """A cluster returning a non-list payload contributes no nodes."""
     config_store.set(get_test_config())
@@ -87,6 +87,7 @@ def test_non_list_payload_is_ignored():
     assert [node["name"] for node in result] == ["pt1"]
 
 
+@pytest.mark.unit
 def test_returns_empty_when_no_config_is_loaded():
     """With no active configuration the function short-circuits to an empty list."""
     config_store.set(None)
