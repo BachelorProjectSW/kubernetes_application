@@ -1,0 +1,21 @@
+services: #Containers it will run
+  backend:
+    build:
+      context: .
+      dockerfile: src/strato_api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" #This is to reach the postgres database, as they run on different networks
+
+  frontend:
+    build:
+      context: ./src/frontend
+      args:
+        VITE_CONFIG_API_URL: ${VITE_CONFIG_API_URL}
+    restart: unless-stopped
+    ports:
+      - "8091:80"
