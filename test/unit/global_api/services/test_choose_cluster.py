@@ -4,6 +4,7 @@ from src.global_api.services.scoring import choose_cluster
 from test.k3d.cluster_configs.test_config import get_test_config
 from test.k3d.cluster_configs.worker_nodes import UnitTestClusterRuntimeData
 
+
 @pytest.mark.unit
 def test_picks_the_greener_cluster_when_other_factors_are_equal():
     """With equal latency, the fully-renewable cluster outscores the grid one."""
@@ -20,6 +21,7 @@ def test_picks_the_greener_cluster_when_other_factors_are_equal():
 
     assert chosen.name == clusters[0].name
     assert chosen_data is runtime[0]
+
 
 @pytest.mark.unit
 def test_skips_clusters_with_all_nodes_powered_off():
@@ -41,6 +43,7 @@ def test_skips_clusters_with_all_nodes_powered_off():
     assert chosen.name == clusters[1].name
     assert chosen_data is runtime[1]
 
+
 @pytest.mark.unit
 def test_lower_latency_cluster_wins_under_latency_weight():
     """When energy is identical, the cluster with lower latency scores higher."""
@@ -59,6 +62,7 @@ def test_lower_latency_cluster_wins_under_latency_weight():
     )
 
     assert chosen.name == clusters[1].name
+
 
 @pytest.mark.unit
 def test_single_cluster_is_returned_directly():
