@@ -31,7 +31,7 @@ jobs:
 
       - name: Deploy to server
         run: |
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@ci << 'EOF'
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@strato << 'EOF'
             set -e
             cd ~/kubernetes_application
             git fetch origin
