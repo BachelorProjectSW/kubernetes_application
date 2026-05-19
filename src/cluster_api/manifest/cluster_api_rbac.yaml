@@ -12,7 +12,7 @@ metadata:
   name: cluster-api-node-reader
 rules:
   - apiGroups: [""] #Core API group (pods, nodes, services)
-    resources: ["nodes"] #node scope permissions
+    resources: ["nodes", "pods"] #node scope permissions
     verbs: ["get", "list", "watch"] #Get nodes, list nodes, watch changes in nodes
 ---
 apiVersion: rbac.authorization.k8s.io/v1
