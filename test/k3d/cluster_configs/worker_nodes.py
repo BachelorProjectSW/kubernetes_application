@@ -1,4 +1,9 @@
-from src.models.basemodels import ClusterInformation, QuestionConfig, WorkerNode
+from src.models.basemodels import (
+    ClusterInformation,
+    ClusterRuntimeData,
+    QuestionConfig,
+    WorkerNode,
+)
 from src.models.enum import WorkerStatus
 
 from .test_config import get_test_config
@@ -65,3 +70,50 @@ class UnitTestWorkerNodes:
             UnitTestWorkerNodes.make("n3", WorkerStatus.OFF, 3, max_slots=0),
             UnitTestWorkerNodes.make("n4", WorkerStatus.OFF, 4, max_slots=0),
         ]
+
+    @staticmethod
+    def as_payload(worker_nodes: list[WorkerNode]) -> list[dict]:
+        """Serialize worker nodes the way the cluster API returns them over HTTP.
+
+        Use this so tests that exercise an HTTP boundary still source their
+        node data from this fixture instead of hand-built dictionaries.
+        """
+        return [node.model_dump(mode="json") for node in worker_nodes]
+
+
+class UnitTestClusterRuntimeData:
+    """Reusable ClusterRuntimeData fixtures for global-scheduler unit tests."""
+
+    @staticmethod
+    def make(
+        renewable_output_w: float = 0.0,
+        cluster_load_w: float = 1000.0,
+        grid_carbon_intensity: float = 300.0,
+        grid_electricity_price: float = 0.20,
+        avg_latency_ms: float = 1000.0,
+        all_nodes_powered_off: bool = False,
+    ) -> ClusterRuntimeData:
+        """Create a runtime-data row with sensible defaults for tests."""
+        return ClusterRuntimeData(
+            renewable_output_w=renewable_output_w,
+            cluster_load_w=cluster_load_w,
+            grid_carbon_intensity=grid_carbon_intensity,
+            grid_electricity_price=grid_electricity_price,
+            avg_latency_ms=avg_latency_ms,
+            all_nodes_powered_off=all_nodes_powered_off,
+        )
+
+    @classmethod
+    def green(cls) -> ClusterRuntimeData:
+        """Fully renewable cluster: zero blended carbon and cost (best score)."""
+        return cls.make(renewable_output_w=2000.0, cluster_load_w=1000.0)
+
+    @classmethod
+    def dirty(cls) -> ClusterRuntimeData:
+        """Grid-only cluster: full grid carbon and cost (worse score)."""
+        return cls.make(renewable_output_w=0.0, cluster_load_w=1000.0)
+
+    @classmethod
+    def powered_off(cls) -> ClusterRuntimeData:
+        """Return a cluster whose nodes are all off (skipped by scoring)."""
+        return cls.make(all_nodes_powered_off=True)
