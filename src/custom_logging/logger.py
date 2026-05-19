@@ -12,7 +12,7 @@ import os
 log = structlog.get_logger()
 
 # Change the level of logging set to DEBUG for all, info (exclude debug etc...)
-LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG").upper()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "¨CRITICAL").upper()
 # whether the debug, info, error, warning logs should be saved in the DB or just printed.
 SAVE_LOGS_IN_DB = os.getenv("SAVE_LOGS_IN_DB", "FALSE").upper() == "TRUE"
 _LOGGER_CONFIG_ID: str | None = None
