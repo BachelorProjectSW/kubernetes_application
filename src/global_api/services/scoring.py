@@ -104,7 +104,6 @@ def score_cluster(
 ) -> float:
     """Compute the score for a cluster.
 
-
     Args:
         renewable_output_w: Current renewable production in watts.
         cluster_load_w: Current cluster power consumption in watts.
