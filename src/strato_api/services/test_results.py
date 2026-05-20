@@ -72,7 +72,7 @@ def _power_for_status(status: str, energy: EnergyConfig) -> float:
     """
     if status == WorkerStatus.WORKING:
         return energy.node_power_active_w * energy.power_scale_factor
-    if status in (WorkerStatus.IDLE, WorkerStatus.TURNING_ON, WorkerStatus.TURNING_OFF):
+    if status == WorkerStatus.IDLE:
         return energy.node_power_idle_w * energy.power_scale_factor
     return energy.node_power_off_w * energy.power_scale_factor
 
