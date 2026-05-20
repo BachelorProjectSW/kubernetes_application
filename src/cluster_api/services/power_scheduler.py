@@ -7,6 +7,7 @@ from ..util.client_setup import get_api_client
 from ...models.enum import WorkerStatus
 from ...custom_logging.util.log_reader import get_worker_nodes_logs
 from datetime import datetime, timezone
+from .llm import worker_lock
 import subprocess
 import time
 from ...custom_logging.logger import log_node_status_snapshot
@@ -76,32 +77,36 @@ def turn_on_node(worker_node: WorkerNode, cluster_name: str):
 
 
 def turn_off_node(worker_node: WorkerNode, cluster_name: str):
-    """Shut a worker down over SSH after checking it is safe to do so.
+    """Shut a worker down over SSH.
 
-    Args:
-        worker_node: Worker to power off.
-        cluster_name: Name of the cluster the worker belongs to.
-
-    Returns:
-        ``True`` when the shutdown request was sent, otherwise ``False``.
-
+    Assumes the caller has already reserved the node for shutdown by setting
+    status=TURNING_OFF under worker_lock.
     """
     try:
-        log.info("cluster_api.power.turning_off_node", cluster=cluster_name, node=worker_node)
-        worker_node.status = WorkerStatus.TURNING_OFF
-        log_node_status_snapshot(cluster_name, worker_node)
+        log.info(
+            "cluster_api.power.turning_off_node",
+            cluster=cluster_name,
+            node=worker_node,
+        )
+
+        # Small grace period before shutdown.
+        # Do NOT hold worker_lock during this sleep.
         time.sleep(10)
 
-        if worker_node.inflight_requests > 0:
-            worker_node.status = WorkerStatus.IDLE
-            log_node_status_snapshot(cluster_name, worker_node)
-            log.warning(
-                "cluster_api.power.turn_off_aborted_inflight_requests",
-                cluster_name=cluster_name,
-                worker_node=worker_node.name,
-                inflight_requests=worker_node.inflight_requests,
-            )
-            return False
+        # Safety check. In normal cases this should still be 0 because
+        # TURNING_OFF nodes are not eligible in choose_worker_node().
+        with worker_lock:
+            if worker_node.inflight_requests > 0:
+                worker_node.status = WorkerStatus.IDLE
+                log_node_status_snapshot(cluster_name, worker_node)
+
+                log.warning(
+                    "cluster_api.power.turn_off_aborted_inflight_requests",
+                    cluster_name=cluster_name,
+                    worker_node=worker_node.name,
+                    inflight_requests=worker_node.inflight_requests,
+                )
+                return False
 
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -109,19 +114,15 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         client.connect(
             hostname=worker_node.ip,
             username=worker_node.name,
-            password=worker_node.name
+            password=worker_node.name,
         )
 
-        # -S makes sudo read password from stdin
         command = "sudo -S shutdown now"
-
         stdin, stdout, stderr = client.exec_command(command)
 
-        # send password to sudo
         stdin.write(worker_node.name + "\n")
         stdin.flush()
 
-        # read output
         out = stdout.read().decode()
         err = stderr.read().decode()
 
@@ -134,14 +135,22 @@ def turn_off_node(worker_node: WorkerNode, cluster_name: str):
         )
 
         client.close()
-        # Sleep 20 seconds to ensure its turned off.
+
+        # Sleep 20 seconds to ensure it is turned off.
         time.sleep(20)
-        worker_node.status = WorkerStatus.OFF
-        log_node_status_snapshot(cluster_name, worker_node)
+
+        with worker_lock:
+            worker_node.status = WorkerStatus.OFF
+            worker_node.max_slots = 0
+            log_node_status_snapshot(cluster_name, worker_node)
+
         return True
+
     except Exception as e:
-        worker_node.status = WorkerStatus.IDLE
-        log_node_status_snapshot(cluster_name, worker_node)
+        with worker_lock:
+            worker_node.status = WorkerStatus.IDLE
+            log_node_status_snapshot(cluster_name, worker_node)
+
         log.warning(
             "cluster_api.power.turn_off_failed",
             cluster_name=cluster_name,
@@ -445,19 +454,20 @@ def get_idle_time(node_name: str, cluster_name: str) -> float:
 
 
 def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
-    """Turn off workers that have been idle longer than the configured threshold.
+    """Turn off workers that have been idle longer than idle_time.
 
-    Args:
-        idle_time: Minimum idle time in seconds before a node may be powered off.
-        stay_one: Keep one worker running when the cluster would otherwise drop to zero.
+    The important part is atomic:
+    - check node is IDLE
+    - check inflight_requests == 0
+    - check at least one other active node will remain
+    - set status to TURNING_OFF
 
-    Returns:
-        A summary dict when the stay-one guard short-circuits; otherwise ``None``.
-
+    Slow shutdown happens outside worker_lock.
     """
     config = config_store.get()
     cluster_name = config.cluster_config.name
     config_id = config.config_id
+
     if not config_id:
         log.warning(
             "cluster_api.power.turn_off_idle_skipped_missing_config_id",
@@ -466,38 +476,72 @@ def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
         )
         return
 
-    nodes = config.worker_nodes
-
-    # Ensure the same working node (sorted by name) is never turned off.
     nodes = sorted(config.worker_nodes, key=lambda n: n.name)
-    keeper = nodes[0]
 
     for node in nodes:
-        if node is keeper:
-            continue
-        # Only true idle nodes are eligible for automatic power-off.
-        if node.status != WorkerStatus.IDLE:
-            log.debug(
-                "cluster_api.power.turn_off_idle_skipped_status",
-                cluster_name=cluster_name,
-                worker_node=node.name,
-                status=node.status,
-            )
-            continue
+        should_turn_off = False
 
-        # Never power off a node while requests are still inflight.
-        if node.inflight_requests > 0:
-            log.debug(
-                "cluster_api.power.turn_off_idle_skipped_inflight",
-                cluster_name=cluster_name,
-                worker_node=node.name,
-                inflight_requests=node.inflight_requests,
-            )
-            continue
+        with worker_lock:
+            # Only true idle nodes are eligible for automatic power-off.
+            if node.status != WorkerStatus.IDLE:
+                log.debug(
+                    "cluster_api.power.turn_off_idle_skipped_status",
+                    cluster_name=cluster_name,
+                    worker_node=node.name,
+                    status=node.status,
+                )
+                continue
 
-        last_request = get_idle_time(node.name, cluster_name)
-        log.debug("cluster_api.power.last_request", last_request=last_request)
-        if last_request > idle_time:
+            # Never power off a node while requests are still inflight.
+            if node.inflight_requests > 0:
+                log.debug(
+                    "cluster_api.power.turn_off_idle_skipped_inflight",
+                    cluster_name=cluster_name,
+                    worker_node=node.name,
+                    inflight_requests=node.inflight_requests,
+                )
+                continue
+
+            # Keep at least one currently usable worker alive.
+            active_nodes = [
+                n for n in nodes
+                if n.status in {WorkerStatus.IDLE, WorkerStatus.WORKING}
+            ]
+
+            if stay_one and len(active_nodes) <= 1:
+                log.debug(
+                    "cluster_api.power.turn_off_idle_skipped_keep_one_active",
+                    cluster_name=cluster_name,
+                    worker_node=node.name,
+                    active_nodes=[n.name for n in active_nodes],
+                )
+                continue
+
+            last_request = get_idle_time(node.name, cluster_name)
+            log.debug(
+                "cluster_api.power.last_request",
+                worker_node=node.name,
+                last_request=last_request,
+            )
+
+            if last_request <= idle_time:
+                log.debug(
+                    "cluster_api.power.turn_off_idle_skipped_recent_request",
+                    cluster_name=cluster_name,
+                    worker_node=node.name,
+                    last_request_age_s=last_request,
+                    idle_time_s=idle_time,
+                )
+                continue
+
+            # Atomic reservation for shutdown.
+            # After this, handle_llm() cannot select the node.
+            node.status = WorkerStatus.TURNING_OFF
+            log_node_status_snapshot(cluster_name, node)
+            should_turn_off = True
+
+        # Slow operation outside the lock.
+        if should_turn_off:
             log.info(
                 "cluster_api.power.turn_off_idle_node_selected",
                 cluster_name=cluster_name,
@@ -506,11 +550,3 @@ def turn_off_idle_nodes(idle_time: int, stay_one: bool = False):
                 idle_time_s=idle_time,
             )
             turn_off_node(node, cluster_name)
-        else:
-            log.debug(
-                "cluster_api.power.turn_off_idle_skipped_recent_request",
-                cluster_name=cluster_name,
-                worker_node=node.name,
-                last_request_age_s=last_request,
-                idle_time_s=idle_time,
-            )
