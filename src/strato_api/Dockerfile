@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 ENV PYTHONPATH=/app
 
 COPY src/strato_api /app/src/strato_api
+COPY src/global_api /app/src/global_api
 COPY src/custom_logging /app/src/custom_logging
 COPY src/models /app/src/models
 COPY src/db /app/src/db
