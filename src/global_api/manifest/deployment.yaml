@@ -27,7 +27,7 @@ spec:
 
       containers:
         - name: global-api
-          image: ghcr.io/bachelorprojectsw/global-api:844126c31332f9b128c89d39bba63d39a51583a8
+          image: ghcr.io/bachelorprojectsw/global-api:e3cef6da04c88b87e160cb0db2f6d33bd158a24e
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8020
