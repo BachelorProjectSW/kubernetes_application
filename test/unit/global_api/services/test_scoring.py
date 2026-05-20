@@ -78,7 +78,6 @@ def test_score_cluster():
             cost_weight=0.3,
             latency_weight=0.0,
             estimated_latency_ms=1000.0,
-            max_latency_ms=5000.0,
             energy=EnergyConfig(),
         )
 
