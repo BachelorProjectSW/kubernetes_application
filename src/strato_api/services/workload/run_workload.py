@@ -67,6 +67,21 @@ async def execute_workload(
     timeout = aiohttp.ClientTimeout(total=request_timeout_s)
     async with aiohttp.ClientSession(base_url=host, timeout=timeout) as session:
 
+        async def _log_sent_safely(trace_id: str, question_text: str):
+            try:
+                await asyncio.to_thread(
+                    log_sent,
+                    host,
+                    trace_id=trace_id,
+                    payload={"question": question_text},
+                )
+            except Exception as e:
+                log.warning(
+                    "strato.workload.log_sent_failed",
+                    trace_id=trace_id,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
         async def _send_request(ts: float):
             """Send one request at its scheduled offset from workload start.
 
@@ -98,23 +113,33 @@ async def execute_workload(
                     target=f"{host}{endpoint}",
                 )
 
-                # Record that this request is being sent (used by global power scheduler for RPS)
-                try:
-                    log_sent(host, trace_id=trace_id, payload={"question": question.question})
-                except Exception:
-                    pass
+                log.debug(
+                    "strato.workload.post_started",
+                    trace_id=trace_id,
+                    target=f"{host}{endpoint}",
+                )
+
+                # Do not let logging block the actual request.
+                # It runs in the background/threadpool while the HTTP request is sent.
+                asyncio.create_task(_log_sent_safely(trace_id, question.question))
 
                 async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                     request_reached_host = True
                     body = await resp.text()
                     duration_ms = int((time.perf_counter() - request_start) * 1000)
+
                     log.debug(
                         "strato.workload.request_completed",
                         trace_id=trace_id,
                         status_code=resp.status,
                         duration_ms=duration_ms,
                     )
-                    return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
+
+                    return {
+                        "ok": 200 <= resp.status < 300,
+                        "status": resp.status,
+                        "body": body,
+                    }
             except asyncio.CancelledError:
                 log.info("workload.request_cancelled")
                 return {"ok": False, "error": "cancelled"}
@@ -169,9 +194,13 @@ async def execute_workload(
                     "strato.workload.request_failed",
                     trace_id=trace_id,
                     error=str(e),
+                    error_type=type(e).__name__,
                     duration_ms=duration_ms,
                 )
-                return {"ok": False, "error": str(e)}
+                return {
+                    "ok": False,
+                    "error": str(e),
+                    "error_type": type(e).__name__,}
 
         # Create one async task per planned request timestamp.
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
