@@ -51,7 +51,7 @@ def _log_market_snapshot_if_new(
     )
 
 
-def get_microgrid_base_load_w(
+def _get_microgrid_base_load_w(
     cluster: ClusterConfig,
     simulated_time_start: datetime,
     simulated_time_end: datetime,
@@ -160,7 +160,7 @@ def get_cluster_runtime_data(
             cluster_load_w=cluster_load_w,
         )
 
-        microgrid_base_load_w = get_microgrid_base_load_w(
+        microgrid_base_load_w = _get_microgrid_base_load_w(
             cluster,
             simulated_time_start,
             simulated_time_end,

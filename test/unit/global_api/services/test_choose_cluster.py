@@ -16,7 +16,7 @@ def test_picks_the_greener_cluster_when_other_factors_are_equal():
     ]
 
     chosen, chosen_data = choose_cluster(
-        clusters, runtime, config.weights, config.energy
+        clusters, runtime, config.weights, config.energy, config.latency.max_ms
     )
 
     assert chosen.name == clusters[0].name
@@ -37,7 +37,7 @@ def test_skips_clusters_with_all_nodes_powered_off():
     ]
 
     chosen, chosen_data = choose_cluster(
-        clusters, runtime, config.weights, config.energy
+        clusters, runtime, config.weights, config.energy, config.latency.max_ms
     )
 
     assert chosen.name == clusters[1].name
@@ -58,7 +58,7 @@ def test_lower_latency_cluster_wins_under_latency_weight():
     ]
 
     chosen, _ = choose_cluster(
-        clusters, runtime, config.weights, config.energy
+        clusters, runtime, config.weights, config.energy, config.latency.max_ms
     )
 
     assert chosen.name == clusters[1].name
@@ -72,7 +72,7 @@ def test_single_cluster_is_returned_directly():
     runtime = [UnitTestClusterRuntimeData.dirty()]
 
     chosen, chosen_data = choose_cluster(
-        clusters, runtime, config.weights, config.energy
+        clusters, runtime, config.weights, config.energy, config.latency.max_ms
     )
 
     assert chosen.name == clusters[0].name
