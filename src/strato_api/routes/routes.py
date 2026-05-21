@@ -116,8 +116,6 @@ def get_config_endpoint():
         HTTPException: Re-raised service-level HTTP errors.
         HTTPException: ``500`` for unexpected failures.
 
-
-
     """
     try:
         return [config.model_dump(mode="json") for config in read_all_configs()]
