@@ -87,7 +87,6 @@ def _get_scored_clusters(
             config.weights.cost,
             config.weights.latency,
             runtime_data.avg_latency_ms,
-            float(config.latency.max_ms),
             config.energy,
         )
 
