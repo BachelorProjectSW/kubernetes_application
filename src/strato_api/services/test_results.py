@@ -1,10 +1,11 @@
 from collections import Counter, defaultdict
 
 from fastapi import HTTPException
-from datetime import datetime
+from datetime import datetime, timedelta
 from ...custom_logging.models.log_models import MarketSnapshotLog, NodeStatusLog, RequestLog
+from ...models.basemodels import ClusterConfig, EnergyConfig
 from ...models.enum import WorkerStatus
-from ...models.basemodels import EnergyConfig
+from ...global_api.services.cluster_data import get_microgrid_base_load_w
 from ...custom_logging.util.log_reader import (
     read_all_request_logs,
     get_config_by_id,
@@ -71,7 +72,7 @@ def _power_for_status(status: str, energy: EnergyConfig) -> float:
     """
     if status == WorkerStatus.WORKING:
         return energy.node_power_active_w * energy.power_scale_factor
-    if status in (WorkerStatus.IDLE, WorkerStatus.TURNING_ON, WorkerStatus.TURNING_OFF):
+    if status == WorkerStatus.IDLE:
         return energy.node_power_idle_w * energy.power_scale_factor
     return energy.node_power_off_w * energy.power_scale_factor
 
@@ -304,11 +305,18 @@ def get_test_results(config_id: str) -> dict:
     for snapshots in snapshots_by_cluster.values():
         snapshots.sort(key=lambda s: s.timestamp)
 
+    # Look up ClusterConfig by name so the snapshot loop can apply microgrid
+    # base load (e.g. DK fridge consumption) consistently with scoring.
+    clusters_by_name: dict[str, ClusterConfig] = {c.name: c for c in config.clusters}
+    base_load_w_cache: dict[tuple[str, datetime], float] = {}
+    base_load_wh_by_cluster: dict[str, float] = defaultdict(float)
+
     total_gco2_g = 0.0
     total_cost_eur = 0.0
 
     for cluster_name, snapshots in snapshots_by_cluster.items():
         cluster_requests = [r for r in sorted_requests if r.cluster == cluster_name]
+        cluster_config = clusters_by_name.get(cluster_name)
         for i, snapshot in enumerate(snapshots):
             interval_start = snapshot.timestamp
             is_last_snapshot = i + 1 == len(snapshots)
@@ -321,7 +329,24 @@ def get_test_results(config_id: str) -> dict:
             energy_wh = compute_cluster_energy_wh(
                 cluster_name, interval_start, interval_end, config.energy, logs=node_logs
             )
-            energy_kwh = energy_wh / 1000.0
+
+            # Add microgrid base load (always-on draw such as DK fridge) for the
+            # interval so the final total agrees with the load used at scoring time.
+            base_load_wh = 0.0
+            if cluster_config is not None:
+                cache_key = (cluster_config.simulated_country_code.upper(), snapshot.simulated_hour)
+                if cache_key not in base_load_w_cache:
+                    base_load_w_cache[cache_key] = get_microgrid_base_load_w(
+                        cluster_config,
+                        snapshot.simulated_hour,
+                        snapshot.simulated_hour + timedelta(hours=1),
+                    )
+                base_load_w = base_load_w_cache[cache_key]
+                interval_hours = (interval_end - interval_start).total_seconds() / 3600
+                base_load_wh = base_load_w * interval_hours
+                base_load_wh_by_cluster[cluster_name] += base_load_wh
+
+            energy_kwh = (energy_wh + base_load_wh) / 1000.0
 
             # Approximate the microgrid fraction for this interval
             interval_requests = []
@@ -342,6 +367,13 @@ def get_test_results(config_id: str) -> dict:
             # Apply blended (PV-netted) market factors to interval energy.
             total_gco2_g += energy_kwh * snapshot.carbon_gco2_per_kwh * grid_fraction
             total_cost_eur += energy_kwh * snapshot.cost_eur_per_kwh * grid_fraction
+
+    # Fold base load into the per-cluster energy summary so the dashboard total
+    # matches the carbon/cost computation above.
+    for cluster_name, base_load_wh in base_load_wh_by_cluster.items():
+        cluster_energy_wh[cluster_name] = round(
+            cluster_energy_wh.get(cluster_name, 0.0) + base_load_wh, 4
+        )
 
     return {
         "config_id": config_id,

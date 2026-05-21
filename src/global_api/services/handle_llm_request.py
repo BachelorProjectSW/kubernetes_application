@@ -81,7 +81,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             all_cluster_energy_data,
             config.weights,
             config.energy,
-            config.latency.max_ms,
         )
         choose_cluster_end = int((time.monotonic() - total_start) * 1000)
 
