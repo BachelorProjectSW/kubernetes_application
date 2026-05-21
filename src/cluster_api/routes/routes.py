@@ -15,6 +15,7 @@ def nodes():
     Returns:
         The current worker-node list as plain JSON data.
 
+
     """
     return config_store.get_worker_nodes_dict()
 
