@@ -18,7 +18,7 @@ It is deployed as a Kubernetes `Deployment` on the control plane node and expose
 | `POST` | `/set_config` | Load a new cluster configuration |
 | `POST` | `/handle_llm_request` | Forward an LLM question to the appropriate pod |
 | `POST` | `/turn_on_nodes/` | Power on a number of worker nodes |
-| `POST` | `/turn_off_nodes/` | Power off a number of worker nodes (debug only) |
+| `POST` | `/turn_off_nodes/` | Power off a number of worker nodes |
 | `POST` | `/turn_off_idle_nodes/` | Power off nodes that have been idle too long |
 | `POST` | `/cancel_all_llama_pods` | Delete all running llama pods so they restart cleanly |
 
@@ -30,7 +30,7 @@ This section covers setting up a K3s cluster on Raspberry Pi hardware that this 
 
 ### Prerequisites
 
-- Raspberry Pi devices with a supported Linux distribution (Debian/Ubuntu recommended)
+- Raspberry Pi devices with a supported Linux distribution
 - SSH access to each node
 - A [Tailscale](https://tailscale.com/) account for VPN networking between nodes
 

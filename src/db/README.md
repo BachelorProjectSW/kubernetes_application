@@ -37,20 +37,6 @@ The database is reachable at `localhost:5433` with the following credentials:
 
 The database connection can be configured via environment variables. Set `DATABASE_URL` to override all individual settings:
 
-```env
-DATABASE_URL=postgresql+psycopg://strato:strato@<HOST>:5433/strato
-```
-
-Alternatively, set the individual variables:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `POSTGRES_HOST` | `100.109.95.2` | Database host (Tailscale IP of the server) |
-| `POSTGRES_PORT` | `5433` | Database port |
-| `POSTGRES_USER` | `strato` | Database user |
-| `POSTGRES_PASSWORD` | `strato` | Database password |
-| `POSTGRES_DB` | `strato` | Database name |
-
 ## pgAdmin (optional GUI)
 
 To inspect the database with a graphical interface, run pgAdmin:
