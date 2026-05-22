@@ -134,20 +134,20 @@ async def execute_workload(
                         continue
                     if not request_reached_host:
                         log_request(
-                            cluster_name="unknown",
-                            worker_node_name="unknown",
-                            success=False,
-                            latency_ms=duration_ms,
-                            cluster_load_w=0,
-                            renewable_fraction=0,
-                            blended_carbon_gco2_per_kwh=0,
-                            blended_cost_eur_per_kwh=0,
-                            question=question.question,
-                            answer="unknown",
-                            response_status_code=None,
-                            all_content="unknown",
-                            trace_id=trace_id,
-                        )
+                                cluster_name="unknown",
+                                worker_node_name="unknown",
+                                success=False,
+                                latency_ms=duration_ms,
+                                cluster_load_w=0,
+                                renewable_fraction=0,
+                                blended_carbon_gco2_per_kwh=0,
+                                blended_cost_eur_per_kwh=0,
+                                question=question.question,
+                                answer=f"{type(e).__name__}: {e}",   # ← changed from "unknown"
+                                response_status_code=None,
+                                all_content=f"{type(e).__name__}: {e}",   # ← changed from "unknown"
+                                trace_id=trace_id,
+                            )
                     log.warning(
                         "strato.workload.request_timeout",
                         trace_id=trace_id,
@@ -170,20 +170,20 @@ async def execute_workload(
                         continue
                     if not request_reached_host:
                         log_request(
-                            cluster_name="unknown",
-                            worker_node_name="unknown",
-                            success=False,
-                            latency_ms=duration_ms,
-                            cluster_load_w=0,
-                            renewable_fraction=0,
-                            blended_carbon_gco2_per_kwh=0,
-                            blended_cost_eur_per_kwh=0,
-                            question=question.question,
-                            answer="unknown",
-                            response_status_code=None,
-                            all_content="unknown",
-                            trace_id=trace_id,
-                        )
+                                cluster_name="unknown",
+                                worker_node_name="unknown",
+                                success=False,
+                                latency_ms=duration_ms,
+                                cluster_load_w=0,
+                                renewable_fraction=0,
+                                blended_carbon_gco2_per_kwh=0,
+                                blended_cost_eur_per_kwh=0,
+                                question=question.question,
+                                answer=f"{type(e).__name__}: {e}",   # ← changed from "unknown"
+                                response_status_code=None,
+                                all_content=f"{type(e).__name__}: {e}",   # ← changed from "unknown"
+                                trace_id=trace_id,
+                            )
                     log.warning(
                         "strato.workload.request_failed",
                         trace_id=trace_id,
