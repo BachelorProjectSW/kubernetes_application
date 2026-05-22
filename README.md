@@ -1,181 +1,73 @@
-# Bachelor
+# Kubernetes LLM Benchmarking Platform
 
-Install k3s guide on rpi
+A Bachelor project for benchmarking large language models (LLMs) across a distributed Raspberry Pi K3s cluster. The system runs `llama.cpp` pods on worker nodes, manages power scheduling, collects performance data, and presents results through a web dashboard.
 
-Step 1)
-Install the master node:
-append "cgroup_memory=1 cgroup_enable=memory" to the first line in /boot/firmware/cmdline.txt
-ensure to edit with sudo, as the file is read-only:
-sudo vim /boot/firmware/cmdline.txt
-before:
-cfg80211.ieee80211_regdom=DK
-after:
-cfg80211.ieee80211_regdom=DK cgroup_memory=1 cgroup_enable=memory
+## Architecture
 
-Step 2)
-Reboot
+| Service | Port | Description |
+|---------|------|-------------|
+| `cluster_api` | 8040 | Deployed on each K3s control plane. Manages llama pods, node power, and LLM requests for one cluster. |
+| `global_api` | 8020 | Central scheduler. Distributes incoming LLM questions across all clusters. |
+| `strato_api` | 8090 | Main orchestration backend. Starts/stops test runs and exposes results. |
+| `frontend` | 8091 | React dashboard for configuring tests and viewing results. |
+| `postgresql` | 5433 | Stores test configurations, structured logs, and results. |
 
-Step 3)
-Run "curl -sfL https://get.k3s.io | sh -"
+All nodes communicate over a [Tailscale](https://tailscale.com/) VPN.
 
-step 4)
-#Get the token (which should be used from the working nodes
-cat /var/lib/rancher/k3s/server/agent-token
+## Prerequisites
 
-step 5)
-#Get the ip address from the master node
-ip a
+- Docker and Docker Compose
+- One or more Raspberry Pi devices running Debian/Ubuntu (for the K3s cluster)
+- A Tailscale account
 
-step 6)
-Setup working nodes/agents:
-curl -sfL https://get.k3s.io | K3S_URL=https://{IP_FROM_MASTER_NODE}:6443 K3S_TOKEN={TOKEN_FROM_STEP_4} K3S_NODE_NAME="{UNIQUE_NODE_NAME}" sh -s -
+## Getting started
 
----
+### 1. Set up the K3s cluster
 
-Get API authentication
+Follow the K3s cluster setup guide in [`src/cluster_api/README.md`](src/cluster_api/README.md). This covers enabling cgroups on Raspberry Pi, installing K3s, joining worker nodes, and deploying the `cluster_api` service to the cluster.
 
-step 1)
-Copy the auth file to fixed place
-sudo cp /etc/rancher/k3s/k3s.yaml src/cluster_api/auth
+### 2. Start the database
 
-Make it read/write
-sudo chmod 644 src/cluster_api/auth/k3s.yaml
+Follow the database setup guide in [`src/db/README.md`](src/db/README.md) to run a local PostgreSQL instance via Docker.
 
----
+### 3. Configure environment variables
 
-Setup docker for getting data from kubernetes network.
+Create a `.env` file in the project root:
 
-step 1)
-Install docker
-sudo apt update
-sudo apt install docker.io -y
-
-step 2)
-start Docker and enable it at boot
-sudo systemctl start docker
-sudo systemctl enable docker
-
-step 3)
-add docker to groups
-sudo usermod -aG docker $USER
-sudo reboot
-
-step 4)
-Build docker file:
-cd kubernetes
-docker build -t kube-api-server .
-
-step 5)
-Run api server (on host network, as otherwise docker will create its own local network):
-docker run --network=host kube-api-server
-
----
-
-## Kubernetes quick commands
-
-Use the commands below to inspect the cluster, verify required resources, connect to the server locally, and test the API.
-
-## Cluster inspection
-
-List all nodes:
-
-```bash
-kubectl get nodes
+```env
+DATABASE_URL=postgresql+psycopg://strato:strato@<POSTGRES_HOST>:5433/strato
+ELECTRICITY_MAPS_API_KEY=<YOUR_KEY>
+VITE_CONFIG_API_URL=http://<STRATO_HOST>:8090
 ```
 
-List all pods:
+### 4. Start the backend and frontend
 
 ```bash
-kubectl get pods
+docker compose up --build
 ```
 
-List all pods with node placement details:
+This starts `strato_api` on port `8090` and the frontend on port `8091`.
+
+### 5. Deploy the cluster API
+
+On the K3s control plane, apply the manifests from `src/cluster_api/manifest/`:
 
 ```bash
-kubectl get pods -o wide
+kubectl apply -f src/cluster_api/manifest/
 ```
 
-List all services:
+Or deploy through ArgoCD — see [`src/cluster_api/README.md`](src/cluster_api/README.md).
 
-```bash
-kubectl get services
-```
-
-## Resource checks
-
-Confirm that the required configmaps are present:
-
-```bash
-kubectl get configmap llama-settings llama-init
-```
-
-## Node management
-
-Delete a node:
-
-```bash
-kubectl delete node <NODE_NAME>
-```
-
-## Local access with port-forwarding
-
-Find the target server pod:
-
-```bash
-kubectl get pods -o wide
-```
-
-Forward the pod’s port `8080` to your local machine:
-
-```bash
-kubectl port-forward pod/<SERVER_NAME> <LOCAL_PORT>:8080
-```
-
-Example:
-
-```bash
-kubectl port-forward pod/llama-server-45z67 8080:8080
-```
-
-Alternative example:
-
-```bash
-kubectl port-forward pod/llama-server-r5mdv 8888:8080
-```
-
-## API verification
-
-Query the models endpoint:
-
-```bash
-curl http://127.0.0.1:<LOCAL_PORT>/v1/models
-```
-
-Send a sample chat request:
-
-```bash
-curl http://127.0.0.1:<LOCAL_PORT>/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"model":"model","messages":[{"role":"user","content":"Where is the Red Sea located?"}],"temperature":0.7,"max_tokens":-1}'
-```
-
-# Frontend setup
-
-The developer is expected to have Node.js installed.
-
-Change into the frontend app directory:
-
-```bash
-cd src/cluster_frontend
-```
+## Frontend development
 
 Install dependencies:
 
 ```bash
+cd src/frontend
 npm install
 ```
 
-Next, run the live dev server:
+Start the dev server:
 
 ```bash
 npm run dev
@@ -187,8 +79,61 @@ Create a production build:
 npm run build
 ```
 
-Preview the production build locally
+Preview the production build locally:
 
 ```bash
 npm run preview
+```
+
+## Kubernetes quick reference
+
+### Cluster inspection
+
+```bash
+kubectl get nodes
+kubectl get pods
+kubectl get pods -o wide
+kubectl get services
+```
+
+### Verify required resources
+
+```bash
+kubectl get configmap llama-settings llama-init
+```
+
+### Node management
+
+```bash
+kubectl delete node <NODE_NAME>
+```
+
+### Port-forward a pod for local access
+
+Find the pod name:
+
+```bash
+kubectl get pods -o wide
+```
+
+Forward port `8080` from the pod to your local machine:
+
+```bash
+kubectl port-forward pod/<POD_NAME> <LOCAL_PORT>:8080
+```
+
+Example:
+
+```bash
+kubectl port-forward pod/llama-server-45z67 8080:8080
+```
+
+### Query the LLM API
+
+```bash
+curl http://127.0.0.1:<LOCAL_PORT>/v1/models
+
+curl http://127.0.0.1:<LOCAL_PORT>/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"model","messages":[{"role":"user","content":"Where is the Red Sea located?"}],"temperature":0.7,"max_tokens":-1}'
 ```

@@ -1,61 +1,78 @@
-# K3s Cluster Setup
+# Cluster API
 
-This guide explains how to set up a small K3s cluster on Raspberry Pi with:
+The `cluster_api` service runs on the K3s control plane of each Raspberry Pi cluster. It is responsible for:
 
-- 1 control plane node
-- 1 or more worker nodes
+- Managing `llama.cpp` pod lifecycle (start, cancel, restart)
+- Powering worker nodes on and off based on demand or idle time
+- Receiving cluster configuration from the `global_api`
+- Routing LLM requests to the correct llama pod
 
-It also shows how to create a Tailscale auth secret in Kubernetes and how to apply the manifests from the `manifest/` folder.
+It is deployed as a Kubernetes `Deployment` on the control plane node and exposes port `8040`.
 
-## Prerequisites
+## API endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/get_cluster_working_nodes` | List worker nodes known to this cluster |
+| `GET` | `/get_cluster_information` | Return the active cluster configuration |
+| `POST` | `/set_config` | Load a new cluster configuration |
+| `POST` | `/handle_llm_request` | Forward an LLM question to the appropriate pod |
+| `POST` | `/turn_on_nodes/` | Power on a number of worker nodes |
+| `POST` | `/turn_off_nodes/` | Power off a number of worker nodes |
+| `POST` | `/turn_off_idle_nodes/` | Power off nodes that have been idle too long |
+| `POST` | `/cancel_all_llama_pods` | Delete all running llama pods so they restart cleanly |
+
+---
+
+## K3s Cluster Setup
+
+This section covers setting up a K3s cluster on Raspberry Pi hardware that this service will run on.
+
+### Prerequisites
 
 - Raspberry Pi devices with a supported Linux distribution
 - SSH access to each node
-- A Tailscale account if you want to use the Tailscale secret
+- A [Tailscale](https://tailscale.com/) account for VPN networking between nodes
 
-## Step 1: Enable cgroups
+### Step 1: Enable cgroups
+
+On each Raspberry Pi, edit the boot command line:
 
 ```bash
 sudo nano /boot/firmware/cmdline.txt
 ```
 
-Append the following to the first line (at the end):
+Append the following to the **first line** (do not create a new line):
 
-```bash
-cgroup_memory=1 cgroup_enable=memory```
+```
+cgroup_memory=1 cgroup_enable=memory
 ```
 
-## Step 2: Reboot
-
-Run the following command:
+### Step 2: Reboot
 
 ```bash
 sudo reboot
 ```
 
-## Step 3: Install K3s on the control plane/node
-
-Run:
+### Step 3: Install K3s on the control plane node
 
 ```bash
 curl -sfL https://get.k3s.io | sh -
 ```
 
-Get the join token, to add worker nodes:
+Retrieve the join token for worker nodes:
 
 ```bash
 sudo cat /var/lib/rancher/k3s/server/agent-token
 ```
 
-Save it somewhere, as it is to be used in a later step.
-
-Get the ip address:
+Retrieve the control plane IP address:
 
 ```bash
 hostname -I
 ```
 
-Save this aswell.
+Save both values — you will need them in the next step.
 
 Verify the control plane is ready:
 
@@ -63,140 +80,100 @@ Verify the control plane is ready:
 sudo kubectl get nodes
 ```
 
-## Step 4: Install K3s on the worker nodes, and join them to the cluster
+### Step 4: Join worker nodes to the cluster
 
-Run this command, replacing the placeholders, with the saved values:
-
-```bash
-sudo apt install curl
-```
-
-Run this command, replacing the placeholders, with the saved values:
+On each worker node, run the following (replacing the placeholders with the values from Step 3):
 
 ```bash
+sudo apt install curl -y
+
 curl -sfL https://get.k3s.io | \
-  K3S_URL=https://{IP_FROM_MASTER_NODE}:6443 \
-  K3S_TOKEN={TOKEN_FROM_STEP_3} \
+  K3S_URL=https://<CONTROL_PLANE_IP>:6443 \
+  K3S_TOKEN=<TOKEN_FROM_STEP_3> \
   sh -s -
 ```
 
-## Step 5: Verify the cluster
+### Step 5: Verify the cluster
 
-On the control plane node, check that all nodes joined successfully:
+On the control plane, confirm all nodes have joined:
 
 ```bash
 sudo kubectl get nodes -o wide
 ```
 
-The following should be shown:
+The output should list the control plane node and all worker nodes.
 
-- The control plane node
-- All worker nodes
+### Step 6: Create the Tailscale auth secret
 
-## Step 6: Create the Tailscale auth secret
+Create a Kubernetes secret for the Tailscale auth key. To generate a key:
 
-On the control plane node, create a Kubernetes secret for the Tailscale auth key:
+1. Sign in to the [Tailscale admin console](https://login.tailscale.com/admin/settings/keys).
+2. Open the **Keys** page and generate a new auth key.
+3. Copy the key value and run:
 
 ```bash
 kubectl create secret generic tailscale-auth \
-  --from-literal=TS_AUTHKEY=KEY_FROM_TAILSCALE
+  --from-literal=TS_AUTHKEY=<YOUR_TAILSCALE_AUTH_KEY>
 ```
 
-### To create the Tailscale key
+> **Keep the auth key secret. Do not commit it to Git.**
 
-1. Sign in to the Tailscale admin console.
-2. Open the Keys page.
-3. Generate a new auth key.
-4. Copy the key value.
-5. Replace KEY_FROM_TAILSCALE with your real key.
+### Step 7: Deploy the cluster API
 
-Check the [official docs](https://tailscale.com/docs/features/access-control/auth-keys?utm_source=chatgpt.com).
-
-Keep the auth key secret. Do not commit it to Git.
-
-## Step 7: Apply Kubernetes manifests
-
-Create the individual manifest files in a folder named `manifest/`, then run the following command on the control node:
+Apply all manifests from the `manifest/` folder on the control plane:
 
 ```bash
 kubectl apply -f manifest/
 ```
 
-This applies the files in that folder directly.
+#### Optional: Deploy through Argo CD
 
-As an alternative, the manifests can also be deployed through [ArgoCD](https://argo-cd.readthedocs.io/en/stable/).
-
-### Optional: Install Argo CD on the control plane
-
-If you want to manage deployments through Argo CD instead of applying manifests manually, install Argo CD on the control plane with:
+If you prefer GitOps-style deployments, install Argo CD on the control plane:
 
 ```bash
 kubectl create namespace argocd
-kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd --server-side --force-conflicts \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
 
-Check that the pods are running:
+Verify the pods are running:
 
 ```bash
 kubectl get pods -n argocd
 ```
 
-To access the Argo CD UI locally, port-forward the server service:
+Access the Argo CD UI locally:
 
 ```bash
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 ```
 
-Then open:
+Then open `https://localhost:8080` in your browser.
+
+Retrieve the initial admin password:
 
 ```bash
-https://localhost:8080
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
 ```
 
-To get the initial admin password:
+The default username is `admin`.
 
-```bash
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
-```
-
-The username is:
-
-```bash
-admin
-```
+---
 
 ## Useful commands
 
-### Check cluster nodes
-
 ```bash
+# Check cluster nodes
 kubectl get nodes
-```
 
-### Node management
-
-Delete a node:
-
-```bash
-kubectl delete node <NODE_NAME>
-```
-
-### Check pods
-
-List all pods:
-
-```bash
+# Check pods
 kubectl get pods
-```
-
-List all pods with node placement details:
-
-```bash
 kubectl get pods -o wide
-```
 
-### Check the K3s service
-
-```bash
+# Check services
 kubectl get services
+
+# Delete a node
+kubectl delete node <NODE_NAME>
 ```

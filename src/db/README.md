@@ -1,16 +1,45 @@
-## Database Setup
+# Database
 
-### Postgres
+The application uses PostgreSQL to persist test configurations, structured logs, and test results. The schema is managed automatically by SQLModel on startup — no manual migration step is required.
 
-Run postgres:
+## Tables
+
+| Table | Description |
+|-------|-------------|
+| `configs` | Saved test configuration snapshots, keyed by `config_id` |
+| `app_logs` | Structured log entries and terminal debug messages, grouped by `config_id` |
+
+## Running PostgreSQL
+
+Start a PostgreSQL container with the default credentials:
 
 ```bash
-docker run --name p6-postgres -e POSTGRES_USER=strato -e POSTGRES_PASSWORD=strato -e POSTGRES_DB=strato -p 5433:5432 -v p6_pgdata:/var/lib/postgresql/data -d postgres:16
+docker run --name p6-postgres \
+  -e POSTGRES_USER=strato \
+  -e POSTGRES_PASSWORD=strato \
+  -e POSTGRES_DB=strato \
+  -p 5433:5432 \
+  -v p6_pgdata:/var/lib/postgresql/data \
+  -d postgres:16
 ```
 
-### pgAdmin
+The database is reachable at `localhost:5433` with the following credentials:
 
-To use pgadmin (GUI) run pgadmin:
+| Field | Value |
+|-------|-------|
+| Host | `localhost` |
+| Port | `5433` |
+| Database | `strato` |
+| Username | `strato` |
+| Password | `strato` |
+
+## Environment variables
+
+The database connection can be configured via environment variables. Set `DATABASE_URL` to override all individual settings:
+
+## pgAdmin (optional GUI)
+
+To inspect the database with a graphical interface, run pgAdmin:
 
 ```bash
 docker run --name pgadmin \
@@ -20,21 +49,17 @@ docker run --name pgadmin \
   -d dpage/pgadmin4
 ```
 
-Login details:
+Open `http://localhost:5050` and log in with:
 
-- username: `admin@admin.com`
-- password: `admin`
+- **Email:** `admin@admin.com`
+- **Password:** `admin`
 
-After logging in:
+Then register the server:
 
-1. Right click `Servers` -> `Register` -> `Server`
-2. General
-
-- Name: `strato`
-
-3. Connection
-
-- Hostname / address: IP where Postgres is hosted (local or strato ip)
-- Port: `5433`
-- Username: `admin`
-- Password: `admin`
+1. Right-click **Servers** → **Register** → **Server**
+2. **General** tab — Name: `strato`
+3. **Connection** tab:
+   - Host: IP address where PostgreSQL is running
+   - Port: `5433`
+   - Username: `strato`
+   - Password: `strato`
