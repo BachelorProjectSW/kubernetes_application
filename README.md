@@ -1,16 +1,14 @@
-# Kubernetes LLM Benchmarking Platform
-
-A Bachelor project for benchmarking large language models (LLMs) across a distributed Raspberry Pi K3s cluster. The system runs `llama.cpp` pods on worker nodes, manages power scheduling, collects performance data, and presents results through a web dashboard.
+# A Framework for Evaluating Scheduling Strategies
 
 ## Architecture
 
-| Service | Port | Description |
-|---------|------|-------------|
+| Service         | Port | Description                                                                                           |
+| --------------- | ---- | ----------------------------------------------------------------------------------------------------- |
 | `cluster_api` | 8040 | Deployed on each K3s control plane. Manages llama pods, node power, and LLM requests for one cluster. |
-| `global_api` | 8020 | Central scheduler. Distributes incoming LLM questions across all clusters. |
-| `strato_api` | 8090 | Main orchestration backend. Starts/stops test runs and exposes results. |
-| `frontend` | 8091 | React dashboard for configuring tests and viewing results. |
-| `postgresql` | 5433 | Stores test configurations, structured logs, and results. |
+| `global_api`  | 8020 | Central scheduler. Distributes incoming LLM questions across all clusters.                            |
+| `strato_api`  | 8090 | Main orchestration backend. Starts/stops test runs and exposes results.                               |
+| `frontend`    | 8091 | React dashboard for configuring tests and viewing results.                                            |
+| `postgresql`  | 5433 | Stores test configurations, structured logs, and results.                                             |
 
 All nodes communicate over a [Tailscale](https://tailscale.com/) VPN.
 
