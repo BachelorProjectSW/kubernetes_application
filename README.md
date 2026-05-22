@@ -17,7 +17,6 @@ All nodes communicate over a [Tailscale](https://tailscale.com/) VPN.
 ## Prerequisites
 
 - Docker and Docker Compose
-- Node.js (for frontend development)
 - One or more Raspberry Pi devices running Debian/Ubuntu (for the K3s cluster)
 - A Tailscale account
 
