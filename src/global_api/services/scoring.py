@@ -198,7 +198,7 @@ def choose_cluster(
 
     log.debug(
         "global_api.cluster.selected",
-        cluster_name=best_cluster.name,
+        cluster_name=best_cluster.name if best_cluster is not None else "none",
         score=best_score,
     )
 

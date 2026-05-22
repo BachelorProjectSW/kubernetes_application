@@ -82,96 +82,116 @@ async def execute_workload(
             if delay > 0:
                 await asyncio.sleep(delay)
 
-            request_reached_host = False
+            trace_id = str(uuid.uuid4())
+            request_start = time.perf_counter()
+            payload_json = json.dumps(question.model_dump())
+            headers = {
+                "Content-Type": "application/json",
+                "X-Trace-Id": trace_id,
+            }
+
+            log.debug(
+                "strato.workload.request_started",
+                trace_id=trace_id,
+                target=f"{host}{endpoint}",
+            )
+
+            # Record that this request is being sent (used by global power scheduler for RPS)
             try:
-                trace_id = str(uuid.uuid4())
-                request_start = time.perf_counter()
-                payload_json = json.dumps(question.model_dump())
-                headers = {
-                    "Content-Type": "application/json",
-                    "X-Trace-Id": trace_id,
-                }
+                log_sent(host, trace_id=trace_id, payload={"question": question.question})
+            except Exception:
+                pass
 
-                log.debug(
-                    "strato.workload.request_started",
-                    trace_id=trace_id,
-                    target=f"{host}{endpoint}",
-                )
-
-                # Record that this request is being sent (used by global power scheduler for RPS)
+            max_retries = 3
+            for attempt in range(max_retries + 1):
+                request_reached_host = False
                 try:
-                    log_sent(host, trace_id=trace_id, payload={"question": question.question})
-                except Exception:
-                    pass
-
-                async with session.post(endpoint, data=payload_json, headers=headers) as resp:
-                    request_reached_host = True
-                    body = await resp.text()
+                    async with session.post(endpoint, data=payload_json, headers=headers) as resp:
+                        request_reached_host = True
+                        body = await resp.text()
+                        duration_ms = int((time.perf_counter() - request_start) * 1000)
+                        log.debug(
+                            "strato.workload.request_completed",
+                            trace_id=trace_id,
+                            status_code=resp.status,
+                            duration_ms=duration_ms,
+                        )
+                        return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
+                except asyncio.CancelledError:
+                    log.info("workload.request_cancelled")
+                    return {"ok": False, "error": "cancelled"}
+                except asyncio.TimeoutError:
                     duration_ms = int((time.perf_counter() - request_start) * 1000)
-                    log.debug(
-                        "strato.workload.request_completed",
+                    if not request_reached_host and attempt < max_retries:
+                        log.warning(
+                            "strato.workload.request_retry",
+                            trace_id=trace_id,
+                            attempt=attempt + 1,
+                            max_retries=max_retries,
+                            reason="timeout_before_host",
+                        )
+                        await asyncio.sleep(0.1 * (attempt + 1))
+                        continue
+                    if not request_reached_host:
+                        log_request(
+                            cluster_name="unknown",
+                            worker_node_name="unknown",
+                            success=False,
+                            latency_ms=duration_ms,
+                            cluster_load_w=0,
+                            renewable_fraction=0,
+                            blended_carbon_gco2_per_kwh=0,
+                            blended_cost_eur_per_kwh=0,
+                            question=question.question,
+                            answer="unknown",
+                            response_status_code=None,
+                            all_content="unknown",
+                            trace_id=trace_id,
+                        )
+                    log.warning(
+                        "strato.workload.request_timeout",
                         trace_id=trace_id,
-                        status_code=resp.status,
+                        timeout_s=request_timeout_s,
                         duration_ms=duration_ms,
+                        attempts=attempt + 1,
                     )
-                    return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
-            except asyncio.CancelledError:
-                log.info("workload.request_cancelled")
-                return {"ok": False, "error": "cancelled"}
-            except asyncio.TimeoutError:
-                duration_ms = int((time.perf_counter() - request_start) * 1000)
-                if not request_reached_host:
-                    # If we timed out before reaching the cluster, write a fallback
-                    # failed-request log entry so observability data stays complete.
-                    log_request(
-                        cluster_name="unknown",
-                        worker_node_name="unknown",
-                        success=False,
-                        latency_ms=duration_ms,
-                        cluster_load_w=0,
-                        renewable_fraction=0,
-                        blended_carbon_gco2_per_kwh=0,
-                        blended_cost_eur_per_kwh=0,
-                        question=question.question,
-                        answer="unknown",
-                        response_status_code=None,
-                        all_content="unknown",
+                    return {"ok": False, "error": f"request timeout after {request_timeout_s}s"}
+                except Exception as e:
+                    duration_ms = int((time.perf_counter() - request_start) * 1000)
+                    if not request_reached_host and attempt < max_retries:
+                        log.warning(
+                            "strato.workload.request_retry",
+                            trace_id=trace_id,
+                            attempt=attempt + 1,
+                            max_retries=max_retries,
+                            error=str(e),
+                        )
+                        await asyncio.sleep(0.1 * (attempt + 1))
+                        continue
+                    if not request_reached_host:
+                        log_request(
+                            cluster_name="unknown",
+                            worker_node_name="unknown",
+                            success=False,
+                            latency_ms=duration_ms,
+                            cluster_load_w=0,
+                            renewable_fraction=0,
+                            blended_carbon_gco2_per_kwh=0,
+                            blended_cost_eur_per_kwh=0,
+                            question=question.question,
+                            answer="unknown",
+                            response_status_code=None,
+                            all_content="unknown",
+                            trace_id=trace_id,
+                        )
+                    log.warning(
+                        "strato.workload.request_failed",
                         trace_id=trace_id,
+                        error=str(e),
+                        duration_ms=duration_ms,
+                        attempts=attempt + 1,
                     )
-                log.warning(
-                    "strato.workload.request_timeout",
-                    trace_id=trace_id,
-                    timeout_s=request_timeout_s,
-                    duration_ms=duration_ms,
-                )
-                return {"ok": False, "error": f"request timeout after {request_timeout_s}s"}
-            except Exception as e:
-                duration_ms = int((time.perf_counter() - request_start) * 1000)
-                if not request_reached_host:
-                    # Same fallback as timeout path: keep telemetry consistent
-                    # even when the downstream system did not process the request.
-                    log_request(
-                        cluster_name="unknown",
-                        worker_node_name="unknown",
-                        success=False,
-                        latency_ms=duration_ms,
-                        cluster_load_w=0,
-                        renewable_fraction=0,
-                        blended_carbon_gco2_per_kwh=0,
-                        blended_cost_eur_per_kwh=0,
-                        question=question.question,
-                        answer="unknown",
-                        response_status_code=None,
-                        all_content="unknown",
-                        trace_id=trace_id,
-                    )
-                log.warning(
-                    "strato.workload.request_failed",
-                    trace_id=trace_id,
-                    error=str(e),
-                    duration_ms=duration_ms,
-                )
-                return {"ok": False, "error": str(e)}
+                    return {"ok": False, "error": str(e)}
 
         # Create one async task per planned request timestamp.
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
