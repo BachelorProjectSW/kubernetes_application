@@ -117,45 +117,27 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             response.raise_for_status()
             data = response.json()
         except Exception as e:
-            # If the cluster call fails, store the attempt so the failure is visible.
             global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-            # Extract the response body from HTTP errors — it contains the actual
-            # error detail from the cluster (e.g. the llama failure reason).
+            # Extract the response body — it contains the actual error detail from the cluster.
             http_response = getattr(e, "response", None)
-            status_code = http_response.status_code if http_response is not None else 500
-            error_body = None
+            cluster_fail_status_code = http_response.status_code if http_response is not None else 500
+            cluster_fail_body = None
             if http_response is not None:
                 try:
-                    error_body = http_response.json()
+                    cluster_fail_body = http_response.json()
                 except Exception:
-                    error_body = http_response.text
+                    cluster_fail_body = http_response.text
             log.error(
                 "global_api.cluster_request_failed",
                 cluster=cluster.name,
                 url=url,
                 trace_id=trace_id,
-                status_code=status_code,
+                status_code=cluster_fail_status_code,
                 error=str(e),
-                error_body=error_body,
+                error_body=cluster_fail_body,
                 global_total_time_ms=global_total_time_ms,
             )
-            log_request(
-                cluster_name=cluster.name,
-                worker_node_name="unknown",
-                success=False,
-                latency_ms=global_total_time_ms,
-                cluster_load_w=cluster_energy_data.cluster_load_w,
-                renewable_fraction=renewable_fraction,
-                blended_carbon_gco2_per_kwh=blended_carbon,
-                blended_cost_eur_per_kwh=blended_cost,
-                question=question.question,
-                answer=None,
-                response_status_code=status_code,
-                all_content={"failure_stage": "global_to_cluster", "error": str(e), "error_body": error_body},
-                trace_id=trace_id,
-                global_choose_cluster=choose_cluster_end,
-                global_total_time_ms=global_total_time_ms,
-            )
+            # Do NOT call log_request here — the outer except is the single write point.
             raise
 
         # Convert the cluster payload into the response model used by callers.
@@ -242,14 +224,14 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             question=question.question,
             answer=answer if "answer" in locals() else None,
             response_status_code=(
-                result.llama_response_status_code
-                if "result" in locals()
-                else 500
+                cluster_fail_status_code
+                if "cluster_fail_status_code" in locals()
+                else (result.llama_response_status_code if "result" in locals() else 500)
             ),
             all_content=(
-                llm_content
-                if "llm_content" in locals()
-                else None
+                {"failure_stage": "global_to_cluster", "error": str(e), "error_body": cluster_fail_body}
+                if "cluster_fail_body" in locals()
+                else (llm_content if "llm_content" in locals() else None)
             ),
             trace_id=trace_id,
             global_choose_cluster=(
