@@ -119,6 +119,17 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         except Exception as e:
             # If the cluster call fails, store the attempt so the failure is visible.
             global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+            # Extract the real HTTP status from the cluster response when available
+            # (requests.HTTPError carries .response; connection errors don't).
+            cluster_status_code = getattr(getattr(e, "response", None), "status_code", None) or 500
+            log.warning(
+                "global_api.cluster_call_failed",
+                cluster=cluster.name,
+                cluster_url=url,
+                cluster_status_code=cluster_status_code,
+                trace_id=trace_id,
+                error=str(e),
+            )
             log_request(
                 cluster_name=cluster.name,
                 worker_node_name="unknown",
@@ -130,7 +141,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 blended_cost_eur_per_kwh=blended_cost,
                 question=question.question,
                 answer=None,
-                response_status_code=500,
+                response_status_code=cluster_status_code,
                 all_content=data,
                 trace_id=trace_id,
                 global_choose_cluster=choose_cluster_end,

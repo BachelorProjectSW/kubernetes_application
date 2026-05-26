@@ -120,7 +120,7 @@ async def execute_workload(
                 except asyncio.CancelledError:
                     log.info("workload.request_cancelled")
                     return {"ok": False, "error": "cancelled"}
-                except asyncio.TimeoutError:
+                except asyncio.TimeoutError as e:
                     duration_ms = int((time.perf_counter() - request_start) * 1000)
                     if not request_reached_host and attempt < max_retries:
                         log.warning(
