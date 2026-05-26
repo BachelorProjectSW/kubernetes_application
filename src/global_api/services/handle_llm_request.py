@@ -117,10 +117,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             response.raise_for_status()
             data = response.json()
         except Exception as e:
-            # If the cluster call fails, store the attempt so the failure is visible.
             global_total_time_ms = int((time.monotonic() - total_start) * 1000)
-            # Extract the real HTTP status from the cluster response when available
-            # (requests.HTTPError carries .response; connection errors don't).
             cluster_status_code = getattr(getattr(e, "response", None), "status_code", None) or 500
             log.warning(
                 "global_api.cluster_call_failed",
@@ -129,23 +126,6 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 cluster_status_code=cluster_status_code,
                 trace_id=trace_id,
                 error=str(e),
-            )
-            log_request(
-                cluster_name=cluster.name,
-                worker_node_name="unknown",
-                success=False,
-                latency_ms=global_total_time_ms,
-                cluster_load_w=cluster_energy_data.cluster_load_w,
-                renewable_fraction=renewable_fraction,
-                blended_carbon_gco2_per_kwh=blended_carbon,
-                blended_cost_eur_per_kwh=blended_cost,
-                question=question.question,
-                answer=None,
-                response_status_code=cluster_status_code,
-                all_content=data,
-                trace_id=trace_id,
-                global_choose_cluster=choose_cluster_end,
-                global_total_time_ms=global_total_time_ms,
             )
             raise Exception(e)
 
@@ -235,6 +215,8 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             response_status_code=(
                 result.llama_response_status_code
                 if "result" in locals()
+                else cluster_status_code
+                if "cluster_status_code" in locals()
                 else 500
             ),
             all_content=(
