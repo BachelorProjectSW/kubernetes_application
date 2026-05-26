@@ -119,6 +119,26 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         except Exception as e:
             # If the cluster call fails, store the attempt so the failure is visible.
             global_total_time_ms = int((time.monotonic() - total_start) * 1000)
+            # Extract the response body from HTTP errors — it contains the actual
+            # error detail from the cluster (e.g. the llama failure reason).
+            http_response = getattr(e, "response", None)
+            status_code = http_response.status_code if http_response is not None else 500
+            error_body = None
+            if http_response is not None:
+                try:
+                    error_body = http_response.json()
+                except Exception:
+                    error_body = http_response.text
+            log.error(
+                "global_api.cluster_request_failed",
+                cluster=cluster.name,
+                url=url,
+                trace_id=trace_id,
+                status_code=status_code,
+                error=str(e),
+                error_body=error_body,
+                global_total_time_ms=global_total_time_ms,
+            )
             log_request(
                 cluster_name=cluster.name,
                 worker_node_name="unknown",
@@ -130,13 +150,13 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 blended_cost_eur_per_kwh=blended_cost,
                 question=question.question,
                 answer=None,
-                response_status_code=500,
-                all_content=data,
+                response_status_code=status_code,
+                all_content={"failure_stage": "global_to_cluster", "error": str(e), "error_body": error_body},
                 trace_id=trace_id,
                 global_choose_cluster=choose_cluster_end,
                 global_total_time_ms=global_total_time_ms,
             )
-            raise Exception(e)
+            raise
 
         # Convert the cluster payload into the response model used by callers.
         result = LLMResponse(
@@ -185,7 +205,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
         return result
     except Exception as e:
         # Any unexpected failure is logged once more with the best data we have.
-        log.error("global.api.request.failed", error=e)
+        log.exception("global.api.request.failed", error=str(e))
         log_request(
             cluster_name=cluster.name if "cluster" in locals() else "unknown",
             worker_node_name=(

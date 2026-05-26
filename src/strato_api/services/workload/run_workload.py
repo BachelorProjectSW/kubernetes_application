@@ -133,9 +133,9 @@ async def execute_workload(
                         blended_carbon_gco2_per_kwh=0,
                         blended_cost_eur_per_kwh=0,
                         question=question.question,
-                        answer="unknown",
+                        answer=None,
                         response_status_code=None,
-                        all_content="unknown",
+                        all_content={"failure_stage": "strato_to_global", "error": f"timeout after {request_timeout_s}s"},
                         trace_id=trace_id,
                     )
                 log.warning(
@@ -143,6 +143,7 @@ async def execute_workload(
                     trace_id=trace_id,
                     timeout_s=request_timeout_s,
                     duration_ms=duration_ms,
+                    reached_host=request_reached_host,
                 )
                 return {"ok": False, "error": f"request timeout after {request_timeout_s}s"}
             except Exception as e:
@@ -160,9 +161,9 @@ async def execute_workload(
                         blended_carbon_gco2_per_kwh=0,
                         blended_cost_eur_per_kwh=0,
                         question=question.question,
-                        answer="unknown",
+                        answer=None,
                         response_status_code=None,
-                        all_content="unknown",
+                        all_content={"failure_stage": "strato_to_global", "error": str(e)},
                         trace_id=trace_id,
                     )
                 log.warning(
@@ -170,6 +171,7 @@ async def execute_workload(
                     trace_id=trace_id,
                     error=str(e),
                     duration_ms=duration_ms,
+                    reached_host=request_reached_host,
                 )
                 return {"ok": False, "error": str(e)}
 
