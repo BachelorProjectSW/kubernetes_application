@@ -273,7 +273,9 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
 
     except Exception as e:
         duration_ms = int((time.monotonic() - start_time) * 1000)
-        llama_status_code = getattr(getattr(e, "response", None), "status_code", None)
+        llama_response = getattr(e, "response", None)
+        llama_status_code = getattr(llama_response, "status_code", None)
+        llama_error_body = getattr(llama_response, "text", None)
 
         logger.exception(
             "cluster_api.llm.request_failed",
@@ -284,13 +286,14 @@ def handle_llm(question: QuestionConfig, trace_id: str | None = None):
             worker_ip=worker_node.ip if worker_node else None,
             cluster_total_time_ms=duration_ms,
             llama_status_code=llama_status_code,
+            llama_error_body=llama_error_body,
             error=str(e),
         )
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(
             status_code=502,
-            detail=f"LLM request failed: {str(e)} (llama_status={llama_status_code})",
+            detail=f"LLM request failed: {str(e)} (llama_status={llama_status_code}, llama_body={llama_error_body})",
         ) from e
 
     finally:
