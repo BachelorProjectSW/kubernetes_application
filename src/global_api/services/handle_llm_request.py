@@ -131,12 +131,12 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
                 question=question.question,
                 answer=None,
                 response_status_code=500,
-                all_content=data,
+                all_content={"error_type": type(e).__name__, "error": str(e)},
                 trace_id=trace_id,
                 global_choose_cluster=choose_cluster_end,
                 global_total_time_ms=global_total_time_ms,
             )
-            raise Exception(e)
+            raise
 
         # Convert the cluster payload into the response model used by callers.
         result = LLMResponse(
@@ -229,7 +229,7 @@ def handle_llm_request(question: QuestionConfig, trace_id: str):
             all_content=(
                 llm_content
                 if "llm_content" in locals()
-                else None
+                else {"error_type": type(e).__name__, "error": str(e)}
             ),
             trace_id=trace_id,
             global_choose_cluster=(

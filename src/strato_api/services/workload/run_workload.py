@@ -121,8 +121,6 @@ async def execute_workload(
             except asyncio.TimeoutError:
                 duration_ms = int((time.perf_counter() - request_start) * 1000)
                 if not request_reached_host:
-                    # If we timed out before reaching the cluster, write a fallback
-                    # failed-request log entry so observability data stays complete.
                     log_request(
                         cluster_name="unknown",
                         worker_node_name="unknown",
@@ -135,7 +133,11 @@ async def execute_workload(
                         question=question.question,
                         answer="unknown",
                         response_status_code=None,
-                        all_content="unknown",
+                        all_content={
+                            "error_type": "asyncio.TimeoutError",
+                            "error": f"timeout after {request_timeout_s}s",
+                            "request_reached_host": False,
+                        },
                         trace_id=trace_id,
                     )
                 log.warning(
@@ -148,8 +150,6 @@ async def execute_workload(
             except Exception as e:
                 duration_ms = int((time.perf_counter() - request_start) * 1000)
                 if not request_reached_host:
-                    # Same fallback as timeout path: keep telemetry consistent
-                    # even when the downstream system did not process the request.
                     log_request(
                         cluster_name="unknown",
                         worker_node_name="unknown",
@@ -162,12 +162,17 @@ async def execute_workload(
                         question=question.question,
                         answer="unknown",
                         response_status_code=None,
-                        all_content="unknown",
+                        all_content={
+                            "error_type": type(e).__name__,
+                            "error": str(e),
+                            "request_reached_host": False,
+                        },
                         trace_id=trace_id,
                     )
                 log.warning(
                     "strato.workload.request_failed",
                     trace_id=trace_id,
+                    error_type=type(e).__name__,
                     error=str(e),
                     duration_ms=duration_ms,
                 )
