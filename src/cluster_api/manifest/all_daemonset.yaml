@@ -49,6 +49,12 @@ spec:
               value: "8080" #only on port 8080
             - name: LLAMA_ARG_THINK_BUDGET
               value: "0"
+            - name: LLAMA_ARG_CACHE_RAM
+              value: "0"
+            - name: LLAMA_ARG_ENDPOINT_METRICS
+              value: "1"
+            - name: LLAMA_ARG_CACHE_PROMPT
+              value: "0"
           ports:
             - containerPort: 8080
               hostPort: 8080
@@ -120,6 +126,13 @@ spec:
               value: "8080"
             - name: LLAMA_ARG_THINK_BUDGET
               value: "0"
+            - name: LLAMA_ARG_CACHE_RAM
+              value: "0"
+            - name: LLAMA_ARG_ENDPOINT_METRICS
+              value: "1"
+            - name: LLAMA_ARG_CACHE_PROMPT
+              value: "0"
+              
           ports:
             - containerPort: 8080
               hostPort: 8080
