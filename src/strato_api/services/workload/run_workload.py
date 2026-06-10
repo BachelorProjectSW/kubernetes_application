@@ -5,6 +5,7 @@ import json
 import requests
 import structlog
 import uuid
+from aiohttp import ServerDisconnectedError
 from .generator import generate_workload
 from ....custom_logging.logger import log_request, log_sent
 from ....models.basemodels import QuestionConfig
@@ -65,7 +66,9 @@ async def execute_workload(
     )
 
     timeout = aiohttp.ClientTimeout(total=request_timeout_s)
-    async with aiohttp.ClientSession(base_url=host, timeout=timeout) as session:
+    connector = aiohttp.TCPConnector(force_close=True)
+
+    async with aiohttp.ClientSession(base_url=host, timeout=timeout, connector=connector) as session:
 
         async def _send_request(ts: float):
             """Send one request at its scheduled offset from workload start.
@@ -104,17 +107,23 @@ async def execute_workload(
                 except Exception:
                     pass
 
-                async with session.post(endpoint, data=payload_json, headers=headers) as resp:
-                    request_reached_host = True
-                    body = await resp.text()
-                    duration_ms = int((time.perf_counter() - request_start) * 1000)
-                    log.debug(
-                        "strato.workload.request_completed",
-                        trace_id=trace_id,
-                        status_code=resp.status,
-                        duration_ms=duration_ms,
-                    )
-                    return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
+                for attempt in range(2):
+                    try:
+                        async with session.post(endpoint, data=payload_json, headers=headers) as resp:
+                            request_reached_host = True
+                            body = await resp.text()
+                            duration_ms = int((time.perf_counter() - request_start) * 1000)
+                            log.debug(
+                                "strato.workload.request_completed",
+                                trace_id=trace_id,
+                                status_code=resp.status,
+                                duration_ms=duration_ms,
+                            )
+                            return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
+                    except ServerDisconnectedError:
+                        if attempt == 1 or request_reached_host:
+                            raise
+                        log.debug("strato.workload.retry_stale_connection", trace_id=trace_id)
             except asyncio.CancelledError:
                 log.info("workload.request_cancelled")
                 return {"ok": False, "error": "cancelled"}
