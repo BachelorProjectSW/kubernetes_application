@@ -5,7 +5,7 @@ import json
 import requests
 import structlog
 import uuid
-from aiohttp import ServerDisconnectedError
+from aiohttp import ClientConnectorError
 from .generator import generate_workload
 from ....custom_logging.logger import log_request, log_sent
 from ....models.basemodels import QuestionConfig
@@ -64,10 +64,17 @@ async def execute_workload(
         target=f"{host}{endpoint}",
         request_timeout_s=request_timeout_s,
     )
-
-    timeout = aiohttp.ClientTimeout(total=request_timeout_s)
+    
+    
+    #A fresh TCP connection must be established within 5 seconds.
+    #Without sock_connect, a connect attempt can wait until
+    #"request_timeout_s" is reached.
+    timeout = aiohttp.ClientTimeout(total=request_timeout_s, sock_connect=5)
+    
+    # Use a new TCP connection for each request instead of many 
+    # requests sharing the same aiohttp keep-alive connection pool.
     connector = aiohttp.TCPConnector(force_close=True)
-
+    
     async with aiohttp.ClientSession(base_url=host, timeout=timeout, connector=connector) as session:
 
         async def _send_request(ts: float):
@@ -120,10 +127,14 @@ async def execute_workload(
                                 duration_ms=duration_ms,
                             )
                             return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
-                    except ServerDisconnectedError:
-                        if attempt == 1 or request_reached_host:
+                    except ClientConnectorError:
+                        #A fresh TCP connection could not be established. As the target is reached 
+                        #over Tailscale, a brief discovery hiccup can still make a new connect attempt
+                        #fail before the request reaches the global API. Retry once.
+                        if attempt == 1:
                             raise
-                        log.debug("strato.workload.retry_stale_connection", trace_id=trace_id)
+                        log.debug("strato.workload.retry_connect_failed", trace_id=trace_id)
+                        await asyncio.sleep(1)
             except asyncio.CancelledError:
                 log.info("workload.request_cancelled")
                 return {"ok": False, "error": "cancelled"}
