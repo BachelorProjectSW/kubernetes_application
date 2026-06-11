@@ -14,6 +14,10 @@ from ....models.basemodels import QuestionConfig
 log = structlog.get_logger()
 
 
+#Retry delays
+RETRY_DELAYS = [2, 5, 10]
+
+
 async def execute_workload(
     host: str,
     endpoint: str,
@@ -66,13 +70,11 @@ async def execute_workload(
     )
     
     
-    #A fresh TCP connection must be established within 5 seconds.
-    #Without sock_connect, a connect attempt can wait until
-    #"request_timeout_s" is reached.
-    timeout = aiohttp.ClientTimeout(total=request_timeout_s, sock_connect=5)
+    #A fresh TCP connection must be established within 3 seconds.
+    timeout = aiohttp.ClientTimeout(total=request_timeout_s, sock_connect=3)
     
-    # Use a new TCP connection for each request instead of many 
-    # requests sharing the same aiohttp keep-alive connection pool.
+    #Use a new TCP connection for each request instead of many 
+    #requests sharing the same aiohttp keep-alive connection pool.
     connector = aiohttp.TCPConnector(force_close=True)
     
     async with aiohttp.ClientSession(base_url=host, timeout=timeout, connector=connector) as session:
@@ -114,7 +116,7 @@ async def execute_workload(
                 except Exception:
                     pass
 
-                for attempt in range(2):
+                for attempt in range(len(RETRY_DELAYS) + 1):
                     try:
                         async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                             request_reached_host = True
@@ -127,14 +129,18 @@ async def execute_workload(
                                 duration_ms=duration_ms,
                             )
                             return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
-                    except ClientConnectorError:
-                        #A fresh TCP connection could not be established. As the target is reached 
-                        #over Tailscale, a brief discovery hiccup can still make a new connect attempt
-                        #fail before the request reaches the global API. Retry once.
-                        if attempt == 1:
+                    except (asyncio.TimeoutError, ClientConnectorError):
+                        #A fresh TCP connection could not be established
+                        if request_reached_host or attempt == len(RETRY_DELAYS):
                             raise
-                        log.debug("strato.workload.retry_connect_failed", trace_id=trace_id)
-                        await asyncio.sleep(1)
+                        delay_s = RETRY_DELAYS[attempt]
+                        log.debug(
+                            "strato.workload.retry_connect_failed",
+                            trace_id=trace_id,
+                            attempt=attempt,
+                            retry_in_s=delay_s,
+                        )
+                        await asyncio.sleep(delay_s)
             except asyncio.CancelledError:
                 log.info("workload.request_cancelled")
                 return {"ok": False, "error": "cancelled"}
@@ -155,7 +161,7 @@ async def execute_workload(
                         response_status_code=None,
                         all_content={
                             "error_type": "asyncio.TimeoutError",
-                            "error": f"timeout after {request_timeout_s}s",
+                            "error": f"connect timed out after {duration_ms}ms (sock_connect), all retries exhausted",
                             "request_reached_host": False,
                         },
                         trace_id=trace_id,
