@@ -130,7 +130,7 @@ async def execute_workload(
                             )
                             return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
                     except (asyncio.TimeoutError, ClientConnectorError):
-                        #A fresh TCP connection could not be established
+                        #A fresh TCP connection could not be established (The solution to the tailscale problem)
                         if request_reached_host or attempt == len(RETRY_DELAYS):
                             raise
                         delay_s = RETRY_DELAYS[attempt]
