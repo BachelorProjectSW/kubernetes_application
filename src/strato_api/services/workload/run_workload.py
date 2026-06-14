@@ -15,7 +15,8 @@ log = structlog.get_logger()
 
 
 # Retry delays
-RETRY_DELAYS = [2, 5, 10]
+RETRY_DELAY_S = 2
+MAX_RETRIES = 2
 
 
 async def execute_workload(
@@ -115,7 +116,7 @@ async def execute_workload(
                 except Exception:
                     pass
 
-                for attempt in range(len(RETRY_DELAYS) + 1):
+                for attempt in range(MAX_RETRIES + 1):
                     try:
                         async with session.post(endpoint, data=payload_json, headers=headers) as resp:
                             request_reached_host = True
@@ -130,10 +131,12 @@ async def execute_workload(
                             return {"ok": 200 <= resp.status < 300,
                                     "status": resp.status, "body": body}
                     except (asyncio.TimeoutError, ClientConnectorError):
+                        
                         # A fresh TCP connection could not be established
-                        if request_reached_host or attempt == len(RETRY_DELAYS):
+                        if request_reached_host or attempt == MAX_RETRIES:
                             raise
-                        delay_s = RETRY_DELAYS[attempt]
+                        
+                        delay_s = RETRY_DELAY_S
                         log.debug(
                             "strato.workload.retry_connect_failed",
                             trace_id=trace_id,
