@@ -131,11 +131,11 @@ async def execute_workload(
                             return {"ok": 200 <= resp.status < 300,
                                     "status": resp.status, "body": body}
                     except (asyncio.TimeoutError, ClientConnectorError):
-                        
+
                         # A fresh TCP connection could not be established
                         if request_reached_host or attempt == MAX_RETRIES:
                             raise
-                        
+
                         delay_s = RETRY_DELAY_S
                         log.debug(
                             "strato.workload.retry_connect_failed",
