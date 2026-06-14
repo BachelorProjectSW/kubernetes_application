@@ -5,12 +5,18 @@ import json
 import requests
 import structlog
 import uuid
+from aiohttp import ClientConnectorError
 from .generator import generate_workload
 from ....custom_logging.logger import log_request, log_sent
 from ....models.basemodels import QuestionConfig
 
 
 log = structlog.get_logger()
+
+
+# Retry delays
+RETRY_DELAY_S = 2
+MAX_RETRIES = 2
 
 
 async def execute_workload(
@@ -64,8 +70,14 @@ async def execute_workload(
         request_timeout_s=request_timeout_s,
     )
 
-    timeout = aiohttp.ClientTimeout(total=request_timeout_s)
-    async with aiohttp.ClientSession(base_url=host, timeout=timeout) as session:
+    # A fresh TCP connection must be established within 3 seconds.
+    timeout = aiohttp.ClientTimeout(total=request_timeout_s, sock_connect=3)
+
+    # Use a new TCP connection for each request instead of many
+    # requests sharing the same aiohttp keep-alive connection pool.
+    connector = aiohttp.TCPConnector(force_close=True)
+
+    async with aiohttp.ClientSession(base_url=host, timeout=timeout, connector=connector) as session:
 
         async def _send_request(ts: float):
             """Send one request at its scheduled offset from workload start.
@@ -104,25 +116,38 @@ async def execute_workload(
                 except Exception:
                     pass
 
-                async with session.post(endpoint, data=payload_json, headers=headers) as resp:
-                    request_reached_host = True
-                    body = await resp.text()
-                    duration_ms = int((time.perf_counter() - request_start) * 1000)
-                    log.debug(
-                        "strato.workload.request_completed",
-                        trace_id=trace_id,
-                        status_code=resp.status,
-                        duration_ms=duration_ms,
-                    )
-                    return {"ok": 200 <= resp.status < 300, "status": resp.status, "body": body}
+                for attempt in range(MAX_RETRIES + 1):
+                    try:
+                        async with session.post(endpoint, data=payload_json, headers=headers) as resp:
+                            request_reached_host = True
+                            body = await resp.text()
+                            duration_ms = int((time.perf_counter() - request_start) * 1000)
+                            log.debug(
+                                "strato.workload.request_completed",
+                                trace_id=trace_id,
+                                status_code=resp.status,
+                                duration_ms=duration_ms,
+                            )
+                            return {"ok": 200 <= resp.status < 300,
+                                    "status": resp.status, "body": body}
+                    except (asyncio.TimeoutError, ClientConnectorError):
+
+                        # Retry only connection failures. If a response was already received,
+                        # do not retry because the server may have processed the POST.
+                        if request_reached_host or attempt == MAX_RETRIES:
+                            raise
+                        log.debug(
+                            "strato.workload.retry_connect_failed",
+                            trace_id=trace_id,
+                            attempt=attempt,
+                        )
+                        await asyncio.sleep(RETRY_DELAY_S)
             except asyncio.CancelledError:
                 log.info("workload.request_cancelled")
                 return {"ok": False, "error": "cancelled"}
             except asyncio.TimeoutError:
                 duration_ms = int((time.perf_counter() - request_start) * 1000)
                 if not request_reached_host:
-                    # If we timed out before reaching the cluster, write a fallback
-                    # failed-request log entry so observability data stays complete.
                     log_request(
                         cluster_name="unknown",
                         worker_node_name="unknown",
@@ -135,7 +160,11 @@ async def execute_workload(
                         question=question.question,
                         answer="unknown",
                         response_status_code=None,
-                        all_content="unknown",
+                        all_content={
+                            "error_type": "asyncio.TimeoutError",
+                            "error": f"connect timed out after {duration_ms}ms",
+                            "request_reached_host": False,
+                        },
                         trace_id=trace_id,
                     )
                 log.warning(
@@ -148,8 +177,6 @@ async def execute_workload(
             except Exception as e:
                 duration_ms = int((time.perf_counter() - request_start) * 1000)
                 if not request_reached_host:
-                    # Same fallback as timeout path: keep telemetry consistent
-                    # even when the downstream system did not process the request.
                     log_request(
                         cluster_name="unknown",
                         worker_node_name="unknown",
@@ -162,12 +189,17 @@ async def execute_workload(
                         question=question.question,
                         answer="unknown",
                         response_status_code=None,
-                        all_content="unknown",
+                        all_content={
+                            "error_type": type(e).__name__,
+                            "error": str(e),
+                            "request_reached_host": False,
+                        },
                         trace_id=trace_id,
                     )
                 log.warning(
                     "strato.workload.request_failed",
                     trace_id=trace_id,
+                    error_type=type(e).__name__,
                     error=str(e),
                     duration_ms=duration_ms,
                 )
