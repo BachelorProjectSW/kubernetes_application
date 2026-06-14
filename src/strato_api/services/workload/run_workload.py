@@ -132,18 +132,16 @@ async def execute_workload(
                                     "status": resp.status, "body": body}
                     except (asyncio.TimeoutError, ClientConnectorError):
 
-                        # A fresh TCP connection could not be established
+                        #Retry only connection failures. If a response was already received,
+                        #do not retry because the server may have processed the POST.
                         if request_reached_host or attempt == MAX_RETRIES:
                             raise
-
-                        delay_s = RETRY_DELAY_S
                         log.debug(
                             "strato.workload.retry_connect_failed",
                             trace_id=trace_id,
                             attempt=attempt,
-                            retry_in_s=delay_s,
                         )
-                        await asyncio.sleep(delay_s)
+                        await asyncio.sleep(RETRY_DELAY_S)
             except asyncio.CancelledError:
                 log.info("workload.request_cancelled")
                 return {"ok": False, "error": "cancelled"}
