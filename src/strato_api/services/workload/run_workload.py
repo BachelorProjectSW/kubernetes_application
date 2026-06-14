@@ -132,8 +132,8 @@ async def execute_workload(
                                     "status": resp.status, "body": body}
                     except (asyncio.TimeoutError, ClientConnectorError):
 
-                        #Retry only connection failures. If a response was already received,
-                        #do not retry because the server may have processed the POST.
+                        # Retry only connection failures. If a response was already received,
+                        # do not retry because the server may have processed the POST.
                         if request_reached_host or attempt == MAX_RETRIES:
                             raise
                         log.debug(
