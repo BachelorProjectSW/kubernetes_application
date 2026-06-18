@@ -145,15 +145,44 @@ worker thread, and returns. It must be fast.
 69      log.info("test.started_in_background", config_id=config.id, test_name=config.name)
 70      return {"message": f"{config.name} test started successfully"}
 ```
-- **Line 67** — create a thread that will run `run_test(config)`.
+**This is the only place in the file that creates a thread, and it creates exactly one.**
+A "thread" is just an independent line of execution inside the same process; several can
+run at once and they share the same memory (which is why the lock and globals exist).
+
+- **Line 67** — this does **not** run anything yet. `threading.Thread(...)` only *builds a
+  thread object*: a work order that says "when started, run `run_test`, passing it
+  `config`." Nothing executes from it until line 68.
   - `daemon=True` means the thread won't keep the process alive on shutdown; if the main
     process exits, this thread is killed. Acceptable for a test runner.
   - `name="test-runner"` is for log/debug readability.
-- **Line 68** — start it. From here, `run_test` runs **concurrently**.
-- **Lines 69–70** — log and return immediately. The frontend gets
-  `"<name> test started successfully"` within milliseconds, while the actual workload runs
-  in the background. **This is the whole reason for the thread:** a test runs for minutes;
-  the HTTP request can't block that long.
+- **Line 68** — `.start()` actually launches it. From this instant `run_test(config)` is
+  running **on a new, separate thread**, in parallel with whatever the current thread does
+  next.
+- **Lines 69–70** — the current thread logs and **returns the HTTP response immediately**.
+  The frontend gets `"<name> test started successfully"` within milliseconds. Returning
+  here does **not** stop the background thread, it keeps running `run_test` for minutes
+  after this function has returned. **That is the whole point:** a test runs for minutes,
+  and an HTTP request can't stay open that long, so we hand the slow work to a background
+  thread and free the request immediately. The frontend then polls `GET /test_status` to
+  watch progress.
+
+### Wait, which threads exist here?
+
+Only **one** thread is created by our code (line 67–68: the `test-runner`). The other
+threads that touch this file's globals are **not created by us**, they belong to the web
+server:
+
+- When a request hits `POST /start_test`, the server (uvicorn) is already running
+  `start_test` **on one of its own request-handling threads**. Our code runs *on* that
+  thread; it didn't create it.
+- Later, `POST /stop_test` arrives and the server runs `stop_test` on **another** of its
+  request threads.
+
+So the sequence is: the server gives an incoming request a thread → on that thread our
+`start_test` spawns **one** extra background thread → then returns, freeing the request
+thread. The lock exists precisely because these independent threads (the server's request
+threads plus our one background thread) all read and write the same
+`test_running` / `stop_requested` / `current_config` variables.
 
 ---
 
@@ -303,14 +332,17 @@ API to start, then run the workload until it finishes or is stopped.
 
 ## The concurrency model in one picture
 
+Only the **test-runner** thread is created by this file (line 67–68). The other two lanes
+are the web server's own request threads, our code just runs on them.
+
 ```
-request thread:  start_test() ── validate ── flip flags ── spawn thread ── return 200
-                                                              │
-test-runner thread: run_test() ──── save_config ── tell global API ── run_workload(...) ─────┐
-                                                                          ▲ polls            │
-stop request thread: stop_test() ── set stop_requested ──────────────────┘ should_stop_test │
-                                                                                             ▼
-                                              finally: reset flags ── idle again ────────────┘
+[server's request thread]  start_test() ── validate ── flip flags ── spawn thread ── return 200 ✓ done
+                                                                          │ creates (only thread we make)
+[OUR test-runner thread]              run_test() ── save_config ── tell global API ── run_workload(...) ──┐
+                                                                                          ▲ polls         │
+[server's request thread]  stop_test() ── set stop_requested ─────────────────────────────┘ should_stop  │
+                                                                                                          ▼
+                                                        finally: reset flags ── idle again ───────────────┘
 ```
 
 ## Function calls made from this file (jump list)
