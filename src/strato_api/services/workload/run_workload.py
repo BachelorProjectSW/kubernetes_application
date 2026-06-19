@@ -52,6 +52,7 @@ async def execute_workload(
 
     """
     request_timeout_s = 1000
+    #monotonic timer, it only moves forward, one cannot be cheating with the comp clock
     start_time = time.perf_counter()
 
     timestamps = generate_workload(
@@ -91,11 +92,13 @@ async def execute_workload(
             """
             # Translate the schedule offset into a sleep relative to "now".
             delay = ts - (time.perf_counter() - start_time)
+            #The thread will not be full, await delay
             if delay > 0:
                 await asyncio.sleep(delay)
 
             request_reached_host = False
             try:
+                #Be able to trace the request across the different stages
                 trace_id = str(uuid.uuid4())
                 request_start = time.perf_counter()
                 payload_json = json.dumps(question.model_dump())
@@ -111,6 +114,7 @@ async def execute_workload(
                 )
 
                 # Record that this request is being sent (used by global power scheduler for RPS)
+                # a try block such that if the postgresql is not available it does not fail
                 try:
                     log_sent(host, trace_id=trace_id, payload={"question": question.question})
                 except Exception:
@@ -206,9 +210,11 @@ async def execute_workload(
                 return {"ok": False, "error": str(e)}
 
         # Create one async task per planned request timestamp.
+        # this also includes whether they are done, failed etc...
         tasks = [asyncio.create_task(_send_request(ts)) for ts in timestamps]
 
         # Poll for completion so we can react quickly to external stop requests.
+        # While some request tasks are still running or waiting: Check whether someone asked us to stop.
         while not all(t.done() for t in tasks):
             if stop_check():
                 log.info("workload.stop_requested - cancelling all tasks")
@@ -219,6 +225,8 @@ async def execute_workload(
                 break
             await asyncio.sleep(0.5)
 
+        #Gather all the tasks in a list
+        #Event he exceptions as well
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
     results = [r for r in results if isinstance(r, dict)]
@@ -278,6 +286,7 @@ def run_workload(
 
     """
     try:
+        #For example, while request 1 is waiting for a network response, asyncio can start or process request 2 rather than leaving the thread idle.
         return asyncio.run(
             execute_workload(host, endpoint, question, duration_s, rpm, pattern, seed, peakiness, stop_check)
         )

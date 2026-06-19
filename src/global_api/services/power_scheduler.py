@@ -57,6 +57,7 @@ def _get_scored_clusters(
     # Read recent request logs once so every cluster uses the same latency view.
     now = datetime.now(timezone.utc)
     start = now - timedelta(seconds=config.latency.latency_window_s)
+
     try:
         recent_requests = read_model_logs(RequestLog, config.id, since=start)
     except Exception:

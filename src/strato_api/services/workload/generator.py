@@ -37,7 +37,11 @@ def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5)
     timestamps = []
 
     if pattern == "steady":
+        #The interval between the requests
         interval = 60 / rpm
+        #So foreach request we do generate the interval at which it should be sent at
+        #The random.uniform gives us a number between 0 and 1 such that we dont just send it exactly at 2
+        #seconds but rather at 2+0.22= 2.22 seconds fx.
         for i in range(total_requests):
             timestamps.append(i * interval + random.uniform(0, 1))
 
@@ -47,7 +51,8 @@ def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5)
         # Generate multiple waves
         waves = []
         num_waves = 3 + int(peakiness * 3)
-
+        
+        # _ = we do not use the number 
         for _ in range(num_waves):
             wave_length = random.uniform(duration_s * 0.1, duration_s * 0.8)
             frequency = 2 * math.pi / wave_length
@@ -73,9 +78,11 @@ def generate_workload(duration_s, rpm, pattern="steady", seed=42, peakiness=0.5)
             k=total_requests,
         )
 
+        #basically add the little jitter to the thing type of vibe
         for sec in second_choices:
             ts = sec + random.uniform(0, 1)
             timestamps.append(ts)
-
+    
+    #Then we sort them, because the jitter could have messed up the order
     timestamps.sort()
     return timestamps

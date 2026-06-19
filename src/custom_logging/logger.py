@@ -120,7 +120,7 @@ def log_request(
         save_model_log(_current_config_id(), entry)
     except Exception as e:
         log.warning("custom_logging.db.save_model_log_failed", error=str(e), log_type="RequestLog")
-
+    #**row expands the dictionary into keyword fields.
     log.debug("custom_logging.request.logged", **row)
 
 

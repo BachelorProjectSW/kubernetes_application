@@ -43,6 +43,7 @@ def _database_url() -> str:
     return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db_name}"
 
 
+#Database creation if it is not created yet
 def _admin_url(url: URL) -> URL:
     """Create an admin-database URL used for database creation checks.
 

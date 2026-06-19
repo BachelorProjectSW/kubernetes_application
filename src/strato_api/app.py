@@ -5,6 +5,7 @@ from ..db.postgres import init_database
 import os
 import uvicorn
 
+#API
 app = FastAPI()
 
 # Allow all website traffic as its all hosted on the tailscale network.
@@ -23,4 +24,5 @@ init_database()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8090"))
+    #WEBSERVER
     uvicorn.run(app, host="0.0.0.0", port=port)

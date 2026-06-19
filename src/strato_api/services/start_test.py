@@ -45,11 +45,13 @@ def start_test(config: Config):
         port = config.global_scheduler.port
         response = requests.post(
             f"http://{ip}:{port}/validate_config",
+            #model.dump = python dic
             json=config.model_dump(),
             timeout=180
         )
         response.raise_for_status()
         validation = response.json()
+        #if valid == false, not false == true
         if not validation["valid"]:
             raise RuntimeError(f"Invalid config: {validation['errors']}")
     except Exception as e:
@@ -64,6 +66,7 @@ def start_test(config: Config):
         current_config = config
 
     # Run the test on a separate thread so the API stays responsive.
+    # daemon= the thread will not keep the Python process alive. If the API shuts down, the test may be terminated abruptly.
     thread = threading.Thread(target=run_test, args=(config,), daemon=True, name="test-runner")
     thread.start()
     log.info("test.started_in_background", config_id=config.id, test_name=config.name)
